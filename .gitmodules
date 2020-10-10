@@ -1,6 +1,9 @@
 [submodule "src/timer"]
 	path = src/timer
-	url = git@github.com:Jakobimatrix/timer.git
+	url = https://github.com/Jakobimatrix/timer.git
 [submodule "src/homography"]
 	path = src/homography
-	url = git@github.com:Jakobimatrix/homography.git
+	url = https://github.com/Jakobimatrix/homography.git
+[submodule "src/tinyxml2"]
+	path = src/tinyxml2
+	url = https://github.com/Jakobimatrix/tinyxml2.git
