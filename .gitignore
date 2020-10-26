@@ -43,6 +43,6 @@ compile_commands.json
 CTestTestfile.cmake
 *.a
 *.png
-Release/src/
-Debug/src/
+Release/ 
+Debug/
 build/
