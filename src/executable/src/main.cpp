@@ -2,6 +2,7 @@
 #include <eigen3/Eigen/Core>
 #include <iostream>
 #include <settings.hpp>
+#include <timer/timer.hpp>
 
 
 class ExampleClass : public util::Settings {
@@ -101,6 +102,11 @@ bool testSettings() {
 
 
 int main(int argc, char* argv[]) {
+  // Usage of timer class
+  tool::Timer timer;
+  timer.start("test_timer");
+
   testSFML();
   testSettings();
+  timer.stop("test_timer");
 }

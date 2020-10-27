@@ -20,5 +20,6 @@ list(APPEND evosym_start_SOURCES
   ${SFML_LIBRARIES}
   ${SFML_DEPENDENCIES}
   settings_lib
+  timer_lib
 )
 target_link_libraries(evosym_start ${evosym_start_SOURCES})

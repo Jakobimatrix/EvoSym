@@ -1,5 +1,6 @@
-if [ -e src/executables/evosym_start ]; then
-    exec src/executables/evosym_start
+exe="src/executable/evosym_start"
+if [ -e $exe ]; then
+    exec $exe
 else
     echo "Cannot find executable."
 fi
