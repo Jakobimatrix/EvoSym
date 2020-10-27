@@ -19,5 +19,6 @@ list(APPEND evosym_start_SOURCES
   ${Boost_LIBRARIES}
   ${SFML_LIBRARIES}
   ${SFML_DEPENDENCIES}
+  settings_lib
 )
 target_link_libraries(evosym_start ${evosym_start_SOURCES})
