@@ -7,3 +7,6 @@
 [submodule "src/Settings"]
 	path = src/Settings
 	url = https://github.com/Jakobimatrix/Settings
+[submodule "src/randomGenerator"]
+	path = src/randomGenerator
+	url = https://github.com/Jakobimatrix/randomGenerator

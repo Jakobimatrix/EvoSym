@@ -22,5 +22,6 @@ list(APPEND evosym_start_SOURCES
   settings_lib
   timer_lib
   homography_lib
+  random_generator
 )
 target_link_libraries(evosym_start ${evosym_start_SOURCES})
