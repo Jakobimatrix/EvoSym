@@ -1,10 +1,26 @@
+
+/*
 #include <SFML/Graphics.hpp>
 #include <eigen3/Eigen/Core>
+#include <filesystem>
+#include <globals/globals.hpp>
 #include <homography/homography.hpp>
 #include <iostream>
 #include <randomGenerator.hpp>
 #include <settings.hpp>
 #include <timer/timer.hpp>
+
+
+#define GLAD_GL_IMPLEMENTATION
+#include "gl.h"
+
+#ifdef SFML_SYSTEM_IOS
+#include <SFML/Main.hpp>
+#endif
+
+#ifndef GL_SRGB8_ALPHA8
+#define GL_SRGB8_ALPHA8 0x8C43
+#endif
 
 
 class ExampleClass : public util::Settings {
@@ -57,25 +73,8 @@ class ExampleClass : public util::Settings {
   const std::string S_STRING_ID = "even_more_nearly_pi";
   const std::string ARRAY_ID = "You_should_probably_choose_a_short_name";
 };
-
-bool testSFML() {
-  std::cout << "testing SFML please press Enter to continue. Then Close Window "
-               "to finish."
-            << std::endl;
-  sf::Window App(sf::VideoMode(800, 600), "myproject");
-
-  while (App.isOpen()) {
-    sf::Event Event;
-    while (App.pollEvent(Event)) {
-      if (Event.type == sf::Event::Closed)
-        App.close();
-    }
-    App.display();
-  }
-
-  return true;
-}
-
+*/
+/*
 bool testSettings() {
 
   const std::string FILE = "ExampleClass.xml";
@@ -87,8 +86,8 @@ bool testSettings() {
   // save the corrent values of all registered membervariables:
   exampleClass.save();
   std::cout << "Now you could look at " << FILE
-            << " and change some values. Press Enter when finnished." << std::endl;
-  std::getchar();
+            << " and change some values. Press Enter when finnished." <<
+std::endl; std::getchar();
   // change something in the file and reload into class
   exampleClass.reloadAllFromFile();
   exampleClass.print();
@@ -102,55 +101,10 @@ bool testSettings() {
   return true;
 }
 
-bool testHomography() {
-
-  const Eigen::Vector2d image_size(300, 300);
-  std::array<Eigen::Vector2d, 4> A;
-  std::array<Eigen::Vector2d, 4> B;
-  std::array<EigenSTL::pair_Vector2d_Vector2d, 4> associated_points;
-  Eigen::Matrix3d H;
-
-  // Some points in world...
-  A[0] << -2, 2;   // A
-  A[1] << 2, 2;    // B
-  A[2] << 2, -2;   // C
-  A[3] << -2, -2;  // D
-
-  // ...should match these picture coordinates
-  B[0] << 0, 0;               // A
-  B[1] << image_size.x(), 0;  // B
-  B[2] << image_size;         // C
-  B[3] << 0, image_size.y();  // D
-
-  for (unsigned int i = 0; i < 4; i++) {
-    associated_points[i] = std::make_pair(A[i], B[i]);
-  }
-
-  // get the transformation matrix
-  H = tool::findHomography<tool::SystemSolverMethode::PARTIAL_PIV_LU>(associated_points);
-
-  std::cout << "The homography matrix for the sample points is:\n"
-            << H << std::endl;
-  // Transform a picture point to the corresponding world point.
-  const Eigen::Vector2d a_picture_point(34, 57);
-  const Eigen::Vector2d a_world_point =
-      tool::computeTransformation(H.inverse(), a_picture_point);
-
-  std::cout << "The Point in A (" << a_picture_point.transpose() << ") corresponds to the point ("
-            << a_world_point.transpose() << ") in B." << std::endl;
-
-  // Transform a world point to the corresponding picture point.
-  const Eigen::Vector2d b_world_point(2.224, 3.335);
-  const Eigen::Vector2d b_picture_point = tool::computeTransformation(H, b_world_point);
-  std::cout << "The Point in A (" << b_picture_point.transpose() << ") corresponds to the point ("
-            << b_world_point.transpose() << ") in B." << std::endl;
-
-  return true;
-}
-
+*/
+/*
 bool testRandGen() {
-  tool::RandomGenerator* rg;
-  rg = &rg->getInstance();
+  tool::RandomGenerator* rg = &tool::RandomGenerator::getInstance();
 
   // *********** distributions ***********
 
@@ -226,19 +180,293 @@ bool testRandGen() {
     std::cout << i << ", ";
   }
   std::cout << "]\nchoose [" << *(rg->get<std::vector<int>>(b)) << "]" << std::endl;
+
+  return true;
 }
 
+bool testSFMLCube() {
+
+  const Globals* G = &Globals::getInstance();
+
+  bool exit = false;
+  bool sRgb = false;
+
+  while (!exit) {
+    // Request a 24-bits depth buffer when creating the window
+    sf::ContextSettings contextSettings;
+    contextSettings.depthBits = 24;
+    contextSettings.sRgbCapable = sRgb;
+
+    // Create the main window
+    sf::RenderWindow window(
+        sf::VideoMode(800, 600), "SFML graphics with OpenGL", sf::Style::Default, contextSettings);
+    window.setVerticalSyncEnabled(true);
+
+    // Create a sprite for the background
+    sf::Texture backgroundTexture;
+    backgroundTexture.setSrgb(sRgb);
+    if (!backgroundTexture.loadFromFile(G->absolute_path_to_resources +
+                                        "background.jpg"))
+      return EXIT_FAILURE;
+    sf::Sprite background(backgroundTexture);
+
+    // Create some text to draw on top of our OpenGL object
+    sf::Font font;
+    if (!font.loadFromFile(G->absolute_path_to_resources + "sansation.ttf"))
+      return EXIT_FAILURE;
+    sf::Text text("SFML / OpenGL demo", font);
+    sf::Text sRgbInstructions("Press space to toggle sRGB conversion", font);
+    sf::Text mipmapInstructions("Press return to toggle mipmapping", font);
+    text.setFillColor(sf::Color(255, 255, 255, 170));
+    sRgbInstructions.setFillColor(sf::Color(255, 255, 255, 170));
+    mipmapInstructions.setFillColor(sf::Color(255, 255, 255, 170));
+    text.setPosition(250.f, 450.f);
+    sRgbInstructions.setPosition(150.f, 500.f);
+    mipmapInstructions.setPosition(180.f, 550.f);
+
+    // Load a texture to apply to our 3D cube
+    sf::Texture texture;
+    if (!texture.loadFromFile(G->absolute_path_to_resources + "texture.jpg"))
+      return EXIT_FAILURE;
+
+    // Attempt to generate a mipmap for our cube texture
+    // We don't check the return value here since
+    // mipmapping is purely optional in this example
+    texture.generateMipmap();
+
+    // Make the window the active window for OpenGL calls
+    window.setActive(true);
+
+    // Load OpenGL or OpenGL ES entry points using glad
+#ifdef SFML_OPENGL_ES
+    gladLoadGLES1(reinterpret_cast<GLADloadfunc>(sf::Context::getFunction));
+#else
+    gladLoadGL(reinterpret_cast<GLADloadfunc>(sf::Context::getFunction));
+#endif
+
+    // Enable Z-buffer read and write
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+#ifdef SFML_OPENGL_ES
+    glClearDepthf(1.f);
+#else
+    glClearDepth(1.f);
+#endif
+
+    // Disable lighting
+    glDisable(GL_LIGHTING);
+
+    // Configure the viewport (the same size as the window)
+    glViewport(0, 0, window.getSize().x, window.getSize().y);
+
+    // Setup a perspective projection
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    GLfloat ratio = static_cast<float>(window.getSize().x) / window.getSize().y;
+#ifdef SFML_OPENGL_ES
+    glFrustumf(-ratio, ratio, -1.f, 1.f, 1.f, 500.f);
+#else
+    glFrustum(-ratio, ratio, -1.f, 1.f, 1.f, 500.f);
+#endif
+
+    // Bind the texture
+    glEnable(GL_TEXTURE_2D);
+    sf::Texture::bind(&texture);
+
+    // Define a 3D cube (6 faces made of 2 triangles composed by 3 vertices)
+    static const GLfloat cube[] = {
+        // positions    // texture coordinates
+        -20, -20, -20, 0, 0, -20, 20,  -20, 1, 0, -20, -20, 20,  0, 1,
+        -20, -20, 20,  0, 1, -20, 20,  -20, 1, 0, -20, 20,  20,  1, 1,
+
+        20,  -20, -20, 0, 0, 20,  20,  -20, 1, 0, 20,  -20, 20,  0, 1,
+        20,  -20, 20,  0, 1, 20,  20,  -20, 1, 0, 20,  20,  20,  1, 1,
+
+        -20, -20, -20, 0, 0, 20,  -20, -20, 1, 0, -20, -20, 20,  0, 1,
+        -20, -20, 20,  0, 1, 20,  -20, -20, 1, 0, 20,  -20, 20,  1, 1,
+
+        -20, 20,  -20, 0, 0, 20,  20,  -20, 1, 0, -20, 20,  20,  0, 1,
+        -20, 20,  20,  0, 1, 20,  20,  -20, 1, 0, 20,  20,  20,  1, 1,
+
+        -20, -20, -20, 0, 0, 20,  -20, -20, 1, 0, -20, 20,  -20, 0, 1,
+        -20, 20,  -20, 0, 1, 20,  -20, -20, 1, 0, 20,  20,  -20, 1, 1,
+
+        -20, -20, 20,  0, 0, 20,  -20, 20,  1, 0, -20, 20,  20,  0, 1,
+        -20, 20,  20,  0, 1, 20,  -20, 20,  1, 0, 20,  20,  20,  1, 1};
+
+    // Enable position and texture coordinates vertex components
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glVertexPointer(3, GL_FLOAT, 5 * sizeof(GLfloat), cube);
+    glTexCoordPointer(2, GL_FLOAT, 5 * sizeof(GLfloat), cube + 3);
+
+    // Disable normal and color vertex components
+    glDisableClientState(GL_NORMAL_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+
+    // Make the window no longer the active window for OpenGL calls
+    window.setActive(false);
+
+    // Create a clock for measuring the time elapsed
+    sf::Clock clock;
+
+    // Flag to track whether mipmapping is currently enabled
+    bool mipmapEnabled = true;
+
+    // Start game loop
+    while (window.isOpen()) {
+      // Process events
+      sf::Event event;
+      while (window.pollEvent(event)) {
+        // Close window: exit
+        if (event.type == sf::Event::Closed) {
+          exit = true;
+          window.close();
+        }
+
+        // Escape key: exit
+        if ((event.type == sf::Event::KeyPressed) &&
+            (event.key.code == sf::Keyboard::Escape)) {
+          exit = true;
+          window.close();
+        }
+
+        // Return key: toggle mipmapping
+        if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::E)) {
+          if (mipmapEnabled) {
+            // We simply reload the texture to disable mipmapping
+            if (!texture.loadFromFile(G->absolute_path_to_resources +
+                                      "texture.jpg"))
+              return EXIT_FAILURE;
+
+            mipmapEnabled = false;
+          } else {
+            texture.generateMipmap();
+
+            mipmapEnabled = true;
+          }
+        }
+
+        // Space key: toggle sRGB conversion
+        if ((event.type == sf::Event::KeyPressed) &&
+            (event.key.code == sf::Keyboard::Space)) {
+          sRgb = !sRgb;
+          window.close();
+        }
+
+        // Adjust the viewport when the window is resized
+        if (event.type == sf::Event::Resized) {
+          sf::Vector2u textureSize = backgroundTexture.getSize();
+
+          // Make the window the active window for OpenGL calls
+          window.setActive(true);
+
+          glViewport(0, 0, event.size.width, event.size.height);
+          glMatrixMode(GL_PROJECTION);
+          glLoadIdentity();
+          GLfloat ratio = static_cast<float>(event.size.width) / event.size.height;
+#ifdef SFML_OPENGL_ES
+          glFrustumf(-ratio, ratio, -1.f, 1.f, 1.f, 500.f);
+#else
+          glFrustum(-ratio, ratio, -1.f, 1.f, 1.f, 500.f);
+#endif
+
+          // Make the window no longer the active window for OpenGL calls
+          window.setActive(false);
+
+          sf::View view;
+          view.setSize(textureSize.x, textureSize.y);
+          view.setCenter(textureSize.x / 2.f, textureSize.y / 2.f);
+          window.setView(view);
+        }
+      }
+
+      // Draw the background
+      window.pushGLStates();
+      window.draw(background);
+      window.popGLStates();
+
+      // Make the window the active window for OpenGL calls
+      window.setActive(true);
+
+      // Clear the depth buffer
+      glClear(GL_DEPTH_BUFFER_BIT);
+
+      // We get the position of the mouse cursor (or touch), so that we can move the box accordingly
+      sf::Vector2i pos;
+
+#ifdef SFML_SYSTEM_IOS
+      pos = sf::Touch::getPosition(0);
+#else
+      pos = sf::Mouse::getPosition();
+#endif
+
+      float x = pos.x * 200.f / window.getSize().x - 100.f;
+      float y = -pos.y * 200.f / window.getSize().y + 100.f;
+
+      // Apply some transformations
+      glMatrixMode(GL_MODELVIEW);
+      glLoadIdentity();
+      glTranslatef(x, y, -100.f);
+      glRotatef(clock.getElapsedTime().asSeconds() * 50.f, 1.f, 0.f, 0.f);
+      glRotatef(clock.getElapsedTime().asSeconds() * 30.f, 0.f, 1.f, 0.f);
+      glRotatef(clock.getElapsedTime().asSeconds() * 90.f, 0.f, 0.f, 1.f);
+
+      // Draw the cube
+      glDrawArrays(GL_TRIANGLES, 0, 36);
+
+      // Make the window no longer the active window for OpenGL calls
+      window.setActive(false);
+
+      // Draw some text on top of our OpenGL object
+      window.pushGLStates();
+      window.draw(text);
+      window.draw(sRgbInstructions);
+      window.draw(mipmapInstructions);
+      window.popGLStates();
+
+      // Finally, display the rendered frame on screen
+      window.display();
+    }
+  }
+
+  return true;
+}
+
+*/
+
+
+
+#include <display/display.h>
+#include <display/menu.h>
+#include <world/world.h>
+
+#include <chrono>
+#include <globals/globals.hpp>
+
 int main(int argc, char* argv[]) {
-  // Usage of timer class
-  tool::Timer timer;
-  timer.start("test_timer");
+  SimulationSettings menu;
+  World simulatedWorld;
+  Display display(std::make_shared<Menu>(menu));
+  int mash_id = display.addMesh(simulatedWorld.getWorldMesh());
 
-  testSFML();
-  testSettings();
+  using namespace std::chrono;
+  using dsec = duration<double>;
+  auto next_update = system_clock::now() +
+                     round<system_clock::duration>(dsec{menu.get_target_update_rate()});
 
-  testHomography();
 
-  timer.stop("test_timer");
+  while (display.isOpen()) {
+    simulatedWorld.update();
 
-  testRandGen();
+    const auto now = system_clock::now();
+    if (now > next_update) {
+      next_update =
+          now + round<system_clock::duration>(dsec{menu.get_target_update_rate()});
+      display.draw();
+    }
+  }
+  menu.save();
+  simulatedWorld.save();
+  return 0;
 }

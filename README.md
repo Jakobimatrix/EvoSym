@@ -1,6 +1,9 @@
 # EvoSym
 - WIP: Porting [EvoSym_old](https://github.com/Jakobimatrix/EvoSym_old) from Windows to Linux
 
+
+
+
 # dependencies
 - eigen
   header only lib
@@ -8,3 +11,5 @@
   ´sudo apt-get install libboost-all-dev´ 
 - sfml
   ´sudo apt-get install libsfml-dev´
+- std::filesystem
+  ´needs gcc version 9 or you change the CMakeLists.txt and link against -lstdc++fs´

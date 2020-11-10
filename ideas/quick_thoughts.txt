@@ -1,0 +1,12 @@
+# Random world:
+  - 3D
+  - start with sphere (see YT video)
+  - whats the resolution?
+    - can be height, needs to be calculated once, but rendered only if necessary
+    - render depending on view, if weather needs it for calculation, if animal is there 
+  - random height use perlian noise, different sizes
+  - set random area types according to longitude
+  - use "hydraulik errosion"-forming" (see YT video) strength according to area type, --> form lakes (rivers?)
+    - dont do hydrahydraulik errosionn in ocean
+  - calculate weather for some time, change region according weather
+  - save world if stable

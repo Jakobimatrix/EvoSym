@@ -13,7 +13,7 @@ add_subdirectory(src/timer)
 #code
 add_subdirectory(src/display)
 add_subdirectory(src/globals)
-add_subdirectory(src/utils)
+#add_subdirectory(src/utils)
 add_subdirectory(src/world)
 
 #executable

@@ -46,3 +46,4 @@ CTestTestfile.cmake
 Release/ 
 Debug/
 build/
+*.swp
