@@ -13,3 +13,5 @@
   ´sudo apt-get install libsfml-dev´
 - std::filesystem
   ´needs gcc version 9 or you change the CMakeLists.txt and link against -lstdc++fs´
+- Qt 5.9
+  ´sudo apt-get install qt5-default´

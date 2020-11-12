@@ -24,16 +24,19 @@ cmake_minimum_required(VERSION 2.8.11)
 project(testproject)
 
 # Find includes in corresponding build directories
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+if(CMAKE_VERSION VERSION_LESS "3.7.0")
+    set(CMAKE_INCLUDE_CURRENT_DIR ON)
+endif()
 # Instruct CMake to run moc automatically when needed.
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
 
 # Find the QtWidgets library
-#set(QT_LIBRARIES Qt5::Core Qt5::Widgets Qt5::Gui)
-find_package(Qt5Widgets)
+find_package(Qt5 COMPONENTS Widgets Core Gui REQUIRED)
 SET(QMAKE_CXXFLAGS "${QMAKE_CXXFLAGS} -std=c++17")
 SET(QMAKE_LFLAGS "${QMAKE_LFLAGS} -lstdc++fs")
-SET(CMAKE_CXX_STANDARD 17)
+SET(CMAKE_CXX_STANDARD 17) # otherwise compiler will not be c++17
 
 
 #submodules

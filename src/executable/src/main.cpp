@@ -427,11 +427,33 @@ bool testSFMLCube() {
 #include <display/menu.h>
 #include <world/world.h>
 
+#include <QApplication>
+#include <QPushButton>
+#include <QTextEdit>
+#include <QVBoxLayout>
 #include <chrono>
 #include <globals/globals.hpp>
 #include <globals/macros.hpp>
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
+
+  QApplication app(argc, argv);
+
+  QTextEdit *textEdit = new QTextEdit;
+  QPushButton *quitButton = new QPushButton("&Quit");
+
+  QObject::connect(quitButton, SIGNAL(clicked()), qApp, SLOT(quit()));
+
+  QVBoxLayout *layout = new QVBoxLayout;
+  layout->addWidget(textEdit);
+  layout->addWidget(quitButton);
+
+  QWidget window;
+  window.setLayout(layout);
+
+  window.show();
+
+  return app.exec();
 
   DEBUG("a simple string");
   F_DEBUG("like printf %d", 4);
@@ -440,13 +462,13 @@ int main(int argc, char* argv[]) {
 
   SimulationSettings menu;
   World simulatedWorld;
-  Display display(dynamic_cast<Menu*>(&menu));
+  Display display(dynamic_cast<Menu *>(&menu));
   int mash_id = display.addMesh(simulatedWorld.getWorldMesh());
 
   using namespace std::chrono;
   using dsec = duration<double>;
-  auto next_update = system_clock::now() +
-                     round<system_clock::duration>(dsec{menu.get_target_update_rate()});
+  auto next_update = system_clock::now() + std::chrono::round<system_clock::duration>(
+                                               dsec{menu.get_target_update_rate()});
 
 
   while (display.isOpen()) {
@@ -454,8 +476,8 @@ int main(int argc, char* argv[]) {
 
     const auto now = system_clock::now();
     if (now > next_update) {
-      next_update =
-          now + round<system_clock::duration>(dsec{menu.get_target_update_rate()});
+      next_update = now + std::chrono::round<system_clock::duration>(
+                              dsec{menu.get_target_update_rate()});
       display.draw();
     }
   }

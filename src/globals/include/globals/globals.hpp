@@ -3,7 +3,7 @@
 
 #include <string.h>
 
-#include <filesystem>
+#include <filesystem>  // if using compiler < c++17 use <experimental/filesystem ans std::experimental::filesystem
 #include <stdexcept>
 
 
