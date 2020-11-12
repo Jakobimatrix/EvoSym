@@ -3,7 +3,7 @@
 
 #include <string.h>
 
-#include <experimental/filesystem>
+#include <filesystem>
 #include <stdexcept>
 
 
@@ -26,7 +26,7 @@ class Globals {
 
  private:
   void init_paths() {
-    namespace fs = std::experimental::filesystem;
+    namespace fs = std::filesystem;
 
     const fs::path current_path = fs::current_path();
     auto path_it = current_path.begin();
