@@ -33,7 +33,7 @@ class Globals {
     fs::path abs_path_to_base = fs::path("");
     for (; path_it != current_path.end(); path_it++) {
       abs_path_to_base.append(path_it->c_str());
-      if (std::strcmp(path_it->c_str(), REPRO_FOLDER_NAME.c_str()) == 0) {
+      if (strcmp(path_it->c_str(), REPRO_FOLDER_NAME.c_str()) == 0) {
         break;
       }
     }

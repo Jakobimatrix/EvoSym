@@ -2,26 +2,12 @@
 /*
 #include <SFML/Graphics.hpp>
 #include <eigen3/Eigen/Core>
-#include <filesystem>
 #include <globals/globals.hpp>
 #include <homography/homography.hpp>
 #include <iostream>
 #include <randomGenerator.hpp>
 #include <settings.hpp>
 #include <timer/timer.hpp>
-
-
-#define GLAD_GL_IMPLEMENTATION
-#include "gl.h"
-
-#ifdef SFML_SYSTEM_IOS
-#include <SFML/Main.hpp>
-#endif
-
-#ifndef GL_SRGB8_ALPHA8
-#define GL_SRGB8_ALPHA8 0x8C43
-#endif
-
 
 class ExampleClass : public util::Settings {
  public:
@@ -447,7 +433,7 @@ bool testSFMLCube() {
 int main(int argc, char* argv[]) {
   SimulationSettings menu;
   World simulatedWorld;
-  Display display(std::make_shared<Menu>(menu));
+  Display display(dynamic_cast<Menu*>(&menu));
   int mash_id = display.addMesh(simulatedWorld.getWorldMesh());
 
   using namespace std::chrono;

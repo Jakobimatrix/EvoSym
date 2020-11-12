@@ -25,6 +25,20 @@ bool Display::initWindow() {
   return window.isOpen();
 }
 
+unsigned long Display::addMesh(std::shared_ptr<Mesh> new_mesh) {
+  meshes.emplace(std::make_pair(mesh_counter, new_mesh));
+  return mesh_counter++;
+}
+
+bool Display::removeMesh(unsigned long id) {
+  auto ptr = meshes.find(id);
+  if (ptr != meshes.end()) {
+    meshes.erase(ptr);
+    return true;
+  }
+  return false;
+}
+
 void Display::draw() {
   processInputActions();
   if (!window.isOpen()) {
@@ -48,13 +62,16 @@ void Display::draw2DStack() {
 
   // draw external menue and vector of boxes and text
 }
-void Display::drawMenu() {}
 
-
+void Display::drawMenu() {
+  if (menu != nullptr) {
+  }
+}
 
 void Display::drawMesh() {
   window.setActive(true);
-
+  for (const auto& mesh : meshes) {
+  }
   window.setActive(false);
 }
 

@@ -43,7 +43,9 @@ compile_commands.json
 CTestTestfile.cmake
 *.a
 *.png
+
 Release/ 
 Debug/
 build/
 *.swp
+settings/

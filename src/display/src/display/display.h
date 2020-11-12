@@ -2,6 +2,7 @@
 #define DISPLAY
 #include <SFML/Graphics.hpp>
 #include <globals/globals.hpp>
+#include <globals/macros.hpp>
 #include <map>
 #include <memory>
 #include <settings.hpp>
@@ -11,11 +12,16 @@
 
 class Display : public util::Settings {
  public:
-  Display(std::shared_ptr<Menu> menu = nullptr)
+  Display(Menu* menu = nullptr)
       : Settings(Globals::getInstance().getPath2DisplaySettings()), menu(menu) {
     put<unsigned int>(disp_height, DISP_HEIGHT_ID);
     put<unsigned int>(disp_width, DISP_WIDTH_ID);
     put<unsigned int>(color_depth, COLOR_DEPTH_ID);
+
+
+    if (!initWindow()) {
+      ERROR("Display::Display: Was not able to initiate Display.");
+    }
   }
 
   ~Display() { save(); }
@@ -24,9 +30,9 @@ class Display : public util::Settings {
 
   [[nodiscard]] bool isOpen() { return window.isOpen(); }
 
-  [[nodiscard]] int addMesh(std::shared_ptr<Mesh> mesh);
+  [[nodiscard]] unsigned long addMesh(std::shared_ptr<Mesh> mesh);
 
-  [[nodiscard]] bool removeMesh(int id);
+  [[nodiscard]] bool removeMesh(unsigned long id);
 
  private:
   void processInputActions();
@@ -42,7 +48,8 @@ class Display : public util::Settings {
   // SFML entities
   sf::RenderWindow window;
   sf::Vector2i last_mouse_pos = sf::Vector2i(0, 0);
-  std::map<int, std::shared_ptr<Mesh>> meshes;
+  std::map<unsigned long, std::shared_ptr<Mesh>> meshes;
+  unsigned long mesh_counter = 0;
 
   // Display settings
   unsigned int disp_height = 600;
@@ -52,7 +59,7 @@ class Display : public util::Settings {
   unsigned int color_depth = 24;
   const std::string COLOR_DEPTH_ID = "ColorDepth";
 
-  std::shared_ptr<Menu> menu;
+  Menu* menu;
 };
 
 #endif
