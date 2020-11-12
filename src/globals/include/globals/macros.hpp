@@ -2,25 +2,49 @@
 #define MACROS
 
 #include <string>
-#include <ostream>
+#include <stdio.h>
 
 #ifdef NDEBUG
-  inline void DEBUG(std::string_view s){
-    std:: cout << "DEBUG: \t" << s << "\n";
-  }
 
-  inline void WARNING(std::string_view s){
-    std:: cout << "WARNING: \t" << s << "\n";
-  }
-
-  inline void ERROR(std::string_view s){
-    std:: cout << "ERROR: \t" << s << "\n";
-  }
+#define DEBUG(str)
+#define F_DEBUG(fmt, ...)
+#define WARNING(str)
+#define F_WARNING(fmt, ...)
+#define ERROR(fmt, ...)
+#define F_ERROR(fmt, ...)
 
 #else
-  inline void DEBUG(std::string_view s){}
-  inline void WARNING(std::string_view s){}
-  inline void ERROR(std::string_view s){}
+
+#define RED(string) "\x1b[31m" string "\x1b[0m"
+#define ORANGE(string) "\033[38:5:208:0m" string "\033[0m"
+
+//https://stackoverflow.com/questions/1644868/define-macro-for-debug-printing-in-c
+#define DEBUG(str) \
+        fprintf(stderr, "[DEBUG]\t %s::%s()  Line: %d: %s\n", __FILE__, \
+            __func__, __LINE__, str)
+
+#define F_DEBUG(fmt, ...) \
+        do { fprintf(stderr, "[DEBUG]\t %s::%s()  Line: %d: " fmt, __FILE__, \
+            __func__, __LINE__, __VA_ARGS__); } while (0); \
+            printf("\n")
+
+#define WARNING(str) \
+        fprintf(stderr, ORANGE("[WARN]")"\t %s::%s()  Line: %d: %s\n", __FILE__, \
+            __func__, __LINE__, str)
+
+#define F_WARNING(fmt, ...) \
+        do { fprintf(stderr, ORANGE("[WARN]")"\t %s::%s()  Line: %d: " fmt, __FILE__, \
+            __func__, __LINE__, __VA_ARGS__); } while (0); \
+            printf("\n")
+
+#define ERROR(str) \
+        fprintf(stderr, RED("[ERROR]")"\t %s::%s()  Line: %d: %s\n", __FILE__, \
+            __func__, __LINE__, str)
+
+#define F_ERROR(fmt, ...) \
+        do { fprintf(stderr, RED("[ERROR]")"\t %s::%s()  Line: %d: " fmt, __FILE__, \
+            __func__, __LINE__, __VA_ARGS__); } while (0); \
+            printf("\n")
 #endif
 
 #endif

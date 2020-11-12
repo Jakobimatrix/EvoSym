@@ -429,8 +429,15 @@ bool testSFMLCube() {
 
 #include <chrono>
 #include <globals/globals.hpp>
+#include <globals/macros.hpp>
 
 int main(int argc, char* argv[]) {
+
+  DEBUG("a simple string");
+  F_DEBUG("like printf %d", 4);
+  F_WARNING("like printf %d", 2);
+  F_ERROR("like printf %d", 3);
+
   SimulationSettings menu;
   World simulatedWorld;
   Display display(dynamic_cast<Menu*>(&menu));

@@ -20,7 +20,7 @@ class Display : public util::Settings {
 
 
     if (!initWindow()) {
-      ERROR("Display::Display: Was not able to initiate Display.");
+      ERROR("Was not able to initiate Display.");
     }
   }
 
