@@ -1,6 +1,7 @@
 #ifndef DISPLAY
 #define DISPLAY
 #include <SFML/Graphics.hpp>
+#include <display/QSFMLCanvas.hpp>
 #include <globals/globals.hpp>
 #include <globals/macros.hpp>
 #include <map>
@@ -10,25 +11,23 @@
 #include "menu.h"
 #include "mesh.h"
 
-class Display : public util::Settings {
+class Display : public QSFMLCanvas, public util::Settings {
+  Q_OBJECT
+ private:
+  void onInit() override;
+  void onUpdate() override;
+
  public:
-  Display(Menu* menu = nullptr)
-      : Settings(Globals::getInstance().getPath2DisplaySettings()), menu(menu) {
+  explicit Display(QWidget* parent, Menu* menu = nullptr)
+      : QSFMLCanvas(parent),
+        Settings(Globals::getInstance().getPath2DisplaySettings()),
+        menu(menu) {
     put<unsigned int>(disp_height, DISP_HEIGHT_ID);
     put<unsigned int>(disp_width, DISP_WIDTH_ID);
     put<unsigned int>(color_depth, COLOR_DEPTH_ID);
-
-
-    if (!initWindow()) {
-      ERROR("Was not able to initiate Display.");
-    }
   }
 
   ~Display() { save(); }
-
-  void draw();
-
-  [[nodiscard]] bool isOpen() { return window.isOpen(); }
 
   [[nodiscard]] unsigned long addMesh(std::shared_ptr<Mesh> mesh);
 
@@ -37,8 +36,6 @@ class Display : public util::Settings {
  private:
   void processInputActions();
 
-  [[nodiscard]] bool initWindow();
-
   void setPerspective();
 
   void drawMesh();
@@ -46,7 +43,6 @@ class Display : public util::Settings {
   void draw2DStack();
 
   // SFML entities
-  sf::RenderWindow window;
   sf::Vector2i last_mouse_pos = sf::Vector2i(0, 0);
   std::map<unsigned long, std::shared_ptr<Mesh>> meshes;
   unsigned long mesh_counter = 0;
@@ -60,6 +56,10 @@ class Display : public util::Settings {
   const std::string COLOR_DEPTH_ID = "ColorDepth";
 
   Menu* menu;
+
+ signals:
+
+ public slots:
 };
 
 #endif

@@ -437,51 +437,67 @@ bool testSFMLCube() {
 
 int main(int argc, char *argv[]) {
 
-  QApplication app(argc, argv);
+  /*
+    QApplication app(argc, argv);
 
-  QTextEdit *textEdit = new QTextEdit;
-  QPushButton *quitButton = new QPushButton("&Quit");
+    QTextEdit *textEdit = new QTextEdit;
+    QPushButton *quitButton = new QPushButton("&Quit");
 
-  QObject::connect(quitButton, SIGNAL(clicked()), qApp, SLOT(quit()));
+    QObject::connect(quitButton, SIGNAL(clicked()), qApp, SLOT(quit()));
 
-  QVBoxLayout *layout = new QVBoxLayout;
-  layout->addWidget(textEdit);
-  layout->addWidget(quitButton);
+    QVBoxLayout *layout = new QVBoxLayout;
+    layout->addWidget(textEdit);
+    layout->addWidget(quitButton);
 
-  QWidget window;
-  window.setLayout(layout);
+    QWidget window;
+    window.setLayout(layout);
 
-  window.show();
+    window.show();
 
-  return app.exec();
+    return app.exec();
+    */
 
-  DEBUG("a simple string");
-  F_DEBUG("like printf %d", 4);
-  F_WARNING("like printf %d", 2);
-  F_ERROR("like printf %d", 3);
+  QApplication a(argc, argv);
 
-  SimulationSettings menu;
-  World simulatedWorld;
-  Display display(dynamic_cast<Menu *>(&menu));
-  int mash_id = display.addMesh(simulatedWorld.getWorldMesh());
+  QFrame frame;
+  frame.show();
+  frame.setFrameRect(QRect(QPoint(0, 0), QPoint(600, 600)));
 
-  using namespace std::chrono;
-  using dsec = duration<double>;
-  auto next_update = system_clock::now() + std::chrono::round<system_clock::duration>(
-                                               dsec{menu.get_target_update_rate()});
+  Display SFMLView(&frame);
+  SFMLView.show();
 
+  int ret = a.exec();
 
-  while (display.isOpen()) {
-    simulatedWorld.update();
-
-    const auto now = system_clock::now();
-    if (now > next_update) {
-      next_update = now + std::chrono::round<system_clock::duration>(
-                              dsec{menu.get_target_update_rate()});
-      display.draw();
-    }
-  }
-  menu.save();
-  simulatedWorld.save();
   return 0;
+  /*
+    DEBUG("a simple string");
+    F_DEBUG("like printf %d", 4);
+    F_WARNING("like printf %d", 2);
+    F_ERROR("like printf %d", 3);
+
+    SimulationSettings menu;
+    World simulatedWorld;
+    Display display(dynamic_cast<Menu *>(&menu));
+    int mash_id = display.addMesh(simulatedWorld.getWorldMesh());
+
+    using namespace std::chrono;
+    using dsec = duration<double>;
+    auto next_update = system_clock::now() + std::chrono::round<system_clock::duration>(
+                                                 dsec{menu.get_target_update_rate()});
+
+
+    while (display.isOpen()) {
+      simulatedWorld.update();
+
+      const auto now = system_clock::now();
+      if (now > next_update) {
+        next_update = now + std::chrono::round<system_clock::duration>(
+                                dsec{menu.get_target_update_rate()});
+        display.draw();
+      }
+    }
+    menu.save();
+    simulatedWorld.save();
+    return 0;
+    */
 }

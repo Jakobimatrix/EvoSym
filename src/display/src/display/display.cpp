@@ -15,14 +15,30 @@
 #endif
 
 
-bool Display::initWindow() {
+void Display::onInit() {
   // Create the main window
-  window.create(sf::VideoMode(disp_width, disp_height, color_depth),
-                Globals::getInstance().getMainVidowTitle(),
-                sf::Style::Default);
-  window.setVerticalSyncEnabled(true);
 
-  return window.isOpen();
+
+  // create(sf::VideoMode(disp_width, disp_height, color_depth), Globals::getInstance().getMainVidowTitle(), sf::Style::Default);
+  setVerticalSyncEnabled(true);
+}
+
+void Display::onUpdate() {
+  processInputActions();
+  if (!sf::RenderWindow::isOpen()) {
+    return;
+  }
+
+  // second draw triangles/Meshes
+  drawMesh();
+
+  // third reset transformation
+  // Save the current OpenGL render states and matrices.
+  pushGLStates();
+  draw2DStack();
+  // Restore the previously saved OpenGL render states and matrices.
+  popGLStates();
+  sf::RenderWindow::display();
 }
 
 unsigned long Display::addMesh(std::shared_ptr<Mesh> new_mesh) {
@@ -39,23 +55,6 @@ bool Display::removeMesh(unsigned long id) {
   return false;
 }
 
-void Display::draw() {
-  processInputActions();
-  if (!window.isOpen()) {
-    return;
-  }
-
-  // second draw triangles/Meshes
-  drawMesh();
-
-  // third reset transformation
-  // Save the current OpenGL render states and matrices.
-  window.pushGLStates();
-  draw2DStack();
-  // Restore the previously saved OpenGL render states and matrices.
-  window.popGLStates();
-  window.display();
-}
 
 void Display::draw2DStack() {
   drawMenu();
@@ -69,25 +68,26 @@ void Display::drawMenu() {
 }
 
 void Display::drawMesh() {
-  window.setActive(true);
+  sf::RenderWindow::setActive(true);
   for (const auto& mesh : meshes) {
   }
-  window.setActive(false);
+  sf::RenderWindow::setActive(false);
 }
 
 void Display::processInputActions() {
   sf::Event event;
-  while (window.pollEvent(event)) {
-    const sf::Vector2i mouse_pos = sf::Mouse::getPosition(window);
+  while (pollEvent(event)) {
+    const sf::Vector2i mouse_pos =
+        sf::Mouse::getPosition() + sf::RenderWindow::getPosition();
 
     // Close window: exit
     if (event.type == sf::Event::Closed) {
-      window.close();
+      sf::RenderWindow::close();
     }
 
     // Escape key: exit
     if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Escape)) {
-      window.close();
+      sf::RenderWindow::close();
     }
 
 
@@ -95,13 +95,13 @@ void Display::processInputActions() {
     if (event.type == sf::Event::Resized) {
       setPerspective();
 
-      disp_height = window.getSize().y;
-      disp_width = window.getSize().x;
+      disp_height = sf::RenderWindow::getSize().y;
+      disp_width = sf::RenderWindow::getSize().x;
 
       sf::View view;
       view.setSize(disp_width, disp_height);
       view.setCenter(disp_width / 2.f, disp_height / 2.f);
-      window.setView(view);
+      sf::RenderWindow::setView(view);
     }
 
     last_mouse_pos = mouse_pos;
@@ -111,7 +111,7 @@ void Display::processInputActions() {
 }
 
 void Display::setPerspective() {
-  window.setActive(true);
+  sf::RenderWindow::setActive(true);
 
   // Load OpenGL or OpenGL ES entry points using glad
 #ifdef SFML_OPENGL_ES
@@ -134,7 +134,7 @@ void Display::setPerspective() {
   // Disable lighting
   glDisable(GL_LIGHTING);
   // Configure the viewport (the same size as the window)
-  glViewport(0, 0, window.getSize().x, window.getSize().y);
+  glViewport(0, 0, sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
   ///
 
 
@@ -142,12 +142,14 @@ void Display::setPerspective() {
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 #ifdef SFML_OPENGL_ES
-  GLfloat ratio = static_cast<float>(window.getSize().x) / window.getSize().y;
+  GLfloat ratio = static_cast<float>(sf::RenderWindow::getSize().x) /
+                  sf::RenderWindow::getSize().y;
   glFrustumf(-ratio, ratio, -1.f, 1.f, 1.f, 500.f);
 #else
-  GLdouble ratio = static_cast<double>(window.getSize().x) / window.getSize().y;
+  GLdouble ratio = static_cast<double>(sf::RenderWindow::getSize().x) /
+                   sf::RenderWindow::getSize().y;
   glFrustum(-ratio, ratio, -1., 1., 1., 500.);
 #endif
 
-  window.setActive(false);
+  sf::RenderWindow::setActive(false);
 }
