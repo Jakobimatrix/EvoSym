@@ -10,9 +10,9 @@
 
 #include <qtimer.h>
 #include <qwidget.h>
-#include <iostream>
 
 #include <SFML/Graphics.hpp>
+#include <cmath>
 
 #ifdef Q_WS_X11
 #include <Qt/qx11info_x11.h>
@@ -21,7 +21,7 @@
 
 class QSFMLCanvas : public QWidget, public sf::RenderWindow {
  public:
-  QSFMLCanvas(QWidget* Parent, unsigned int FrameTime = 0)
+  QSFMLCanvas(QWidget* Parent, unsigned int fps = 25)
       : QWidget(Parent), myInitialized(false) {
     // Setup some states to allow direct rendering into the widget
     setAttribute(Qt::WA_PaintOnScreen);
@@ -36,7 +36,13 @@ class QSFMLCanvas : public QWidget, public sf::RenderWindow {
     resize(Parent->size());
 
     // Setup the timer
-    myTimer.setInterval(static_cast<int>(FrameTime));
+    setFramerate(fps);
+  }
+
+  void setFramerate(unsigned int fps) {
+    const double update_rate_ms = 1000. / fps;
+    const int update_rate_ms_i = static_cast<int>(std::round(update_rate_ms));
+    myTimer.setInterval(update_rate_ms_i);
   }
 
 
@@ -44,19 +50,10 @@ class QSFMLCanvas : public QWidget, public sf::RenderWindow {
 
  protected:
   void resizeEvent(QResizeEvent* event) override {
-  // TODO NOT CALLED IF PARENT CHANGES
-    move(QPoint(0, 0));
-    resize(size());
+    // move(QPoint(0, 0));
+    // fill parent
+    resize(parentWidget()->size());
     QWidget::resizeEvent(event);
-    printf("resize Event\n");
-  }
-
-  void moveEvent(QMoveEvent *event) override {
-   // TODO NOT CALLED IF PARENT CHANGES
-    move(QPoint(0, 0));
-    resize(size());
-    QWidget::moveEvent(event);
-    printf("move Event\n");
   }
 
  private:
@@ -67,9 +64,9 @@ class QSFMLCanvas : public QWidget, public sf::RenderWindow {
   // We make the paintEvent function return a null paint engine.
   // This functions works together with the WA_PaintOnScreen flag
   // to tell Qt that we're not using any of its built-in paint engines.
-  QPaintEngine* paintEngine() const { return nullptr; }
+  QPaintEngine* paintEngine() const override { return nullptr; }
 
-  void showEvent(QShowEvent*) {
+  void showEvent(QShowEvent*) override {
     if (!myInitialized) {
       // Under X11, we need to flush the commands sent to the server to ensure
       // that SFML will get an updated view of the windows
@@ -91,12 +88,9 @@ class QSFMLCanvas : public QWidget, public sf::RenderWindow {
     }
   }
 
-  void paintEvent(QPaintEvent*) {
+  void paintEvent(QPaintEvent*) override {
     // Let the derived class do its specific stuff
     onUpdate();
-
-    // Display on screen
-    sf::RenderWindow::display();
   }
 
   QTimer myTimer;

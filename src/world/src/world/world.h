@@ -1,8 +1,7 @@
 #ifndef WORLD
 #define WORLD
 
-#include <display/mesh.h>
-
+#include <display/mesh.hpp>
 #include <memory>
 
 class World {

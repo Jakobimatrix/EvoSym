@@ -2,14 +2,13 @@
 #define DISPLAY
 #include <SFML/Graphics.hpp>
 #include <display/QSFMLCanvas.hpp>
+#include <display/mesh.hpp>
 #include <globals/globals.hpp>
 #include <globals/macros.hpp>
 #include <map>
 #include <memory>
 #include <settings.hpp>
 
-#include "menu.h"
-#include "mesh.h"
 
 class Display : public QSFMLCanvas, public util::Settings {
   Q_OBJECT
@@ -18,10 +17,9 @@ class Display : public QSFMLCanvas, public util::Settings {
   void onUpdate() override;
 
  public:
-  explicit Display(QWidget* parent, Menu* menu = nullptr)
+  explicit Display(QWidget* parent)
       : QSFMLCanvas(parent),
-        Settings(Globals::getInstance().getPath2DisplaySettings()),
-        menu(menu) {
+        Settings(Globals::getInstance().getPath2DisplaySettings()) {
     put<unsigned int>(disp_height, DISP_HEIGHT_ID);
     put<unsigned int>(disp_width, DISP_WIDTH_ID);
     put<unsigned int>(color_depth, COLOR_DEPTH_ID);
@@ -39,7 +37,6 @@ class Display : public QSFMLCanvas, public util::Settings {
   void setPerspective();
 
   void drawMesh();
-  void drawMenu();
   void draw2DStack();
 
   // SFML entities
@@ -54,8 +51,6 @@ class Display : public QSFMLCanvas, public util::Settings {
   const std::string DISP_WIDTH_ID = "DisplayWidthPixel";
   unsigned int color_depth = 24;
   const std::string COLOR_DEPTH_ID = "ColorDepth";
-
-  Menu* menu;
 
  signals:
 

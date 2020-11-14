@@ -72,6 +72,10 @@ class Globals {
     return MAIN_WINDOW_NAME + " | V." + VERSION + " - " + VERSION_NAME;
   }
 
+  const std::string& getAbsPath2Resources() const {
+    return absolute_path_to_resources;
+  }
+
  private:
   // Absolute paths to folders
   std::string absolute_path_to_base;

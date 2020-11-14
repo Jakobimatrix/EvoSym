@@ -9,8 +9,9 @@ target_include_directories(pre_display_lib INTERFACE "${CMAKE_CURRENT_SOURCE_DIR
 
 add_library(display_lib
   src/display/display.cpp
-  src/display/shape.cpp
-  src/display/menu.cpp)
+  src/display/simulationSettings.cpp
+  src/display/mainWindow.cpp
+  src/display/shape.cpp)
 
 target_link_libraries(display_lib
   pre_display_lib
@@ -20,7 +21,8 @@ target_link_libraries(display_lib
   random_generator
   settings_lib
   globals_lib
-  homography_lib)
+  homography_lib
+  world_lib)
 
 # define the target links: specify how the libs shall be included.
 target_include_directories(display_lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")

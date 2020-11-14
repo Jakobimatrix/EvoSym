@@ -29,6 +29,9 @@ void Display::onUpdate() {
     return;
   }
 
+  sf::RenderWindow::clear(sf::Color(0, 0, 0, 255));
+
+
   // second draw triangles/Meshes
   drawMesh();
 
@@ -57,15 +60,10 @@ bool Display::removeMesh(unsigned long id) {
 
 
 void Display::draw2DStack() {
-  drawMenu();
-
-  // draw external menue and vector of boxes and text
+  // vector of boxes and text
 }
 
-void Display::drawMenu() {
-  if (menu != nullptr) {
-  }
-}
+
 
 void Display::drawMesh() {
   sf::RenderWindow::setActive(true);
