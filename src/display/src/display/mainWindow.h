@@ -2,65 +2,66 @@
 #ifndef MAINWINDOW
 #define MAINWINDOW
 
-#include <QMainWindow>
-#include "display.h"
-#include "simulationSettings.h"
 #include <world/world.h>
 
-class MainWindow : public QMainWindow
-{
-    Q_OBJECT
+#include <QMainWindow>
 
-public:
-    MainWindow();
+#include "display.h"
+#include "simulationSettings.h"
 
-protected:
-    void closeEvent(QCloseEvent *event);
+class MainWindow : public QMainWindow {
+  Q_OBJECT
 
-private:
-    void runSimulation();
+ public:
+  MainWindow();
 
-private slots:
-    bool save();
-    bool saveAs();
-    void about();
-    void newWorld();
-    void open();
+ protected:
+  void closeEvent(QCloseEvent *event) override;
 
-private:
-    void createActions();
-    void createMenus();
-    void createToolBars();
-    void createStatusBar();
-    void readSettings();
-    void writeSettings();
-    bool askSave();
-    void loadFile(const QString &fileName);
-    bool saveFile(const QString &fileName);
-    void setCurrentFile(const QString &fileName);
-    QString strippedName(const QString &fullFileName);
-    void initSimulation();
+ private:
+  void runSimulation();
 
-    // QT stuff
-    QString curFile;
+ private slots:
+  bool save();
+  bool saveAs();
+  void about();
+  void newWorld();
+  void open();
 
-    Display *SFMLView;
+ private:
+  void createActions();
+  void createMenus();
+  void createToolBars();
+  void createStatusBar();
+  void readSettings();
+  void writeSettings();
+  bool askSave();
+  void loadFile(const QString &fileName);
+  bool saveFile(const QString &fileName);
+  void setCurrentFile(const QString &fileName);
+  QString strippedName(const QString &fullFileName);
+  void initSimulation();
 
-    QMenu *fileMenu;
-    QMenu *editMenu;
-    QMenu *helpMenu;
-    QToolBar *fileToolBar;
-    QToolBar *editToolBar;
-    QAction *newAct;
-    QAction *openAct;
-    QAction *saveAct;
-    QAction *saveAsAct;
-    QAction *exitAct;
-    QAction *aboutAct;
+  // QT stuff
+  QString curFile;
 
-    // Simulation
-    SimulationSettings simulationSettings;
-    World simulatedWorld;
+  Display *SFMLView;
+
+  QMenu *fileMenu;
+  QMenu *editMenu;
+  QMenu *helpMenu;
+  QToolBar *fileToolBar;
+  QToolBar *editToolBar;
+  QAction *newAct;
+  QAction *openAct;
+  QAction *saveAct;
+  QAction *saveAsAct;
+  QAction *exitAct;
+  QAction *aboutAct;
+
+  // Simulation
+  SimulationSettings simulationSettings;
+  World simulatedWorld;
 };
 
 
