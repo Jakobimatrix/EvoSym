@@ -29,7 +29,7 @@ void Display::onUpdate() {
     return;
   }
 
-  sf::RenderWindow::clear(sf::Color(0, 0, 0, 255));
+  sf::RenderWindow::clear(sf::Color(100, 100, 100, 255));
 
 
   // second draw triangles/Meshes

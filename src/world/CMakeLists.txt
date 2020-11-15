@@ -7,7 +7,8 @@ target_link_libraries(world_lib
   random_generator
   homography_lib
   settings_lib
-  pre_display_lib)
+  pre_display_lib
+  globals_lib)
 
 # define the target links: specify how the libs shall be included.
 target_include_directories(world_lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")

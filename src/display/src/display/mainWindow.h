@@ -5,6 +5,7 @@
 #include <world/world.h>
 
 #include <QMainWindow>
+#include <thread>
 
 #include "display.h"
 #include "simulationSettings.h"
@@ -21,12 +22,26 @@ class MainWindow : public QMainWindow {
  private:
   void runSimulation();
 
+  bool simulationIsRunning();
+
+  void pauseSimulation();
+
+  void stopSimulation();
+
+  bool startSimulation();
+
+  void setStatus(const std::string &msg, int timeout = 0);
+  void setStatus(const char *str, int timeout = 0);
+  void setStatus(const QString &msg, int timeout = 0);
+
+
  private slots:
   bool save();
   bool saveAs();
   void about();
   void newWorld();
   void open();
+  void exitGracefully();
 
  private:
   void createActions();
@@ -37,13 +52,11 @@ class MainWindow : public QMainWindow {
   void writeSettings();
   bool askSave();
   void loadFile(const QString &fileName);
-  bool saveFile(const QString &fileName);
   void setCurrentFile(const QString &fileName);
   QString strippedName(const QString &fullFileName);
   void initSimulation();
 
   // QT stuff
-  QString curFile;
 
   Display *SFMLView;
 
@@ -60,8 +73,15 @@ class MainWindow : public QMainWindow {
   QAction *aboutAct;
 
   // Simulation
+  QString current_world_file;
   SimulationSettings simulationSettings;
   World simulatedWorld;
+
+  const std::string DEFAULT_FILE_NAME = std::string("new_world.evsm");
+
+  std::thread simulation_thread;
+  bool pause_simulation = false;
+  bool stop_simulation = false;
 };
 
 

@@ -1,10 +1,17 @@
 #include "world.h"
 
+#include <globals/macros.hpp>
 
-void World::update(){
-// todo do calculations
+World::World() { WARNING("----------------------------"); }
+
+void World::update() {
+  // todo do calculations
 }
 
-void World::save(){
-
+bool World::save(const std::string& file) {
+  F_DEBUG("Saving world to %s.", file.c_str());
+  return false;
 }
+
+
+bool World::load(const std::string& file) { return false; }

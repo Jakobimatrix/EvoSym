@@ -1,12 +1,13 @@
 #include "mainWindow.h"
 
+#include <QFileDialog>
 #include <QMessageBox>
 #include <QtWidgets>
 #include <globals/globals.hpp>
 #include <globals/macros.hpp>
 
 MainWindow::MainWindow() {
-
+  current_world_file = QString(DEFAULT_FILE_NAME.c_str());
   SFMLView = new Display(this);
   setCentralWidget(SFMLView);
 
@@ -17,7 +18,6 @@ MainWindow::MainWindow() {
 
   readSettings();
 
-  setCurrentFile("");
   setUnifiedTitleAndToolBarOnMac(true);
 }
 
@@ -32,20 +32,78 @@ void MainWindow::closeEvent(QCloseEvent *event) {
   WARNING("TODO");
 }
 
+void MainWindow::setStatus(const std::string &msg, int timeout) {
+  setStatus(msg.c_str(), timeout);
+}
+void MainWindow::setStatus(const char *str, int timeout) {
+  statusBar()->showMessage(tr(str), timeout);
+}
+void MainWindow::setStatus(const QString &msg, int timeout) {
+  setStatus(msg.toStdString(), timeout);
+}
 
 bool MainWindow::save() {
-  //  if (curFile.isEmpty()) {
-  //    return saveAs();
-  //  } else {
-  //    return saveFile(curFile);
-  //  }
-  return false;
+  const bool is_simulating = simulationIsRunning();
+  if (is_simulating) {
+    stopSimulation();
+  }
+
+  setStatus("Save " + current_world_file.toStdString());
+  const bool save_success = simulatedWorld.save(current_world_file.toStdString());
+  if (is_simulating) {
+    startSimulation();
+  }
+  return save_success;
 }
 
 bool MainWindow::saveAs() {
+  setStatus("Save As ...");
+  QString file_name = QFileDialog::getSaveFileName(
+      this, tr("Save current Simulation as"), current_world_file, tr("Address Book (*.abk);;All Files (*)"));
+
+  if (file_name.isEmpty())
+    return false;
+
+  setCurrentFile(file_name);
+  return save();
+}
+
+void MainWindow::loadFile(const QString &fileName) {
+  setStatus("Loading " + fileName.toStdString() + " ...");
   WARNING("TODO");
+  setCurrentFile(fileName);
+}
+
+bool MainWindow::askSave() {
+  WARNING("TODO");
+  QMessageBox::StandardButton ret;
+  ret = QMessageBox::warning(this,
+                             tr("Application"),
+                             tr("Do you want to save your changes?"),
+                             QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+  if (ret == QMessageBox::Save)
+    return save();
+  else if (ret == QMessageBox::Cancel)
+    return false;
   return false;
 }
+
+
+void MainWindow::setCurrentFile(const QString &file_name) {
+  if (file_name.isEmpty()) {
+    current_world_file = QString(DEFAULT_FILE_NAME.c_str());
+  } else {
+    current_world_file = file_name;
+  }
+
+  setWindowModified(false);
+  setWindowFilePath(current_world_file);
+}
+
+QString MainWindow::strippedName(const QString &fullFileName) {
+  return QFileInfo(fullFileName).fileName();
+}
+
 
 void MainWindow::newWorld() { WARNING("TODO"); }
 
@@ -63,43 +121,40 @@ void MainWindow::about() {
 
 
 void MainWindow::createActions() {
-  WARNING("TODO");
-
   // new wolrd
   const std::string path = Globals::getInstance().getAbsPath2Resources();
   newAct = new QAction(QIcon((path + "new.png").c_str()), tr("&New"), this);
   newAct->setShortcuts(QKeySequence::New);
-  newAct->setStatusTip(tr("Create a new file"));
+  newAct->setStatusTip(tr("Create a new file."));
   connect(newAct, SIGNAL(triggered()), this, SLOT(newWorld()));
 
   // open world
   openAct = new QAction(QIcon((path + "open.png").c_str()), tr("&Open..."), this);
   openAct->setShortcuts(QKeySequence::Open);
-  openAct->setStatusTip(tr("Open an existing file"));
+  openAct->setStatusTip(tr("Open an existing file."));
   connect(openAct, SIGNAL(triggered()), this, SLOT(open()));
 
   // about
   aboutAct = new QAction(tr("About &EvoSym"), this);
-  aboutAct->setStatusTip(tr("Show the EvoSym's About box"));
-  connect(aboutAct, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
+  aboutAct->setStatusTip(tr("Show the EvoSym's About box."));
+  connect(aboutAct, SIGNAL(triggered()), this, SLOT(about()));
 
   // save world
-  saveAct = new QAction(tr("Save &current &world"), this);
-  saveAct->setStatusTip(tr("Safe the current simulation progress"));
-  WARNING("TODO: Signal missing");
+  saveAct = new QAction(QIcon((path + "save.png").c_str()), tr("&Save Current World"), this);
+  saveAct->setStatusTip(tr("Save the current simulation progress."));
+  connect(saveAct, SIGNAL(triggered()), this, SLOT(save()));
 
   // saveAsAct world
-  saveAsAct = new QAction(tr("Save &current &world as"), this);
+  saveAsAct = new QAction(tr("Save Current World &As"), this);
   saveAsAct->setStatusTip(
-      tr("Safe the current simulation progress as a new simulation. (dont "
-         "overwrite old)"));
-  WARNING("TODO: Signal missing");
-
+      tr("Save the current simulation progress as a new simulation. (Dont "
+         "overwrite old file)"));
+  connect(saveAsAct, SIGNAL(triggered()), this, SLOT(saveAs()));
 
   // exit
-  exitAct = new QAction(tr("Save &current &world"), this);
-  exitAct->setStatusTip(tr("Safe the current simulation progress"));
-  WARNING("TODO: Signal missing");
+  exitAct = new QAction(tr("&Exit"), this);
+  exitAct->setStatusTip(tr("Close the program."));
+  connect(exitAct, SIGNAL(triggered()), this, SLOT(exitGracefully()));
 }
 
 void MainWindow::createMenus() {
@@ -149,8 +204,11 @@ void MainWindow::createToolBars() {
 }
 
 void MainWindow::createStatusBar() {
-  WARNING("TODO");
   statusBar()->showMessage(tr("Ready"));
+  QColor backGroundColor = palette().color(QPalette::Window);
+  const std::string backgroud_style_sheet =
+      "background-color: " + backGroundColor.name().toStdString() + ";";
+  statusBar()->setStyleSheet(backgroud_style_sheet.c_str());
 }
 
 void MainWindow::readSettings() {
@@ -169,56 +227,32 @@ void MainWindow::writeSettings() {
   settings.setValue("size", size());
 }
 
+void MainWindow::exitGracefully() { WARNING("TODO: Signal missing"); }
 
-bool MainWindow::askSave() {
-  WARNING("TODO");
-  QMessageBox::StandardButton ret;
-  ret = QMessageBox::warning(this,
-                             tr("Application"),
-                             tr("Do you want to save your changes?"),
-                             QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-  if (ret == QMessageBox::Save)
-    return save();
-  else if (ret == QMessageBox::Cancel)
+bool MainWindow::startSimulation() {
+  if (simulationIsRunning()) {
     return false;
-  return false;
-}
-
-
-void MainWindow::loadFile(const QString &fileName) {
-  WARNING("TODO");
-  setCurrentFile(fileName);
-  statusBar()->showMessage(tr("File loaded"), 2000);
-}
-
-
-bool MainWindow::saveFile(const QString &fileName) {
-  WARNING("TODO");
-  setCurrentFile(fileName);
-  statusBar()->showMessage(tr("File saved"), 2000);
+  }
+  stop_simulation = false;
+  simulation_thread = std::thread(&MainWindow::runSimulation, this);
+  setStatus("Run simulation ...");
   return true;
 }
 
-void MainWindow::setCurrentFile(const QString &fileName) {
-  WARNING("TODO");
-  curFile = fileName;
-  setWindowModified(false);
-
-  QString shownName = curFile;
-  if (curFile.isEmpty())
-    shownName = "untitled.txt";
-  setWindowFilePath(shownName);
+void MainWindow::stopSimulation() {
+  if (simulationIsRunning()) {
+    setStatus("Stopping simulation ...");
+    stop_simulation = true;
+    simulation_thread.join();
+    stop_simulation = false;
+    setStatus("Stopping stoppend.");
+  }
 }
-
-QString MainWindow::strippedName(const QString &fullFileName) {
-  return QFileInfo(fullFileName).fileName();
-}
-
 
 void MainWindow::runSimulation() {
-  WARNING("TODO");
-  while (SFMLView->isOpen()) {
+  while (SFMLView->isOpen() && !stop_simulation) {
     simulatedWorld.update();
   }
-  // save
 }
+
+bool MainWindow::simulationIsRunning() { return simulation_thread.joinable(); }

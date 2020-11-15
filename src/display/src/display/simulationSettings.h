@@ -4,6 +4,7 @@
 #include <strings.h>
 
 #include <globals/globals.hpp>
+#include <globals/macros.hpp>
 #include <settings.hpp>
 
 
@@ -13,6 +14,7 @@ class SimulationSettings : public util::Settings {
       : Settings(Globals::getInstance().getPath2SimulationSettings()) {
     put<int>(target_fps, FPS_ID);
     put<int>(text_size, TEXT_SIZE_ID);
+    WARNING("----------------------------");
   }
 
   double get_target_update_rate() {

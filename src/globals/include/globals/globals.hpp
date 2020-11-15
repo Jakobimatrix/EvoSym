@@ -5,6 +5,7 @@
 
 #include <filesystem>  // if using compiler < c++17 use <experimental/filesystem ans std::experimental::filesystem
 #include <stdexcept>
+#include <vector>
 
 
 class Globals {
@@ -74,6 +75,12 @@ class Globals {
 
   const std::string& getAbsPath2Resources() const {
     return absolute_path_to_resources;
+  }
+
+
+  void getAllSavedWorldFiles(std::vector<std::filesystem::path>& files) const {
+    for (const auto& entry : std::filesystem::directory_iterator(absolute_path_to_save_files))
+      files.push_back(entry);
   }
 
  private:

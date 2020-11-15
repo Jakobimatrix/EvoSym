@@ -3,17 +3,20 @@
 
 #include <display/mesh.hpp>
 #include <memory>
+#include <string>
 
 class World {
  public:
-  World() {}
+  World();
+
   void update();
 
   std::shared_ptr<Mesh> getWorldMesh() {
     return std::make_shared<Mesh>(world_mesh);
   }
 
-  void save();
+  [[nodiscard]] bool save(const std::string& file);
+  [[nodiscard]] bool load(const std::string& file);
 
 
  private:
