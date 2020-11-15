@@ -3,6 +3,21 @@ cmake_minimum_required(VERSION 3.10.2)
 project(evosym VERSION 1.0.0)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread -lstdc++fs")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=unused-variable -Wno-error=unused-but-set-variable")
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
+set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+
+
+
+message("############### BUILD TYPE: ${CMAKE_BUILD_TYPE} ###############")
+
 
 # require third party libs
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
