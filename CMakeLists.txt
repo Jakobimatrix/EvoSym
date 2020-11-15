@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.10.2)
 project(evosym VERSION 1.0.0)
 
@@ -11,14 +10,11 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 
-
-
 message("############### BUILD TYPE: ${CMAKE_BUILD_TYPE} ###############")
-
 
 # require third party libs
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
