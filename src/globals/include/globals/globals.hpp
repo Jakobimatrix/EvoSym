@@ -42,6 +42,7 @@ class Globals {
     absolute_path_to_base = abs_path_to_base.c_str() + PATH_SEPERATOR;
     absolute_path_to_executable = current_path.c_str() + PATH_SEPERATOR;
     absolute_path_to_resources = absolute_path_to_base + RESOURCES_FOLDER_NAME + PATH_SEPERATOR;
+    absolute_path_to_shaders = absolute_path_to_base + SHADERS_FOLDER_NAME + PATH_SEPERATOR;
     absolute_path_to_save_files = absolute_path_to_base + SAVE_FOLDER_NAME + PATH_SEPERATOR;
     absolute_path_to_settings = absolute_path_to_base + SETTINGS_FOLDER_NAME + PATH_SEPERATOR;
 
@@ -77,6 +78,10 @@ class Globals {
     return absolute_path_to_resources;
   }
 
+  const std::string& getAbsPath2Shaders() const {
+    return absolute_path_to_shaders;
+  }
+
 
   void getAllSavedWorldFiles(std::vector<std::filesystem::path>& files) const {
     for (const auto& entry : std::filesystem::directory_iterator(absolute_path_to_save_files))
@@ -87,6 +92,7 @@ class Globals {
   // Absolute paths to folders
   std::string absolute_path_to_base;
   std::string absolute_path_to_resources;
+  std::string absolute_path_to_shaders;
   std::string absolute_path_to_executable;
   std::string absolute_path_to_save_files;
   std::string absolute_path_to_settings;
@@ -98,6 +104,7 @@ class Globals {
   // Folder names
   const std::string REPRO_FOLDER_NAME = std::string("EvoSym");
   const std::string RESOURCES_FOLDER_NAME = std::string("resources");
+  const std::string SHADERS_FOLDER_NAME = std::string("shaders");
   const std::string SAVE_FOLDER_NAME = std::string("simulated_data");
   const std::string SETTINGS_FOLDER_NAME = std::string("settings");
 

@@ -10,3 +10,6 @@
 [submodule "src/randomGenerator"]
 	path = src/randomGenerator
 	url = https://github.com/Jakobimatrix/randomGenerator
+[submodule "src/glm"]
+	path = src/glm
+	url = https://github.com/Jakobimatrix/glm.git

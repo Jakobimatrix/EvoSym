@@ -1,19 +1,6 @@
 #include "display.h"
 
-// TODO install properly https://askubuntu.com/questions/306703/compile-opengl-program-missing-gl-gl-h
-#include "gl.h"
-
-#define GLAD_GL_IMPLEMENTATION
-#include "gl.h"
-
-#ifdef SFML_SYSTEM_IOS
-#include <SFML/Main.hpp>
-#endif
-
-#ifndef GL_SRGB8_ALPHA8
-#define GL_SRGB8_ALPHA8 0x8C43
-#endif
-
+#include <glad/glad.h>
 
 void Display::onInit() {
   // Create the main window
@@ -29,7 +16,7 @@ void Display::onUpdate() {
     return;
   }
 
-  sf::RenderWindow::clear(sf::Color(100, 100, 100, 255));
+  sf::RenderWindow::clear(sf::Color(0, 0, 0, 255));
 
 
   // second draw triangles/Meshes
@@ -44,8 +31,8 @@ void Display::onUpdate() {
   sf::RenderWindow::display();
 }
 
-unsigned long Display::addMesh(std::shared_ptr<Mesh> new_mesh) {
-  meshes.emplace(std::make_pair(mesh_counter, new_mesh));
+unsigned long Display::addMesh(const disp_utils::MeshShaderPair& mesh_shader_pair) {
+  meshes.emplace(std::make_pair(mesh_counter, mesh_shader_pair));
   return mesh_counter++;
 }
 
@@ -63,11 +50,13 @@ void Display::draw2DStack() {
   // vector of boxes and text
 }
 
-
-
 void Display::drawMesh() {
   sf::RenderWindow::setActive(true);
-  for (const auto& mesh : meshes) {
+  for (const auto& mesh_shader_pair : meshes) {
+    // Mesh* m = mesh_shader_pair.second.first.get();
+    // Shader* s = mesh_shader_pair.second.second.get();
+    // m->Draw(*s);
+    mesh_shader_pair.second.first.get()->Draw(*mesh_shader_pair.second.second.get());
   }
   sf::RenderWindow::setActive(false);
 }
@@ -113,9 +102,12 @@ void Display::setPerspective() {
 
   // Load OpenGL or OpenGL ES entry points using glad
 #ifdef SFML_OPENGL_ES
-  gladLoadGLES1(reinterpret_cast<GLADloadfunc>(sf::Context::getFunction));
+  // gladLoadGLES1(reinterpret_cast<GLADloadfunc>(sf::Context::getFunction));
+  ERROR("SFML_OPENGL_ES not supported")
 #else
-  gladLoadGL(reinterpret_cast<GLADloadfunc>(sf::Context::getFunction));
+  // gladLoadGL(reinterpret_cast<GLADloadproc>(sf::Context::getFunction));
+  gladLoadGLLoader(reinterpret_cast<GLADloadproc>(sf::Context::getFunction));
+  // gladLoadGL();
 #endif
 
   // Enable Z-buffer read and write

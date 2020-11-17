@@ -2,7 +2,9 @@
 #define DISPLAY
 #include <SFML/Graphics.hpp>
 #include <display/QSFMLCanvas.hpp>
+#include <display/displayUtils.hpp>
 #include <display/mesh.hpp>
+#include <display/shader.hpp>
 #include <globals/globals.hpp>
 #include <globals/macros.hpp>
 #include <map>
@@ -27,7 +29,8 @@ class Display : public QSFMLCanvas, public util::Settings {
 
   ~Display() { save(); }
 
-  [[nodiscard]] unsigned long addMesh(std::shared_ptr<Mesh> mesh);
+
+  [[nodiscard]] unsigned long addMesh(const disp_utils::MeshShaderPair& mesh_shader_pair);
 
   [[nodiscard]] bool removeMesh(unsigned long id);
 
@@ -41,7 +44,8 @@ class Display : public QSFMLCanvas, public util::Settings {
 
   // SFML entities
   sf::Vector2i last_mouse_pos = sf::Vector2i(0, 0);
-  std::map<unsigned long, std::shared_ptr<Mesh>> meshes;
+
+  std::map<unsigned long, const disp_utils::MeshShaderPair> meshes;
   unsigned long mesh_counter = 0;
 
   // Display settings

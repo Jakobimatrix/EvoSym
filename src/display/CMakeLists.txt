@@ -2,6 +2,7 @@ add_library(pre_display_lib INTERFACE)
 target_link_libraries(pre_display_lib INTERFACE
   Qt5::Widgets
   glad_lib
+  glm
   ${SFML_LIBRARIES}
   ${SFML_DEPENDENCIES}
   globals_lib)
@@ -17,6 +18,7 @@ add_library(display_lib
 
 target_link_libraries(display_lib
   pre_display_lib
+  glad_lib
   Qt5::Widgets
   ${SFML_LIBRARIES}
   ${SFML_DEPENDENCIES}

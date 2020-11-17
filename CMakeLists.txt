@@ -59,6 +59,7 @@ add_subdirectory(src/timer)
 
 #thirdparty
 add_subdirectory(src/glad)
+add_subdirectory(src/glm)
 
 
 #code
