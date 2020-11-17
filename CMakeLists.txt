@@ -57,6 +57,10 @@ add_subdirectory(src/Settings)
 add_subdirectory(src/homography)
 add_subdirectory(src/timer)
 
+#thirdparty
+add_subdirectory(src/glad)
+
+
 #code
 add_subdirectory(src/display)
 add_subdirectory(src/globals)

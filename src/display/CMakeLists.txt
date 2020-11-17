@@ -1,8 +1,10 @@
 add_library(pre_display_lib INTERFACE)
 target_link_libraries(pre_display_lib INTERFACE
   Qt5::Widgets
+  glad_lib
   ${SFML_LIBRARIES}
-  ${SFML_DEPENDENCIES})
+  ${SFML_DEPENDENCIES}
+  globals_lib)
 
 target_include_directories(pre_display_lib INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
