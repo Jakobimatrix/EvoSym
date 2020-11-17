@@ -32,7 +32,7 @@ void World::create_mesh() {
 
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
-  vector<Texture> textures;
+  std::vector<Texture> textures;
 
   world_mesh = std::make_shared<Mesh>(Mesh(vertices, indices, textures));
 }
