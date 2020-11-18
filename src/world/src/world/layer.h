@@ -1,8 +1,13 @@
 #ifndef LAYER
 #define LAYER
 
-#include <Eigen/Dense>
+#include <warning_guards/warning_guards.h>
+
+#include <Eigen/Core>
+
+THIRD_PARTY_HEADERS_BEGIN
 #include <settings.hpp>
+THIRD_PARTY_HEADERS_END
 
 class Properties : public util::Settings {
  public:

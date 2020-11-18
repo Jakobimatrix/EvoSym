@@ -1,5 +1,7 @@
 #ifndef DISPLAY
 #define DISPLAY
+#include <warning_guards/warning_guards.h>
+
 #include <SFML/Graphics.hpp>
 #include <display/QSFMLCanvas.hpp>
 #include <display/displayUtils.hpp>
@@ -9,8 +11,10 @@
 #include <globals/macros.hpp>
 #include <map>
 #include <memory>
-#include <settings.hpp>
 
+THIRD_PARTY_HEADERS_BEGIN
+#include <settings.hpp>
+THIRD_PARTY_HEADERS_END
 
 class Display : public QSFMLCanvas, public util::Settings {
   Q_OBJECT
@@ -27,7 +31,7 @@ class Display : public QSFMLCanvas, public util::Settings {
     put<unsigned int>(color_depth, COLOR_DEPTH_ID);
   }
 
-  ~Display() { save(); }
+  ~Display() override { save(); }
 
 
   [[nodiscard]] unsigned long addMesh(const disp_utils::MeshShaderPair& mesh_shader_pair);

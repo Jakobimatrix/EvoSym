@@ -1,6 +1,8 @@
 #include "display.h"
 
+// THIRD_PARTY_HEADERS_BEGIN
 #include <glad/glad.h>
+// THIRD_PARTY_HEADERS_END
 
 void Display::onInit() {
   // Create the main window

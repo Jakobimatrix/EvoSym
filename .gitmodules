@@ -13,3 +13,6 @@
 [submodule "src/glm"]
 	path = src/glm
 	url = https://github.com/Jakobimatrix/glm.git
+[submodule "src/warning_guards"]
+	path = src/warning_guards
+	url = https://github.com/Jakobimatrix/warning_guards

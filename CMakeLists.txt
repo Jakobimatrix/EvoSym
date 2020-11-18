@@ -3,8 +3,12 @@ project(evosym VERSION 1.0.0)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -pthread")
 
+# needed by glad
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ldl")
+
 message("-----------------------------")
 message(${CMAKE_CXX_COMPILER_ID})
+message("-----------------------------")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsuggest-override")
@@ -12,7 +16,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weverything -Werror=header-hygiene -Wno-c++98-compat -Wno-shadow -Wno-c++98-compat-pedantic -Wno-date-time -Wno-missing-prototypes -Wno-exit-time-destructors -Wno-global-constructors -Wno-conversion -Wno-sign-conversion -Wno-float-equal -Wno-padded -Wno-weak-vtables -Wno-abstract-vbase-init -Wno-potentially-evaluated-expression")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weverything -Werror=header-hygiene -Wno-c++98-compat -Wno-shadow -Wno-c++98-compat-pedantic -Wno-date-time -Wno-missing-prototypes -Wno-exit-time-destructors -Wno-global-constructors -Wno-conversion -Wno-sign-conversion -Wno-float-equal -Wno-padded -Wno-weak-vtables -Wno-abstract-vbase-init -Wno-potentially-evaluated-expression -Wno-documentation-unknown-command")
 endif()
 
 
@@ -63,16 +67,18 @@ SET(QMAKE_LFLAGS "${QMAKE_LFLAGS} -lstdc++fs")
 SET(CMAKE_CXX_STANDARD 17) # otherwise compiler will not be c++17
 
 
-#submodules
-add_subdirectory(src/randomGenerator)
-add_subdirectory(src/Settings)
-add_subdirectory(src/homography)
-add_subdirectory(src/timer)
-
 #thirdparty
 add_subdirectory(src/glad)
 add_subdirectory(src/glm)
 
+add_subdirectory(src/warning_guards)
+
+
+#submodules (my code)
+add_subdirectory(src/randomGenerator)
+add_subdirectory(src/Settings)
+add_subdirectory(src/homography)
+add_subdirectory(src/timer)
 
 #code
 add_subdirectory(src/display)

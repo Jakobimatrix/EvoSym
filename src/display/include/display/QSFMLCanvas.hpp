@@ -45,9 +45,6 @@ class QSFMLCanvas : public QWidget, public sf::RenderWindow {
     myTimer.setInterval(update_rate_ms_i);
   }
 
-
-  ~QSFMLCanvas() {}
-
  protected:
   void resizeEvent(QResizeEvent* event) override {
     // move(QPoint(0, 0));
