@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
 
   QApplication app(argc, argv);
   app.setApplicationName(Globals::getInstance().getMainVidowTitle().c_str());
-  MainWindow mainWin;
+  DisplayQt mainWin;
 #if defined(Q_OS_SYMBIAN)
   mainWin.showMaximized();
 #else

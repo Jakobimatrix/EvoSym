@@ -1,6 +1,6 @@
 // shamelessly copied from https://doc.qt.io/archives/qt-4.8/qt-mainwindows-application-example.html
-#ifndef MAINWINDOW
-#define MAINWINDOW
+#ifndef DISPLAY_QT
+#define DISPLAY_QT
 
 #include <world/world.h>
 
@@ -10,11 +10,11 @@
 #include "sfmlView.h"
 #include "simulationSettings.h"
 
-class MainWindow : public QMainWindow {
+class DisplayQt : public QMainWindow {
   Q_OBJECT
 
  public:
-  MainWindow();
+  DisplayQt();
 
  protected:
   void closeEvent(QCloseEvent *event) override;
