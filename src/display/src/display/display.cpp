@@ -55,9 +55,9 @@ void Display::draw2DStack() {
 void Display::drawMesh() {
   sf::RenderWindow::setActive(true);
   for (const auto& mesh_shader_pair : meshes) {
-    // Mesh* m = mesh_shader_pair.second.first.get();
-    // Shader* s = mesh_shader_pair.second.second.get();
-    // m->Draw(*s);
+    Mesh* m = mesh_shader_pair.second.first.get();
+    Shader* s = mesh_shader_pair.second.second.get();
+    m->Draw(*s);
     mesh_shader_pair.second.first.get()->Draw(*mesh_shader_pair.second.second.get());
   }
   sf::RenderWindow::setActive(false);

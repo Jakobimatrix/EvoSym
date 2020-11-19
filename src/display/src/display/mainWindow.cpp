@@ -186,8 +186,8 @@ void MainWindow::createMenus() {
 void MainWindow::initSimulation() {
   WARNING("TODO");
   // read file
-  // simulatedWorld.init();
-  // unsigned long mash_id = SFMLView->addMesh(simulatedWorld.getWorldsMeshShaderPair());
+  simulatedWorld.init();
+  unsigned long mash_id = SFMLView->addMesh(simulatedWorld.getWorldsMeshShaderPair());
 }
 
 void MainWindow::createToolBars() {

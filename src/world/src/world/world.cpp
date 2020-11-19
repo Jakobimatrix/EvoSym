@@ -5,6 +5,9 @@
 
 World::World() {}
 
+
+void World::init() {}
+
 void World::update() {
   // todo do calculations
 }
@@ -26,13 +29,13 @@ void World::create_mesh() {
   const std::string path = Globals::getInstance().getAbsPath2Shaders();
   const std::string vs = path + "test_1.vs";
   const std::string fs = path + "test_1.fs";
-  // world_shader = std::make_shared<Shader>(Shader(vs.c_str(), fs.c_str()));
-  // clang-format off
+  world_shader = std::make_shared<Shader>(Shader(vs.c_str(), fs.c_str()));
+
 
 
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
   std::vector<Texture> textures;
 
-  //world_mesh = std::make_shared<Mesh>(Mesh(vertices, indices, textures));
+  world_mesh = std::make_shared<Mesh>(Mesh(vertices, indices, textures));
 }
