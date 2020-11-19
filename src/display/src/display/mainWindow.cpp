@@ -8,8 +8,8 @@
 
 MainWindow::MainWindow() {
   current_world_file = QString(DEFAULT_FILE_NAME.c_str());
-  SFMLView = new Display(this);
-  setCentralWidget(SFMLView);
+  sfml_view = new SFMLView(this);
+  setCentralWidget(sfml_view);
 
   createActions();
   createMenus();
@@ -187,7 +187,7 @@ void MainWindow::initSimulation() {
   WARNING("TODO");
   // read file
   simulatedWorld.init();
-  unsigned long mash_id = SFMLView->addMesh(simulatedWorld.getWorldsMeshShaderPair());
+  unsigned long mash_id = sfml_view->addMesh(simulatedWorld.getWorldsMeshShaderPair());
 }
 
 void MainWindow::createToolBars() {
@@ -250,7 +250,7 @@ void MainWindow::stopSimulation() {
 }
 
 void MainWindow::runSimulation() {
-  while (SFMLView->isOpen() && !stop_simulation) {
+  while (sfml_view->isOpen() && !stop_simulation) {
     simulatedWorld.update();
   }
 }

@@ -7,7 +7,7 @@
 #include <QMainWindow>
 #include <thread>
 
-#include "display.h"
+#include "sfmlView.h"
 #include "simulationSettings.h"
 
 class MainWindow : public QMainWindow {
@@ -58,7 +58,7 @@ class MainWindow : public QMainWindow {
 
   // QT stuff
 
-  Display *SFMLView;
+  SFMLView *sfml_view;
 
   QMenu *fileMenu;
   QMenu *editMenu;

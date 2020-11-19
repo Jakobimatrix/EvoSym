@@ -1,10 +1,10 @@
-#include "display.h"
+#include "sfmlView.h"
 
 // THIRD_PARTY_HEADERS_BEGIN
 #include <glad/glad.h>
 // THIRD_PARTY_HEADERS_END
 
-void Display::onInit() {
+void SFMLView::onInit() {
   // Create the main window
 
 
@@ -12,7 +12,7 @@ void Display::onInit() {
   setVerticalSyncEnabled(true);
 }
 
-void Display::onUpdate() {
+void SFMLView::onUpdate() {
   processInputActions();
   if (!sf::RenderWindow::isOpen()) {
     return;
@@ -33,12 +33,12 @@ void Display::onUpdate() {
   sf::RenderWindow::display();
 }
 
-unsigned long Display::addMesh(const disp_utils::MeshShaderPair& mesh_shader_pair) {
+unsigned long SFMLView::addMesh(const disp_utils::MeshShaderPair& mesh_shader_pair) {
   meshes.emplace(std::make_pair(mesh_counter, mesh_shader_pair));
   return mesh_counter++;
 }
 
-bool Display::removeMesh(unsigned long id) {
+bool SFMLView::removeMesh(unsigned long id) {
   auto ptr = meshes.find(id);
   if (ptr != meshes.end()) {
     meshes.erase(ptr);
@@ -48,11 +48,11 @@ bool Display::removeMesh(unsigned long id) {
 }
 
 
-void Display::draw2DStack() {
+void SFMLView::draw2DStack() {
   // vector of boxes and text
 }
 
-void Display::drawMesh() {
+void SFMLView::drawMesh() {
   sf::RenderWindow::setActive(true);
   for (const auto& mesh_shader_pair : meshes) {
     Mesh* m = mesh_shader_pair.second.first.get();
@@ -63,7 +63,7 @@ void Display::drawMesh() {
   sf::RenderWindow::setActive(false);
 }
 
-void Display::processInputActions() {
+void SFMLView::processInputActions() {
   sf::Event event;
   while (pollEvent(event)) {
     const sf::Vector2i mouse_pos =
@@ -99,7 +99,7 @@ void Display::processInputActions() {
   // process anny clicks
 }
 
-void Display::setPerspective() {
+void SFMLView::setPerspective() {
   sf::RenderWindow::setActive(true);
 
   // Load OpenGL or OpenGL ES entry points using glad

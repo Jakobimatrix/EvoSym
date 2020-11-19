@@ -16,14 +16,14 @@ THIRD_PARTY_HEADERS_BEGIN
 #include <settings.hpp>
 THIRD_PARTY_HEADERS_END
 
-class Display : public QSFMLCanvas, public util::Settings {
+class SFMLView : public QSFMLCanvas, public util::Settings {
   Q_OBJECT
  private:
   void onInit() override;
   void onUpdate() override;
 
  public:
-  explicit Display(QWidget* parent)
+  explicit SFMLView(QWidget* parent)
       : QSFMLCanvas(parent),
         Settings(Globals::getInstance().getPath2DisplaySettings()) {
     put<unsigned int>(disp_height, DISP_HEIGHT_ID);
@@ -31,7 +31,7 @@ class Display : public QSFMLCanvas, public util::Settings {
     put<unsigned int>(color_depth, COLOR_DEPTH_ID);
   }
 
-  ~Display() override { save(); }
+  ~SFMLView() override { save(); }
 
 
   [[nodiscard]] unsigned long addMesh(const disp_utils::MeshShaderPair& mesh_shader_pair);
