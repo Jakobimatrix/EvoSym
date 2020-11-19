@@ -12,7 +12,7 @@ target_link_libraries(pre_display_lib INTERFACE
 target_include_directories(pre_display_lib INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
 add_library(display_lib STATIC
-  src/display/display.cpp
+  src/display/sfmlView.cpp
   src/display/simulationSettings.cpp
   src/display/mainWindow.cpp)
 
