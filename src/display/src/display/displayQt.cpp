@@ -1,4 +1,4 @@
-#include "mainWindow.h"
+#include "displayQt.h"
 
 #include <QFileDialog>
 #include <QMessageBox>
@@ -6,7 +6,7 @@
 #include <globals/globals.hpp>
 #include <globals/macros.hpp>
 
-MainWindow::MainWindow() {
+DisplayQt::DisplayQt() {
   current_world_file = QString(DEFAULT_FILE_NAME.c_str());
   sfml_view = new SFMLView(this);
   setCentralWidget(sfml_view);
@@ -22,7 +22,7 @@ MainWindow::MainWindow() {
 }
 
 
-void MainWindow::closeEvent(QCloseEvent *event) {
+void DisplayQt::closeEvent(QCloseEvent *event) {
   if (askSave()) {
     // writeSettings();
     // event->accept();
@@ -32,17 +32,17 @@ void MainWindow::closeEvent(QCloseEvent *event) {
   WARNING("TODO");
 }
 
-void MainWindow::setStatus(const std::string &msg, int timeout) {
+void DisplayQt::setStatus(const std::string &msg, int timeout) {
   setStatus(msg.c_str(), timeout);
 }
-void MainWindow::setStatus(const char *str, int timeout) {
+void DisplayQt::setStatus(const char *str, int timeout) {
   statusBar()->showMessage(tr(str), timeout);
 }
-void MainWindow::setStatus(const QString &msg, int timeout) {
+void DisplayQt::setStatus(const QString &msg, int timeout) {
   setStatus(msg.toStdString(), timeout);
 }
 
-bool MainWindow::save() {
+bool DisplayQt::save() {
   const bool is_simulating = simulationIsRunning();
   if (is_simulating) {
     stopSimulation();
@@ -56,7 +56,7 @@ bool MainWindow::save() {
   return save_success;
 }
 
-bool MainWindow::saveAs() {
+bool DisplayQt::saveAs() {
   setStatus("Save As ...");
   QString file_name = QFileDialog::getSaveFileName(
       this, tr("Save current Simulation as"), current_world_file, tr("Address Book (*.abk);;All Files (*)"));
@@ -68,13 +68,13 @@ bool MainWindow::saveAs() {
   return save();
 }
 
-void MainWindow::loadFile(const QString &fileName) {
+void DisplayQt::loadFile(const QString &fileName) {
   setStatus("Loading " + fileName.toStdString() + " ...");
   WARNING("TODO");
   setCurrentFile(fileName);
 }
 
-bool MainWindow::askSave() {
+bool DisplayQt::askSave() {
   WARNING("TODO");
   QMessageBox::StandardButton ret;
   ret = QMessageBox::warning(this,
@@ -89,7 +89,7 @@ bool MainWindow::askSave() {
 }
 
 
-void MainWindow::setCurrentFile(const QString &file_name) {
+void DisplayQt::setCurrentFile(const QString &file_name) {
   if (file_name.isEmpty()) {
     current_world_file = QString(DEFAULT_FILE_NAME.c_str());
   } else {
@@ -100,17 +100,17 @@ void MainWindow::setCurrentFile(const QString &file_name) {
   setWindowFilePath(current_world_file);
 }
 
-QString MainWindow::strippedName(const QString &fullFileName) {
+QString DisplayQt::strippedName(const QString &fullFileName) {
   return QFileInfo(fullFileName).fileName();
 }
 
 
-void MainWindow::newWorld() { WARNING("TODO"); }
+void DisplayQt::newWorld() { WARNING("TODO"); }
 
-void MainWindow::open() { WARNING("TODO"); }
+void DisplayQt::open() { WARNING("TODO"); }
 
 
-void MainWindow::about() {
+void DisplayQt::about() {
   WARNING("TODO");
   QMessageBox::about(this,
                      tr("About EvoSym"),
@@ -120,7 +120,7 @@ void MainWindow::about() {
 }
 
 
-void MainWindow::createActions() {
+void DisplayQt::createActions() {
   // new wolrd
   const std::string path = Globals::getInstance().getAbsPath2Resources();
   newAct = new QAction(QIcon((path + "new.png").c_str()), tr("&New"), this);
@@ -157,7 +157,7 @@ void MainWindow::createActions() {
   connect(exitAct, SIGNAL(triggered()), this, SLOT(exitGracefully()));
 }
 
-void MainWindow::createMenus() {
+void DisplayQt::createMenus() {
   WARNING("TODO");
   fileMenu = menuBar()->addMenu(tr("&File"));
   if (fileMenu == nullptr) {
@@ -183,14 +183,14 @@ void MainWindow::createMenus() {
   helpMenu->addAction(aboutAct);
 }
 
-void MainWindow::initSimulation() {
+void DisplayQt::initSimulation() {
   WARNING("TODO");
   // read file
   simulatedWorld.init();
   unsigned long mash_id = sfml_view->addMesh(simulatedWorld.getWorldsMeshShaderPair());
 }
 
-void MainWindow::createToolBars() {
+void DisplayQt::createToolBars() {
   WARNING("TODO");
   fileToolBar = addToolBar(tr("File"));
   fileToolBar->addAction(newAct);
@@ -203,7 +203,7 @@ void MainWindow::createToolBars() {
   //  editToolBar->addAction(pasteAct);
 }
 
-void MainWindow::createStatusBar() {
+void DisplayQt::createStatusBar() {
   statusBar()->showMessage(tr("Ready"));
   QColor backGroundColor = palette().color(QPalette::Window);
   const std::string backgroud_style_sheet =
@@ -211,7 +211,7 @@ void MainWindow::createStatusBar() {
   statusBar()->setStyleSheet(backgroud_style_sheet.c_str());
 }
 
-void MainWindow::readSettings() {
+void DisplayQt::readSettings() {
   WARNING("TODO");
   QSettings settings("Trolltech", "Application Example");
   QPoint pos = settings.value("pos", QPoint(200, 200)).toPoint();
@@ -220,26 +220,26 @@ void MainWindow::readSettings() {
   move(pos);
 }
 
-void MainWindow::writeSettings() {
+void DisplayQt::writeSettings() {
   WARNING("TODO");
   QSettings settings("Trolltech", "Application Example");
   settings.setValue("pos", pos());
   settings.setValue("size", size());
 }
 
-void MainWindow::exitGracefully() { WARNING("TODO: Signal missing"); }
+void DisplayQt::exitGracefully() { WARNING("TODO: Signal missing"); }
 
-bool MainWindow::startSimulation() {
+bool DisplayQt::startSimulation() {
   if (simulationIsRunning()) {
     return false;
   }
   stop_simulation = false;
-  simulation_thread = std::thread(&MainWindow::runSimulation, this);
+  simulation_thread = std::thread(&DisplayQt::runSimulation, this);
   setStatus("Run simulation ...");
   return true;
 }
 
-void MainWindow::stopSimulation() {
+void DisplayQt::stopSimulation() {
   if (simulationIsRunning()) {
     setStatus("Stopping simulation ...");
     stop_simulation = true;
@@ -249,10 +249,10 @@ void MainWindow::stopSimulation() {
   }
 }
 
-void MainWindow::runSimulation() {
+void DisplayQt::runSimulation() {
   while (sfml_view->isOpen() && !stop_simulation) {
     simulatedWorld.update();
   }
 }
 
-bool MainWindow::simulationIsRunning() { return simulation_thread.joinable(); }
+bool DisplayQt::simulationIsRunning() { return simulation_thread.joinable(); }
