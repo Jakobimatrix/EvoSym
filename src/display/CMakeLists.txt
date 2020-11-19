@@ -13,8 +13,9 @@ target_include_directories(pre_display_lib INTERFACE "${CMAKE_CURRENT_SOURCE_DIR
 
 add_library(display_lib STATIC
   src/display/sfmlView.cpp
-  src/display/simulationSettings.cpp
-  src/display/mainWindow.cpp)
+  src/display/display.cpp
+  src/display/displayQt.cpp
+  src/display/simulationSettings.cpp)
 
 target_link_libraries(display_lib
   warning_guards
