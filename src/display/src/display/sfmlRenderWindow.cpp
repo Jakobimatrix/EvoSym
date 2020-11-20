@@ -1,18 +1,20 @@
-#include "sfmlView.h"
+#include "sfmlRenderWindow.h"
 
 // THIRD_PARTY_HEADERS_BEGIN
 #include <glad/glad.h>
 // THIRD_PARTY_HEADERS_END
 
-void SFMLView::onInit() {
-  // Create the main window
+SfmlRenderWindow::SfmlRenderWindow(){
 
-
-  // create(sf::VideoMode(disp_width, disp_height, color_depth), Globals::getInstance().getMainVidowTitle(), sf::Style::Default);
-  setVerticalSyncEnabled(true);
 }
 
-void SFMLView::onUpdate() {
+void SfmlRenderWindow::init(){
+// create(sf::VideoMode(disp_width, disp_height, color_depth), Globals::getInstance().getMainVidowTitle(), sf::Style::Default);
+  setVerticalSyncEnabled(true);
+  is_initialized = true;
+}
+
+void SfmlRenderWindow::update(){
   processInputActions();
   if (!sf::RenderWindow::isOpen()) {
     return;
@@ -33,12 +35,12 @@ void SFMLView::onUpdate() {
   sf::RenderWindow::display();
 }
 
-unsigned long SFMLView::addMesh(const disp_utils::MeshShaderPair& mesh_shader_pair) {
+unsigned long SfmlRenderWindow::addMesh(const disp_utils::MeshShaderPair& mesh_shader_pair) {
   meshes.emplace(std::make_pair(mesh_counter, mesh_shader_pair));
   return mesh_counter++;
 }
 
-bool SFMLView::removeMesh(unsigned long id) {
+bool SfmlRenderWindow::removeMesh(unsigned long id) {
   auto ptr = meshes.find(id);
   if (ptr != meshes.end()) {
     meshes.erase(ptr);
@@ -47,12 +49,11 @@ bool SFMLView::removeMesh(unsigned long id) {
   return false;
 }
 
-
-void SFMLView::draw2DStack() {
+void SfmlRenderWindow::draw2DStack() {
   // vector of boxes and text
 }
 
-void SFMLView::drawMesh() {
+void SfmlRenderWindow::drawMesh() {
   sf::RenderWindow::setActive(true);
   for (const auto& mesh_shader_pair : meshes) {
     Mesh* m = mesh_shader_pair.second.first.get();
@@ -63,7 +64,7 @@ void SFMLView::drawMesh() {
   sf::RenderWindow::setActive(false);
 }
 
-void SFMLView::processInputActions() {
+void SfmlRenderWindow::processInputActions() {
   sf::Event event;
   while (pollEvent(event)) {
     const sf::Vector2i mouse_pos =
@@ -97,7 +98,7 @@ void SFMLView::processInputActions() {
   // process anny clicks
 }
 
-void SFMLView::setPerspective() {
+void SfmlRenderWindow::setPerspective() {
   sf::RenderWindow::setActive(true);
 
   // Load OpenGL or OpenGL ES entry points using glad

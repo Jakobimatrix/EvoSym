@@ -7,7 +7,7 @@
 #include <globals/macros.hpp>
 
 DisplayQt::DisplayQt() {
-  sfml_view = new SFMLView(this);
+  sfml_view = new QSfmlCanvas(this);
   setCentralWidget(sfml_view);
 
   QPoint qpos(getDisplayPosX(), getDisplayPosY());

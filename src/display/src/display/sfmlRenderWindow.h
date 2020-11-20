@@ -1,28 +1,17 @@
-#ifndef DISPLAY
-#define DISPLAY
-#include <warning_guards/warning_guards.h>
+#ifndef SFML_RENDER_WINDOW
+#define SFML_RENDER_WINDOW
 
 #include <SFML/Graphics.hpp>
-#include <display/QSFMLCanvas.hpp>
+#include <cmath>
 #include <display/displayUtils.hpp>
-#include <display/mesh.hpp>
-#include <display/shader.hpp>
-#include <globals/globals.hpp>
-#include <globals/macros.hpp>
-#include <map>
-#include <memory>
 
-class SFMLView : public QSFMLCanvas {
-  Q_OBJECT
- private:
-  void onInit() override;
-  void onUpdate() override;
+class SfmlRenderWindow : public sf::RenderWindow{
+public:
+  SfmlRenderWindow();
 
- public:
-  explicit SFMLView(QWidget* parent) : QSFMLCanvas(parent) {}
+  void init();
 
-  ~SFMLView() override {}
-
+  void update();
 
   [[nodiscard]] unsigned long addMesh(const disp_utils::MeshShaderPair& mesh_shader_pair);
 
@@ -41,10 +30,8 @@ class SFMLView : public QSFMLCanvas {
 
   std::map<unsigned long, const disp_utils::MeshShaderPair> meshes;
   unsigned long mesh_counter = 0;
+  bool is_initialized = false;
 
- signals:
-
- public slots:
 };
 
 #endif
