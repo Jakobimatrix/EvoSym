@@ -7,101 +7,89 @@
 #include <globals/macros.hpp>
 
 DisplayQt::DisplayQt() {
-  current_world_file = QString(DEFAULT_FILE_NAME.c_str());
   sfml_view = new SFMLView(this);
   setCentralWidget(sfml_view);
+
+  QPoint qpos(getDisplayPosX(), getDisplayPosY());
+  QSize qsize(getDisplaySizeW(), getDisplaySizeH());
+  resize(qsize);
+  move(qpos);
 
   createActions();
   createMenus();
   createToolBars();
   createStatusBar();
-
-  readSettings();
-
   setUnifiedTitleAndToolBarOnMac(true);
 }
 
+DisplayQt::~DisplayQt() { close(); }
+
+void DisplayQt::close() {
+  if (!exitGracefully()) {
+    WARNING("Was not able to exit gracefully.");
+  }
+}
 
 void DisplayQt::closeEvent(QCloseEvent *event) {
-  if (askSave()) {
-    // writeSettings();
-    // event->accept();
-  } else {
-    // event->ignore();
+  if (!exitGracefully()) {
+    event->ignore();
   }
-  WARNING("TODO");
+  event->accept();
+}
+
+void DisplayQt::resizeEvent(QResizeEvent *event) {
+  saveDisplaySize(event->size().width(), event->size().height());
+  QMainWindow::resizeEvent(event);
+}
+
+void DisplayQt::moveEvent(QMoveEvent *event) {
+  saveDisplayPosition(event->pos().x(), event->pos().y());
+  QMainWindow::moveEvent(event);
+}
+
+bool DisplayQt::askYesNoQuestion(const std::string &question, const std::string &title) {
+  QMessageBox::StandardButton ret;
+  ret = QMessageBox::question(
+      this, tr(title.c_str()), tr(question.c_str()), QMessageBox::Yes | QMessageBox::No);
+  if (ret == QMessageBox::Yes)
+    return true;
+  return false;
+}
+
+void DisplayQt::popup_info(const std::string &text, const std::string &title) {
+  QMessageBox::information(this, tr(text.c_str()), tr(title.c_str()), QMessageBox::Ok);
+}
+
+void DisplayQt::popup_warning(const std::string &text, const std::string &title) {
+  QMessageBox::warning(this, tr(text.c_str()), tr(title.c_str()), QMessageBox::Ok);
+}
+
+void DisplayQt::popup_error(const std::string &text, const std::string &title) {
+  QMessageBox::critical(this, tr(text.c_str()), tr(title.c_str()), QMessageBox::Ok);
+}
+
+void DisplayQt::setWindowFilePath(const std::string &file_path) {
+  const QString path(file_path.c_str());
+  QMainWindow::setWindowFilePath(path);
 }
 
 void DisplayQt::setStatus(const std::string &msg, int timeout) {
-  setStatus(msg.c_str(), timeout);
-}
-void DisplayQt::setStatus(const char *str, int timeout) {
-  statusBar()->showMessage(tr(str), timeout);
+  statusBar()->showMessage(tr(msg.c_str()), timeout);
 }
 void DisplayQt::setStatus(const QString &msg, int timeout) {
   setStatus(msg.toStdString(), timeout);
 }
 
-bool DisplayQt::save() {
-  const bool is_simulating = simulationIsRunning();
-  if (is_simulating) {
-    stopSimulation();
-  }
-
-  setStatus("Save " + current_world_file.toStdString());
-  const bool save_success = simulatedWorld.save(current_world_file.toStdString());
-  if (is_simulating) {
-    startSimulation();
-  }
-  return save_success;
-}
+bool DisplayQt::save() { return Display::save(); }
 
 bool DisplayQt::saveAs() {
-  setStatus("Save As ...");
-  QString file_name = QFileDialog::getSaveFileName(
-      this, tr("Save current Simulation as"), current_world_file, tr("Address Book (*.abk);;All Files (*)"));
+  QString file_name =
+      QFileDialog::getSaveFileName(this,
+                                   tr("Save current Simulation as"),
+                                   tr(getCurrentFileName().c_str()),
+                                   tr("Address Book (*.abk);;All Files (*)"));
 
-  if (file_name.isEmpty())
-    return false;
-
-  setCurrentFile(file_name);
-  return save();
-}
-
-void DisplayQt::loadFile(const QString &fileName) {
-  setStatus("Loading " + fileName.toStdString() + " ...");
-  WARNING("TODO");
-  setCurrentFile(fileName);
-}
-
-bool DisplayQt::askSave() {
-  WARNING("TODO");
-  QMessageBox::StandardButton ret;
-  ret = QMessageBox::warning(this,
-                             tr("Application"),
-                             tr("Do you want to save your changes?"),
-                             QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-  if (ret == QMessageBox::Save)
-    return save();
-  else if (ret == QMessageBox::Cancel)
-    return false;
-  return false;
-}
-
-
-void DisplayQt::setCurrentFile(const QString &file_name) {
-  if (file_name.isEmpty()) {
-    current_world_file = QString(DEFAULT_FILE_NAME.c_str());
-  } else {
-    current_world_file = file_name;
-  }
-
-  setWindowModified(false);
-  setWindowFilePath(current_world_file);
-}
-
-QString DisplayQt::strippedName(const QString &fullFileName) {
-  return QFileInfo(fullFileName).fileName();
+  return Display::saveAs(file_name.toStdString());
 }
 
 
@@ -154,7 +142,7 @@ void DisplayQt::createActions() {
   // exit
   exitAct = new QAction(tr("&Exit"), this);
   exitAct->setStatusTip(tr("Close the program."));
-  connect(exitAct, SIGNAL(triggered()), this, SLOT(exitGracefully()));
+  connect(exitAct, SIGNAL(triggered()), this, SLOT(close()));
 }
 
 void DisplayQt::createMenus() {
@@ -183,13 +171,6 @@ void DisplayQt::createMenus() {
   helpMenu->addAction(aboutAct);
 }
 
-void DisplayQt::initSimulation() {
-  WARNING("TODO");
-  // read file
-  simulatedWorld.init();
-  unsigned long mash_id = sfml_view->addMesh(simulatedWorld.getWorldsMeshShaderPair());
-}
-
 void DisplayQt::createToolBars() {
   WARNING("TODO");
   fileToolBar = addToolBar(tr("File"));
@@ -210,49 +191,3 @@ void DisplayQt::createStatusBar() {
       "background-color: " + backGroundColor.name().toStdString() + ";";
   statusBar()->setStyleSheet(backgroud_style_sheet.c_str());
 }
-
-void DisplayQt::readSettings() {
-  WARNING("TODO");
-  QSettings settings("Trolltech", "Application Example");
-  QPoint pos = settings.value("pos", QPoint(200, 200)).toPoint();
-  QSize size = settings.value("size", QSize(400, 400)).toSize();
-  resize(size);
-  move(pos);
-}
-
-void DisplayQt::writeSettings() {
-  WARNING("TODO");
-  QSettings settings("Trolltech", "Application Example");
-  settings.setValue("pos", pos());
-  settings.setValue("size", size());
-}
-
-void DisplayQt::exitGracefully() { WARNING("TODO: Signal missing"); }
-
-bool DisplayQt::startSimulation() {
-  if (simulationIsRunning()) {
-    return false;
-  }
-  stop_simulation = false;
-  simulation_thread = std::thread(&DisplayQt::runSimulation, this);
-  setStatus("Run simulation ...");
-  return true;
-}
-
-void DisplayQt::stopSimulation() {
-  if (simulationIsRunning()) {
-    setStatus("Stopping simulation ...");
-    stop_simulation = true;
-    simulation_thread.join();
-    stop_simulation = false;
-    setStatus("Stopping stoppend.");
-  }
-}
-
-void DisplayQt::runSimulation() {
-  while (sfml_view->isOpen() && !stop_simulation) {
-    simulatedWorld.update();
-  }
-}
-
-bool DisplayQt::simulationIsRunning() { return simulation_thread.joinable(); }

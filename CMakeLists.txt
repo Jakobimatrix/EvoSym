@@ -65,6 +65,12 @@ find_package(Qt5 COMPONENTS Widgets Core Gui REQUIRED)
 SET(QMAKE_CXXFLAGS "${QMAKE_CXXFLAGS} -std=c++17")
 SET(QMAKE_LFLAGS "${QMAKE_LFLAGS} -lstdc++fs")
 SET(CMAKE_CXX_STANDARD 17) # otherwise compiler will not be c++17
+# needed? its in the tutorial qt5 with CMake
+## We need add -DQT_WIDGETS_LIB when using QtWidgets in Qt 5.
+#add_definitions(${Qt5Widgets_DEFINITIONS})
+## Executables fail to build with Qt 5 in the default configuration
+## without -fPIE. We add that here.
+#SET(CMAKE_CXX_FLAGS "${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 
 
 #thirdparty

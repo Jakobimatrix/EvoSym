@@ -2,59 +2,53 @@
 #ifndef DISPLAY_QT
 #define DISPLAY_QT
 
-#include <world/world.h>
-
 #include <QMainWindow>
-#include <thread>
 
+#include "display.h"
 #include "sfmlView.h"
-#include "simulationSettings.h"
 
-class DisplayQt : public QMainWindow {
+class DisplayQt : public QMainWindow, public Display {
   Q_OBJECT
 
  public:
   DisplayQt();
 
+  ~DisplayQt() override;
+
  protected:
   void closeEvent(QCloseEvent *event) override;
+  void resizeEvent(QResizeEvent *event) override;
+  void moveEvent(QMoveEvent *event) override;
 
  private:
-  void runSimulation();
-
-  bool simulationIsRunning();
-
-  void pauseSimulation();
-
-  void stopSimulation();
-
-  bool startSimulation();
-
-  void setStatus(const std::string &msg, int timeout = 0);
-  void setStatus(const char *str, int timeout = 0);
+  void setStatus(const std::string &msg, int timeout = 0) override;
   void setStatus(const QString &msg, int timeout = 0);
+
+  bool askYesNoQuestion(const std::string &question,
+                        const std::string &title = "") override;
+
+  void popup_info(const std::string &text, const std::string &title = "") override;
+
+  void popup_warning(const std::string &text, const std::string &title = "") override;
+
+  void popup_error(const std::string &text, const std::string &title = "") override;
+
+  void setWindowFilePath(const std::string &file_path) override;
 
 
  private slots:
   bool save();
   bool saveAs();
-  void about();
+  void about() override;
   void newWorld();
   void open();
-  void exitGracefully();
+  void close();
 
  private:
   void createActions();
   void createMenus();
   void createToolBars();
   void createStatusBar();
-  void readSettings();
-  void writeSettings();
-  bool askSave();
-  void loadFile(const QString &fileName);
-  void setCurrentFile(const QString &fileName);
-  QString strippedName(const QString &fullFileName);
-  void initSimulation();
 
   // QT stuff
 
@@ -71,17 +65,6 @@ class DisplayQt : public QMainWindow {
   QAction *saveAsAct;
   QAction *exitAct;
   QAction *aboutAct;
-
-  // Simulation
-  QString current_world_file;
-  SimulationSettings simulationSettings;
-  World simulatedWorld;
-
-  const std::string DEFAULT_FILE_NAME = std::string("new_world.evsm");
-
-  std::thread simulation_thread;
-  bool pause_simulation = false;
-  bool stop_simulation = false;
 };
 
 

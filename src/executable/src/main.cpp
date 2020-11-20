@@ -1,4 +1,4 @@
-#include <display/mainWindow.h>
+#include <display/displayQt.h>
 
 #include <QApplication>
 #include <globals/globals.hpp>

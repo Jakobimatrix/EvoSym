@@ -45,14 +45,6 @@ class QSFMLCanvas : public QWidget, public sf::RenderWindow {
     myTimer.setInterval(update_rate_ms_i);
   }
 
- protected:
-  void resizeEvent(QResizeEvent* event) override {
-    // move(QPoint(0, 0));
-    // fill parent
-    resize(parentWidget()->size());
-    QWidget::resizeEvent(event);
-  }
-
  private:
   virtual void onInit() = 0;
 

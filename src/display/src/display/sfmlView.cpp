@@ -84,12 +84,10 @@ void SFMLView::processInputActions() {
     if (event.type == sf::Event::Resized) {
       setPerspective();
 
-      disp_height = sf::RenderWindow::getSize().y;
-      disp_width = sf::RenderWindow::getSize().x;
-
       sf::View view;
-      view.setSize(disp_width, disp_height);
-      view.setCenter(disp_width / 2.f, disp_height / 2.f);
+      view.setSize(sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
+      view.setCenter(sf::RenderWindow::getSize().x / 2.f,
+                     sf::RenderWindow::getSize().y / 2.f);
       sf::RenderWindow::setView(view);
     }
 

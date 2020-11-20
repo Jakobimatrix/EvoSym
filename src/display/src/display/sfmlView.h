@@ -12,26 +12,16 @@
 #include <map>
 #include <memory>
 
-THIRD_PARTY_HEADERS_BEGIN
-#include <settings.hpp>
-THIRD_PARTY_HEADERS_END
-
-class SFMLView : public QSFMLCanvas, public util::Settings {
+class SFMLView : public QSFMLCanvas {
   Q_OBJECT
  private:
   void onInit() override;
   void onUpdate() override;
 
  public:
-  explicit SFMLView(QWidget* parent)
-      : QSFMLCanvas(parent),
-        Settings(Globals::getInstance().getPath2DisplaySettings()) {
-    put<unsigned int>(disp_height, DISP_HEIGHT_ID);
-    put<unsigned int>(disp_width, DISP_WIDTH_ID);
-    put<unsigned int>(color_depth, COLOR_DEPTH_ID);
-  }
+  explicit SFMLView(QWidget* parent) : QSFMLCanvas(parent) {}
 
-  ~SFMLView() override { save(); }
+  ~SFMLView() override {}
 
 
   [[nodiscard]] unsigned long addMesh(const disp_utils::MeshShaderPair& mesh_shader_pair);
@@ -51,14 +41,6 @@ class SFMLView : public QSFMLCanvas, public util::Settings {
 
   std::map<unsigned long, const disp_utils::MeshShaderPair> meshes;
   unsigned long mesh_counter = 0;
-
-  // Display settings
-  unsigned int disp_height = 600;
-  const std::string DISP_HEIGHT_ID = "DisplayHeightPixel";
-  unsigned int disp_width = 800;
-  const std::string DISP_WIDTH_ID = "DisplayWidthPixel";
-  unsigned int color_depth = 24;
-  const std::string COLOR_DEPTH_ID = "ColorDepth";
 
  signals:
 
