@@ -88,7 +88,6 @@ void Display::runSimulation() {
 }
 
 bool Display::exitGracefully() {
-  DEBUG("EXIT GRACEFULLY");
   stopSimulation();
   if (need_save) {
     const bool save_changes = askYesNoQuestion(

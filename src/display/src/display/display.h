@@ -84,7 +84,7 @@ class Display : public util::Settings {
    * show current information.
    * \param msg The information displayed to the user.
    * \param timeout_ms time in ms when the status shall disapear.
-   * if timeout = 0, display until other status is pushed.
+   * if timeout_ms = 0, display until other status is pushed.
    */
   virtual void setStatus(const std::string& msg, int timeout_ms = 0) = 0;
 
@@ -141,7 +141,6 @@ class Display : public util::Settings {
   // simulation
   void initSimulation();
   std::thread simulation_thread;
-  bool pause_simulation = false;
   bool stop_simulation = false;
   bool need_save = false;
 
