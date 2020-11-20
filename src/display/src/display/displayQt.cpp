@@ -22,13 +22,9 @@ DisplayQt::DisplayQt() {
   setUnifiedTitleAndToolBarOnMac(true);
 }
 
-DisplayQt::~DisplayQt() { close(); }
+DisplayQt::~DisplayQt() {}
 
-void DisplayQt::close() {
-  if (!exitGracefully()) {
-    WARNING("Was not able to exit gracefully.");
-  }
-}
+void DisplayQt::close() { QMainWindow::close(); }
 
 void DisplayQt::closeEvent(QCloseEvent *event) {
   if (!exitGracefully()) {
