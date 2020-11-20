@@ -44,3 +44,16 @@ void QSfmlCanvas::showEvent(QShowEvent*) {
     show_event_triggered = true;
   }
 }
+
+void QSfmlCanvas::resizeEvent(QResizeEvent* event) {
+  if (SfmlRenderWindow::isInitialized()) {
+    // Needed since for some reason SFML canvas does not get
+    // resized when QWidged holding that canvas gets resized.
+    // So we set new size manually.
+    const sf::Vector2u new_size(QWidget::geometry().width(), QWidget::geometry().height());
+    // const sf::Vector2i new_pos(QWidget::geometry().x(), QWidget::geometry().y());
+    sf::RenderWindow::setSize(new_size);
+    // sf::RenderWindow::setPosition(new_pos);
+  }
+  QWidget::resizeEvent(event);
+}

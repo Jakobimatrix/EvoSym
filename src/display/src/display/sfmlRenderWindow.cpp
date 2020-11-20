@@ -1,26 +1,40 @@
 #include "sfmlRenderWindow.h"
 
+#include "display/worldMesh.hpp"
+
 // THIRD_PARTY_HEADERS_BEGIN
 #include <glad/glad.h>
 // THIRD_PARTY_HEADERS_END
 
-SfmlRenderWindow::SfmlRenderWindow(){
+SfmlRenderWindow::SfmlRenderWindow() {}
 
-}
-
-void SfmlRenderWindow::init(){
-// create(sf::VideoMode(disp_width, disp_height, color_depth), Globals::getInstance().getMainVidowTitle(), sf::Style::Default);
+void SfmlRenderWindow::init() {
+  // create(sf::VideoMode(disp_width, disp_height, color_depth), Globals::getInstance().getMainVidowTitle(), sf::Style::Default);
   setVerticalSyncEnabled(true);
+
+
+  // Make the window the active window for OpenGL calls
+  setActive(true);
+
+  setPerspective();
+
+
+  wm = WorldMesh();
+  const std::shared_ptr<SimpleMesh> sm = std::make_shared<SimpleMesh>(wm);
+  uint i = addSimpleMesh(sm);
+
   is_initialized = true;
 }
 
-void SfmlRenderWindow::update(){
-  processInputActions();
-  if (!sf::RenderWindow::isOpen()) {
+void SfmlRenderWindow::update() {
+
+  if (!sf::RenderWindow::isOpen() || !is_initialized) {
     return;
   }
+  processInputActions();
 
-  sf::RenderWindow::clear(sf::Color(0, 0, 0, 255));
+
+  sf::RenderWindow::clear(sf::Color(100, 100, 100, 255));
 
 
   // second draw triangles/Meshes
@@ -49,53 +63,153 @@ bool SfmlRenderWindow::removeMesh(unsigned long id) {
   return false;
 }
 
+unsigned long SfmlRenderWindow::addSimpleMesh(const std::shared_ptr<SimpleMesh>& simple_mesh) {
+  simple_meshes.emplace(std::make_pair(simple_mesh_counter, simple_mesh));
+  return simple_mesh_counter++;
+}
+
+bool SfmlRenderWindow::removeSimpleMesh(unsigned long id) {
+  auto ptr = simple_meshes.find(id);
+  if (ptr != simple_meshes.end()) {
+    simple_meshes.erase(ptr);
+    return true;
+  }
+  return false;
+}
+
 void SfmlRenderWindow::draw2DStack() {
-  // vector of boxes and text
+  sf::RectangleShape rectangle;
+  rectangle.setSize(sf::Vector2f(10, 10));
+  rectangle.setFillColor(sf::Color::Red);
+  rectangle.setPosition(0, 0);
+  draw(rectangle);
+
+  const sf::Vector2i mouse_pos =
+      sf::Mouse::getPosition() - sf::RenderWindow::getPosition() + STRANGE_MOUSE_OFFSET;
+
+
+  sf::RectangleShape mouseUnder;
+  mouseUnder.setSize(sf::Vector2f(10, 10));
+  mouseUnder.setFillColor(sf::Color::Red);
+  mouseUnder.setPosition(mouse_pos.x, mouse_pos.y);
+  draw(mouseUnder);
 }
 
 void SfmlRenderWindow::drawMesh() {
   sf::RenderWindow::setActive(true);
+
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glTranslatef(0, 0, -5.f);
+  glRotatef(clock.getElapsedTime().asSeconds() * 15.f, 1.f, 0.f, 0.f);
+  glRotatef(clock.getElapsedTime().asSeconds() * 10.f, 0.f, 1.f, 0.f);
+  glRotatef(clock.getElapsedTime().asSeconds() * 30.f, 0.f, 0.f, 1.f);
   for (const auto& mesh_shader_pair : meshes) {
-    Mesh* m = mesh_shader_pair.second.first.get();
-    Shader* s = mesh_shader_pair.second.second.get();
-    m->Draw(*s);
+    // Mesh* m = mesh_shader_pair.second.first.get();
+    // Shader* s = mesh_shader_pair.second.second.get();
+    // m->Draw(*s);
     mesh_shader_pair.second.first.get()->Draw(*mesh_shader_pair.second.second.get());
   }
+  for (const auto& simple_mesh : simple_meshes) {
+    // Mesh* m = mesh_shader_pair.second.first.get();
+    // Shader* s = mesh_shader_pair.second.second.get();
+    // m->Draw(*s);
+    simple_mesh.second.get()->draw();
+  }
+  glLoadIdentity();
   sf::RenderWindow::setActive(false);
 }
 
 void SfmlRenderWindow::processInputActions() {
   sf::Event event;
   while (pollEvent(event)) {
-    const sf::Vector2i mouse_pos =
-        sf::Mouse::getPosition() + sf::RenderWindow::getPosition();
 
     // Close window: exit
     if (event.type == sf::Event::Closed) {
       sf::RenderWindow::close();
+    } else if (event.type == sf::Event::GainedFocus) {
+      this->has_focus = true;
+    } else if (event.type == sf::Event::LostFocus) {
+      this->has_focus = false;
     }
+  }
+  if (has_focus) {
+    processMouseAction();
+  }
+}
 
-    // Escape key: exit
-    if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Escape)) {
-      sf::RenderWindow::close();
+void SfmlRenderWindow::onResize() {
+  setPerspective();
+
+  sf::View view;
+  view.setSize(sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
+  view.setCenter(sf::RenderWindow::getSize().x / 2.f,
+                 sf::RenderWindow::getSize().y / 2.f);
+  sf::RenderWindow::setView(view);
+}
+
+void SfmlRenderWindow::processMouseAction() {
+
+  const sf::Vector2i mouse_pos =
+      sf::Mouse::getPosition() - sf::RenderWindow::getPosition() + STRANGE_MOUSE_OFFSET;
+
+  if (!mouse_left_timer.hasStarted() && !mouse_right_timer.hasStarted()) {
+    const sf::Vector2u win_size = sf::RenderWindow::getSize();
+    if (mouse_pos.x < 0 || mouse_pos.y < 0 || mouse_pos.x > win_size.x ||
+        mouse_pos.y > win_size.y) {
+      // not dragging and outside the window.
+      return;
     }
-
-
-    // Adjust the viewport when the window is resized
-    if (event.type == sf::Event::Resized) {
-      setPerspective();
-
-      sf::View view;
-      view.setSize(sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
-      view.setCenter(sf::RenderWindow::getSize().x / 2.f,
-                     sf::RenderWindow::getSize().y / 2.f);
-      sf::RenderWindow::setView(view);
-    }
-
-    last_mouse_pos = mouse_pos;
   }
 
-  // process anny clicks
+  if (sf::Mouse::isButtonPressed(sf::Mouse::Right)) {
+    if (!mouse_right_timer.hasStarted()) {
+      mouse_right_timer.start();
+    } else {
+      dragMouseRight(mouse_pos - last_mouse_pos);
+    }
+  } else {
+    if (mouse_right_timer.hasStarted()) {
+      if (MAX_KLICK_DURATION > mouse_right_timer.getPassedTime<std::chrono::milliseconds>()) {
+        rightKlick(mouse_pos);
+      }
+      mouse_right_timer.stop();
+    }
+  }
+
+  if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+    if (!mouse_left_timer.hasStarted()) {
+      mouse_left_timer.start();
+    } else {
+      dragMouseLeft(mouse_pos - last_mouse_pos);
+    }
+  } else {
+    if (mouse_left_timer.hasStarted()) {
+      if (MAX_KLICK_DURATION > mouse_left_timer.getPassedTime<std::chrono::milliseconds>()) {
+        leftKlick(mouse_pos);
+      }
+      mouse_left_timer.stop();
+    }
+  }
+
+
+  last_mouse_pos = mouse_pos;
+}
+
+void SfmlRenderWindow::dragMouseLeft(const sf::Vector2i& diff) {
+  F_DEBUG("draggin left x: %d y: %d", diff.x, diff.y);
+}
+void SfmlRenderWindow::dragMouseRight(const sf::Vector2i& diff) {
+  F_DEBUG("draggin right x: %d y: %d", diff.x, diff.y);
+}
+void SfmlRenderWindow::leftKlick(const sf::Vector2i& mouse_pos) {
+  F_DEBUG("klick left x: %d y: %d", mouse_pos.x, mouse_pos.y);
+}
+void SfmlRenderWindow::rightKlick(const sf::Vector2i& mouse_pos) {
+  F_DEBUG("klick right x: %d y: %d", mouse_pos.x, mouse_pos.y);
 }
 
 void SfmlRenderWindow::setPerspective() {

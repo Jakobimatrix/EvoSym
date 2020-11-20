@@ -52,7 +52,7 @@ class Mesh {
   }
 
   // render the mesh
-  void Draw(Shader &shader) {
+  void Draw(Shader& shader) {
     // bind appropriate textures
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
@@ -114,55 +114,65 @@ class Mesh {
     // vertex Positions
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(
-        0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(0));
+        0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(0));
     // vertex normals
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(
-        1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(offsetof(Vertex, Normal)));
+        1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Normal)));
     // vertex texture coords
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(
-        2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(offsetof(Vertex, TexCoords)));
+        2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, TexCoords)));
     // vertex tangent
     glEnableVertexAttribArray(3);
     glVertexAttribPointer(
-        3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(offsetof(Vertex, Tangent)));
+        3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Tangent)));
     // vertex bitangent
     glEnableVertexAttribArray(4);
     glVertexAttribPointer(
-        4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(offsetof(Vertex, Bitangent)));
+        4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, Bitangent)));
 
     glBindVertexArray(0);
   }
 };
 
-/*
-class Mesh {
+
+class SimpleMesh {
  public:
-  virtual void getVertexBuffer(GLfloat* vertex_buffer, unsigned int& size) const = 0;
-  virtual void getIndexBuffer(GLfloat* index_buffer, unsigned int& size) const = 0;
+  SimpleMesh() {}
 
-  Mesh() {}
-  virtual ~Mesh();
-};
+  void draw() {
+    // https://stackoverflow.com/questions/21652546/what-is-the-role-of-glbindvertexarrays-vs-glbindbuffer-and-what-is-their-relatio
+    glEnableClientState(GL_NORMAL_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-template <unsigned int num_vertices, unsigned int num_faces>
-class MeshImpl : public Mesh {
+    glNormalPointer(GL_FLOAT, COORDS_PER_VERTEX * sizeof(GLfloat), normal_buffer.data());
+    glVertexPointer(COORDS_PER_VERTEX, GL_FLOAT, VERTEX_STRIDE, vertex_buffer.data());
+    glColorPointer(NUM_COLOR_PIGMENTS, GL_FLOAT, COLOR_STRIDE, color_buffer.data());
 
-  void getVertexBuffer(GLfloat* vertex_buffer, unsigned int& size) const override {
-    vertex_buffer = this->vertex_buffer;
-    size = num_vertices;
+    // draw mesh
+    glDrawArrays(GL_TRIANGLES, 0, static_cast<int>(index_buffer.size()));
+    glBindVertexArray(0);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_NORMAL_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
   }
 
-  void getIndexBuffer(GLfloat* index_buffer, unsigned int& size) const override {
-    index_buffer = this->index_buffer;
-    size = num_faces;
-  }
+ protected:
+  std::vector<GLfloat> vertex_buffer;
+  std::vector<GLfloat> normal_buffer;
+  std::vector<GLfloat> index_buffer;
+  std::vector<GLfloat> color_buffer;
 
- private:
-  GLfloat vertex_buffer[num_vertices];
-  GLfloat index_buffer[num_faces];
+  const static int COORDS_PER_VERTEX = 3;   // x,y,z
+  const static int NUM_COLOR_PIGMENTS = 4;  // r,g,b,a
+  const static int VERTEX_STRIDE = 0;
+  const static int COLOR_STRIDE = 0;
 };
-*/
+
+
 
 #endif

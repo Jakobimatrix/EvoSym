@@ -23,6 +23,8 @@ class QSfmlCanvas : public QWidget, public SfmlRenderWindow {
 
   void showEvent(QShowEvent*) override;
 
+  void resizeEvent(QResizeEvent*) override;
+
   void paintEvent(QPaintEvent*) override { SfmlRenderWindow::update(); }
   bool show_event_triggered = false;
   QTimer timer;

@@ -28,7 +28,8 @@ target_link_libraries(display_lib
   settings_lib
   globals_lib
   homography_lib
-  world_lib)
+  world_lib
+  timer_lib)
 
 # define the target links: specify how the libs shall be included.
 target_include_directories(display_lib PUBLIC STATIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
