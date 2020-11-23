@@ -61,35 +61,27 @@ class Mesh {
 
   Mesh() {}
 
+  /*!
+   * \brief Reserves space on GPU for texture and vertices
+   * \param vertices The vector of vertices describeing the mesh and what not.
+   * \param indices A vector of indices describeing the order of the vertices.
+   * \param texture_path The path to the texture.
+   */
   void init(std::vector<Vertex> vertices,
             std::vector<unsigned int> indices,
             const std::string& texture_path);
 
-  // render the mesh
+  /*!
+   * \brief This renders the mesh using the active shader if set.
+   */
   void draw();
 
-  /*
-  [[nodiscard]] bool setShaderSf(std::shared_ptr<sf::Shader>& ptr) {
-    shader_sf = ptr;
-    return true;
-  }
-
-  [[nodiscard]] bool loadVertexShader(const std::string& vertex_shader_file) {
-    shader_sf = std::make_shared<sf::Shader>();
-    const bool success = shader_sf->loadFromFile(vertex_shader_file,
-  sf::Shader::Vertex); if (!success) { shader_sf.reset();
-    }
-    return success;
-  }
-
-  [[nodiscard]] bool loadFragmentShader(const std::string& fragment_shader_file)
-  { shader_sf = std::make_shared<sf::Shader>(); const bool success = shader_sf->loadFromFile(fragment_shader_file,
-  sf::Shader::Fragment); if (!success) { shader_sf.reset();
-    }
-    return success;
-  }
-  */
-
+  /*!
+   * \brief Loads and connects a new shader to this mesh.
+   * This uses the s::shader class. An existing shader will be deleted.
+   * \param vertex_shader_file The path to the vertex shader file.
+   * \param fragment_shader_file The path to the vertex shader file.
+   */
   [[nodiscard]] bool loadShaderSf(const std::string& vertex_shader_file,
                                   const std::string& fragment_shader_file) {
     shader_sf = std::make_shared<sf::Shader>();
@@ -97,16 +89,18 @@ class Mesh {
     if (!success) {
       shader_sf.reset();
     }
+    shader.reset();
     connectShader(shader_sf->getNativeHandle());
     return success;
   }
 
-  [[nodiscard]] bool setShader(std::shared_ptr<Shader>& ptr) {
-    shader = ptr;
-    connectShader(shader->ID);
-    return true;
-  }
 
+  /*!
+   * \brief Loads and connects a new shader to this mesh.
+   * This uses the own shader class. An existing shader will be deleted.
+   * \param vertex_shader_file The path to the vertex shader file.
+   * \param fragment_shader_file The path to the vertex shader file.
+   */
   [[nodiscard]] bool loadShader(const std::string& vertex_shader_file,
                                 const std::string& fragment_shader_file) {
     shader = std::make_shared<Shader>(vertex_shader_file.c_str(),
@@ -115,12 +109,30 @@ class Mesh {
       shader.reset();
       return false;
     }
+    shader_sf.reset();
     connectShader(shader->ID);
     return true;
   }
 
+  /*!
+   * \brief Connects the vertex shader input variables with the vertex array.
+   * The input variables expected in the shader are:
+   * in vec3 meshPos;
+   * in vec3 meshNormal;
+   * in vec2 meshTexture;
+   * in vec3 meshTangent;
+   * in vec3 meshBittangent;
+   * This is kinda hard coded for now.
+   */
   void connectShader(unsigned int shaderProgram);
 
+  /*!
+   * \brief This prints out the last GL errors.
+   * \param file The file name (use __FILE__)
+   * \param line The line (use __LINE__)
+   * \param expression The function call to GL
+   * usage: glCheck(FUN2GL(val1, val2...));
+   */
   static void checkError(const char* file, unsigned int line, const char* expression);
 
 
@@ -141,9 +153,16 @@ class Mesh {
   int COORDS_PER_VERTEX = 3;
   int COORDS_PER_TEXTURE = 2;
 
+  /*!
+   * \brief Load texture and talk to openGL to request some space for the
+   * texture.
+   * \param texture_path The path to the texture/image.
+   */
   void loadTexture(const std::string& texture_path);
 
-  // initializes all the buffer objects/arrays
+  /*!
+   * \brief Talks to openGL to reserve space for the mesh.
+   */
   void setupMesh();
 };
 

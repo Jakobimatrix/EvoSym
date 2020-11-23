@@ -126,16 +126,10 @@ void Mesh::setupMesh() {
 }
 
 void Mesh::connectShader(unsigned int shaderProgram) {
-  /*if (is_initialized) {
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
-    WARNING(
-        "You connect a shader after setting up the Mesh. I have to "
-        "reinitialize the mesh...");
-  }
-  Mesh::setupMesh();*/
 
+  // Rather then using the recomended glBindAttribLocation prior to linking the
+  // shader I did that here, which is bad according to some. but it works for
+  // sfml shaders too which are linked somewhere deep in sfml.
   auto assignShaderVariable = [&shaderProgram](const std::string& var_name,
                                                int num_values,
                                                void* start_position) {
@@ -147,6 +141,8 @@ void Mesh::connectShader(unsigned int shaderProgram) {
           var_name.c_str());
       return;
     }
+    // Check errors in case the compiler did not optimize away
+    // but rather I did somthing wrong here...
     glCheck();
     const unsigned int u_pos = static_cast<unsigned int>(variable_position);
     glCheck(glEnableVertexAttribArray(u_pos));
@@ -176,8 +172,6 @@ void Mesh::connectShader(unsigned int shaderProgram) {
   assignShaderVariable("meshBittangent",
                        COORDS_PER_VERTEX,
                        reinterpret_cast<void*>(offsetof(Vertex, Bitangent)));
-
-  glCheck(glBindVertexArray(0));
 }
 
 void Mesh::checkError(const char* file, unsigned int line, const char* expression) {
