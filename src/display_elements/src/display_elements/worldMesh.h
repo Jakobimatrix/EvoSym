@@ -49,6 +49,23 @@ class WorldMesh : public Mesh {
     }
   }
 
+  void setProjection(const glm::mat4 &projection) {
+    if (shader != nullptr) {
+      shader->use();
+      shader->setMat4("projection", projection);
+      glUseProgram(0);
+    }
+
+    if (shader_sf != nullptr) {
+      const float *pSource = reinterpret_cast<const float *>(glm::value_ptr(projection));
+      // TODO better solution for conversation?
+      sf::Glsl::Mat4 todo(pSource);
+      glCheck(sf::Shader::bind(shader_sf.get()));
+      glCheck(shader_sf->setUniform("projection", todo));
+      sf::Shader::bind(nullptr);
+    }
+  }
+
   void setTExture() {
     // https://learnopengl.com/Model-Loading/Mesh?????
     if (shader != nullptr) {

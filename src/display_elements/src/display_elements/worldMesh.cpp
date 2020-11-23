@@ -5,32 +5,64 @@ void WorldMesh::loadVertices() {
 
   std::vector<Vertex> verices_temp;
   // clang-format off
-   verices_temp.emplace_back(Vertex({-0.9f, -0.9f, -0.9f,
+   verices_temp.emplace_back(Vertex({-0.6f, -0.6f, -0.6f,
                                 0,0,1,
                                 0,0,
                                 1,0,0,
                                 0,1,0}));
-   verices_temp.emplace_back(Vertex({-0.9f,  0.9f, -0.9f,
+   verices_temp.emplace_back(Vertex({-0.6f,  0.6f, -0.6f,
                                 0,0,1,
                                 1,0,
                                 1,0,0,
                                 0,1,0}));
-   verices_temp.emplace_back(Vertex({-0.9f, -0.9f,  0.9f,
+   verices_temp.emplace_back(Vertex({-0.6f, -0.6f,  0.6f,
                                 0,0,1,
                                 0,1,
                                 1,0,0,
                                 0,1,0}));
-   verices_temp.emplace_back(Vertex({-0.9f, -0.9f,  0.9f,
+   verices_temp.emplace_back(Vertex({-0.6f, -0.6f,  0.6f,
                                 0,0,1,
                                 0,1,
                                 1,0,0,
                                 0,1,0}));
-   verices_temp.emplace_back(Vertex({-0.9f,  0.9f, -0.9f,
+   verices_temp.emplace_back(Vertex({-0.6f,  0.6f, -0.6f,
                                 0,0,1,
                                 1,0,
                                 1,0,0,
                                 0,1,0}));
-   verices_temp.emplace_back(Vertex({-0.9f,  0.9f,  0.9f,
+   verices_temp.emplace_back(Vertex({-0.6f,  0.6f,  0.6f,
+                                0,0,1,
+                                1,1,
+                                1,0,0,
+                                0,1,0}));
+
+
+   verices_temp.emplace_back(Vertex({0.6f, -0.6f, -0.6f,
+                                0,0,1,
+                                0,0,
+                                1,0,0,
+                                0,1,0}));
+   verices_temp.emplace_back(Vertex({0.6f,  0.6f, -0.6f,
+                                0,0,1,
+                                1,0,
+                                1,0,0,
+                                0,1,0}));
+   verices_temp.emplace_back(Vertex({0.6f, -0.6f,  0.6f,
+                                0,0,1,
+                                0,1,
+                                1,0,0,
+                                0,1,0}));
+   verices_temp.emplace_back(Vertex({0.6f, -0.6f,  0.6f,
+                                0,0,1,
+                                0,1,
+                                1,0,0,
+                                0,1,0}));
+   verices_temp.emplace_back(Vertex({0.6f,  0.6f, -0.6f,
+                                0,0,1,
+                                1,0,
+                                1,0,0,
+                                0,1,0}));
+   verices_temp.emplace_back(Vertex({0.6f,  0.6f,  0.6f,
                                 0,0,1,
                                 1,1,
                                 1,0,0,

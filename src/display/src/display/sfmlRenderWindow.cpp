@@ -113,13 +113,16 @@ void SfmlRenderWindow::drawMesh() {
   // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   // glMatrixMode(GL_MODELVIEW);
 
-  glLoadIdentity();
-
-  glTranslatef(0, 0, camera.Zoom);
-
   // draw world
   const glm::mat4 view = camera.GetViewMatrix();
   world_mesh->setView(view);
+  const glm::mat4 projection =
+      glm::perspective(glm::radians(camera.Zoom),
+                       static_cast<float>(sf::RenderWindow::getSize().x) /
+                           sf::RenderWindow::getSize().y,
+                       0.1f,
+                       100.0f);
+  world_mesh->setProjection(projection);
   world_mesh->draw();
 
   for (const auto& mesh_shader_pair : meshes) {

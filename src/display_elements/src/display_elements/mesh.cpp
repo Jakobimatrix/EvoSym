@@ -130,6 +130,8 @@ void Mesh::connectShader(unsigned int shaderProgram) {
   // Rather then using the recomended glBindAttribLocation prior to linking the
   // shader I did that here, which is bad according to some. but it works for
   // sfml shaders too which are linked somewhere deep in sfml.
+  // also since I am stuck with #version 130 (GLSL 1.30)
+  // I cannot use layout(location = 0) which is avaiable in GLSL 1.40
   auto assignShaderVariable = [&shaderProgram](const std::string& var_name,
                                                int num_values,
                                                void* start_position) {
