@@ -5,31 +5,35 @@ void WorldMesh::loadVertices() {
   const std::string vs = path + "camera.vs";
   const std::string fs = path + "camera.fs";
 
-  /*
-  if (false && !loadShader(vs, fs)) {
-    if (!sf::Shader::isAvailable()) {
-      ERROR("Shader not supported");
-    } else {
-      F_ERROR(
-          "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
-          "%s} ",
-          vs.c_str(),
-          fs.c_str());
-    }
-  }*/
+  const bool load_shader_sf = true;
+  const bool load_shader_self = false;
 
-
-  if (false && sf::Shader::isAvailable()) {
-    if (!loadShader(vs, fs)) {
-      F_ERROR(
-          "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
-          "%s} ",
-          vs.c_str(),
-          fs.c_str());
+  if (sf::Shader::isAvailable()) {
+    if (load_shader_self) {
+      if (!loadShader(vs, fs)) {
+        F_ERROR(
+            "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
+            "%s} ",
+            vs.c_str(),
+            fs.c_str());
+      } else {
+        DEBUG("Using Self made shader class.");
+      }
+    } else if (load_shader_sf) {
+      if (!loadShaderSf(vs, fs)) {
+        F_ERROR(
+            "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
+            "%s} ",
+            vs.c_str(),
+            fs.c_str());
+      } else {
+        DEBUG("Using sf::shader class.");
+      }
     }
   } else {
     ERROR("Shader not supported");
   }
+
 
   std::vector<Vertex> verices_temp;
   // clang-format off
@@ -72,6 +76,7 @@ void WorldMesh::loadVertices() {
     }
     std::string texture = Globals::getInstance().getAbsPath2Resources() + "save.png";
     init(verices_temp, indices_temp, texture);
+
 
     /*
     float vertices[] = {

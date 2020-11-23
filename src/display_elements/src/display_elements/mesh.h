@@ -75,16 +75,6 @@ class Mesh {
     return true;
   }
 
-
-  [[nodiscard]] bool loadShaderSf(const std::string& vertex_shader_file,
-                                  const std::string& fragment_shader_file) {
-    shader_sf = std::make_shared<sf::Shader>();
-    const bool success = shader_sf->loadFromFile(vertex_shader_file,
-  fragment_shader_file); if (!success) { shader_sf.reset();
-    }
-    return success;
-  }
-
   [[nodiscard]] bool loadVertexShader(const std::string& vertex_shader_file) {
     shader_sf = std::make_shared<sf::Shader>();
     const bool success = shader_sf->loadFromFile(vertex_shader_file,
@@ -100,6 +90,15 @@ class Mesh {
     return success;
   }
   */
+
+  [[nodiscard]] bool loadShaderSf(const std::string& vertex_shader_file,
+                                  const std::string& fragment_shader_file) {
+    shader_sf = std::make_shared<sf::Shader>();
+    const bool success = shader_sf->loadFromFile(vertex_shader_file,
+  fragment_shader_file); if (!success) { shader_sf.reset();
+    }
+    return success;
+  }
 
   [[nodiscard]] bool setShader(std::shared_ptr<Shader>& ptr) {
     shader = ptr;
@@ -119,7 +118,7 @@ class Mesh {
 
  protected:
   std::shared_ptr<Shader> shader = nullptr;
-  // std::shared_ptr<sf::Shader> shader = nullptr;
+  std::shared_ptr<sf::Shader> shader_sf = nullptr;
 
  private:
   // render data

@@ -61,6 +61,10 @@ void Mesh::draw() {
   if (shader != nullptr) {
     shader->use();
   }
+  if (shader_sf != nullptr) {
+    sf::Shader::bind(shader_sf.get());
+  }
+
   // draw mesh
   glBindVertexArray(VAO);
   checkError("draw1");
@@ -71,6 +75,9 @@ void Mesh::draw() {
 
   if (shader != nullptr) {
     glUseProgram(0);
+  }
+  if (shader_sf != nullptr) {
+    sf::Shader::bind(nullptr);
   }
   checkError("draw3");
 

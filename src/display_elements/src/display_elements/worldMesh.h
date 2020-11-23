@@ -16,6 +16,16 @@ class WorldMesh : public Mesh {
     if (shader != nullptr) {
       shader->use();
       shader->setMat4("pose", pose);
+      glUseProgram(0);
+    }
+
+    if (shader_sf != nullptr) {
+      const float *pSource = reinterpret_cast<const float *>(glm::value_ptr(pose));
+      // TODO better solution for conversation?
+      sf::Glsl::Mat4 todo(pSource);
+      sf::Shader::bind(shader_sf.get());
+      shader_sf->setUniform("pose", todo);
+      sf::Shader::bind(nullptr);
     }
   }
 
@@ -23,15 +33,25 @@ class WorldMesh : public Mesh {
     if (shader != nullptr) {
       shader->use();
       shader->setMat4("view", view);
+      glUseProgram(0);
     }
 
-    /* if sf shader
-    if (shader != nullptr) {
+    if (shader_sf != nullptr) {
       const float *pSource = reinterpret_cast<const float *>(glm::value_ptr(view));
       // TODO better solution for conversation?
       sf::Glsl::Mat4 todo(pSource);
-      shader->setUniform("view", todo);
-    }*/
+      sf::Shader::bind(shader_sf.get());
+      shader_sf->setUniform("view", todo);
+      sf::Shader::bind(nullptr);
+    }
+  }
+
+  void setTExture(){
+  // https://learnopengl.com/Model-Loading/Mesh?????
+  if (shader != nullptr) {
+      shader->use();
+      glUseProgram(0);
+    }
   }
 
   void loadVertices();

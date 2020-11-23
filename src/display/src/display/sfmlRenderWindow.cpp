@@ -30,6 +30,12 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
   sf::Texture::getMaximumSize();
   setActive(true);
 
+
+  printf("Vendor graphic card: %s\n", glGetString(GL_VENDOR));
+  printf("Renderer: %s\n", glGetString(GL_RENDERER));
+  printf("Version GL: %s\n", glGetString(GL_VERSION));
+  printf("Version GLSL: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
   world_mesh = std::make_shared<WorldMesh>();
   // set perspective for world mesh
   const glm::mat4 pose = glm::mat4(1.0f);
