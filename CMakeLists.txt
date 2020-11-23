@@ -76,9 +76,8 @@ SET(CMAKE_CXX_STANDARD 17) # otherwise compiler will not be c++17
 #thirdparty
 add_subdirectory(src/glad)
 add_subdirectory(src/glm)
-
+add_subdirectory(src/stb)
 add_subdirectory(src/warning_guards)
-
 
 #submodules (my code)
 add_subdirectory(src/randomGenerator)
@@ -88,6 +87,7 @@ add_subdirectory(src/timer)
 
 #code
 add_subdirectory(src/display)
+add_subdirectory(src/display_elements)
 add_subdirectory(src/globals)
 #add_subdirectory(src/utils)
 add_subdirectory(src/world)

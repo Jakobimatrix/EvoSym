@@ -1,6 +1,6 @@
 #include "sfmlRenderWindow.h"
 
-#include "display/worldMesh.hpp"
+#include <SFML/OpenGL.hpp>
 
 // THIRD_PARTY_HEADERS_BEGIN
 #include <glad/glad.h>
@@ -8,21 +8,34 @@
 
 SfmlRenderWindow::SfmlRenderWindow() {}
 
-void SfmlRenderWindow::init() {
-  // create(sf::VideoMode(disp_width, disp_height, color_depth), Globals::getInstance().getMainVidowTitle(), sf::Style::Default);
+void SfmlRenderWindow::init(sf::WindowHandle handle) {
+
+  // Create the SFML window with the widget handle
+  sf::ContextSettings settings;
+  settings.depthBits = 24;
+  settings.stencilBits = 8;
+  settings.antialiasingLevel = 4;
+  settings.majorVersion = 3;
+  settings.minorVersion = 0;
+  sf::RenderWindow::create(handle, settings);
+
   setVerticalSyncEnabled(true);
-
-
-  // Make the window the active window for OpenGL calls
-  setActive(true);
-
   setPerspective();
 
+  setActive(true);
+  // SFML bug, first time calling isAvaiable it will deactivate the window
+  // https://en.sfml-dev.org/forums/index.php?topic=17243.0
+  sf::Shader::isAvailable();
+  setActive(true);
+  sf::Texture::getMaximumSize();
+  setActive(true);
 
-  wm = WorldMesh();
-  const std::shared_ptr<SimpleMesh> sm = std::make_shared<SimpleMesh>(wm);
-  uint i = addSimpleMesh(sm);
+  world_mesh = std::make_shared<WorldMesh>();
+  // set perspective for world mesh
+  const glm::mat4 pose = glm::mat4(1.0f);
+  world_mesh->setPose(pose);
 
+  setActive(false);
   is_initialized = true;
 }
 
@@ -31,26 +44,32 @@ void SfmlRenderWindow::update() {
   if (!sf::RenderWindow::isOpen() || !is_initialized) {
     return;
   }
+  sf::RenderWindow::clear(sf::Color(100, 100, 100, 255));
   processInputActions();
 
-
-  sf::RenderWindow::clear(sf::Color(100, 100, 100, 255));
-
-
-  // second draw triangles/Meshes
+  // draw mesh / OpenGL
   drawMesh();
 
-  // third reset transformation
-  // Save the current OpenGL render states and matrices.
-  pushGLStates();
-  draw2DStack();
-  // Restore the previously saved OpenGL render states and matrices.
-  popGLStates();
+  // not working :(
+  //  // reset transformation for SFML
+  //  // se:e https://www.sfml-dev.org/tutorials/2.5/window-opengl.php
+  //  // Save the current OpenGL render states and matrices.
+  //  // glPushAttrib(GL_ALL_ATTRIB_BITS);
+  //  // glPushMatrix();
+  //  pushGLStates();
+  //  // resetGLStates();
+  //  draw2DStack();
+  //  // Restore the previously saved OpenGL render states and matrices.
+  //  // glPopAttrib();
+  //  // glPopMatrix();
+  //  popGLStates();
+
+
   sf::RenderWindow::display();
 }
 
-unsigned long SfmlRenderWindow::addMesh(const disp_utils::MeshShaderPair& mesh_shader_pair) {
-  meshes.emplace(std::make_pair(mesh_counter, mesh_shader_pair));
+unsigned long SfmlRenderWindow::addMesh(const std::shared_ptr<Mesh>& simple_mesh) {
+  meshes.emplace(std::make_pair(mesh_counter, simple_mesh));
   return mesh_counter++;
 }
 
@@ -63,26 +82,12 @@ bool SfmlRenderWindow::removeMesh(unsigned long id) {
   return false;
 }
 
-unsigned long SfmlRenderWindow::addSimpleMesh(const std::shared_ptr<SimpleMesh>& simple_mesh) {
-  simple_meshes.emplace(std::make_pair(simple_mesh_counter, simple_mesh));
-  return simple_mesh_counter++;
-}
-
-bool SfmlRenderWindow::removeSimpleMesh(unsigned long id) {
-  auto ptr = simple_meshes.find(id);
-  if (ptr != simple_meshes.end()) {
-    simple_meshes.erase(ptr);
-    return true;
-  }
-  return false;
-}
-
 void SfmlRenderWindow::draw2DStack() {
   sf::RectangleShape rectangle;
   rectangle.setSize(sf::Vector2f(10, 10));
   rectangle.setFillColor(sf::Color::Red);
   rectangle.setPosition(0, 0);
-  draw(rectangle);
+  sf::RenderWindow::draw(rectangle);
 
   const sf::Vector2i mouse_pos =
       sf::Mouse::getPosition() - sf::RenderWindow::getPosition() + STRANGE_MOUSE_OFFSET;
@@ -92,34 +97,29 @@ void SfmlRenderWindow::draw2DStack() {
   mouseUnder.setSize(sf::Vector2f(10, 10));
   mouseUnder.setFillColor(sf::Color::Red);
   mouseUnder.setPosition(mouse_pos.x, mouse_pos.y);
-  draw(mouseUnder);
+  sf::RenderWindow::draw(mouseUnder);
 }
 
 void SfmlRenderWindow::drawMesh() {
   sf::RenderWindow::setActive(true);
 
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  // glEnable(GL_BLEND);
+  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  // glMatrixMode(GL_MODELVIEW);
 
-  glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-  glTranslatef(0, 0, -5.f);
-  glRotatef(clock.getElapsedTime().asSeconds() * 15.f, 1.f, 0.f, 0.f);
-  glRotatef(clock.getElapsedTime().asSeconds() * 10.f, 0.f, 1.f, 0.f);
-  glRotatef(clock.getElapsedTime().asSeconds() * 30.f, 0.f, 0.f, 1.f);
+
+  glTranslatef(0, 0, camera.Zoom);
+
+  // draw world
+  const glm::mat4 view = camera.GetViewMatrix();
+  world_mesh->setView(view);
+  world_mesh->draw();
+
   for (const auto& mesh_shader_pair : meshes) {
-    // Mesh* m = mesh_shader_pair.second.first.get();
-    // Shader* s = mesh_shader_pair.second.second.get();
-    // m->Draw(*s);
-    mesh_shader_pair.second.first.get()->Draw(*mesh_shader_pair.second.second.get());
+    mesh_shader_pair.second->draw();
   }
-  for (const auto& simple_mesh : simple_meshes) {
-    // Mesh* m = mesh_shader_pair.second.first.get();
-    // Shader* s = mesh_shader_pair.second.second.get();
-    // m->Draw(*s);
-    simple_mesh.second.get()->draw();
-  }
-  glLoadIdentity();
+
   sf::RenderWindow::setActive(false);
 }
 
@@ -134,6 +134,15 @@ void SfmlRenderWindow::processInputActions() {
       this->has_focus = true;
     } else if (event.type == sf::Event::LostFocus) {
       this->has_focus = false;
+    } else if (event.type == sf::Event::MouseWheelScrolled) {
+      std::cout << "wheel d: " << event.mouseWheel.delta << std::endl;
+      std::cout << "wheel x: " << event.mouseWheel.x << std::endl;
+      std::cout << "wheel y: " << event.mouseWheel.y << std::endl;
+    } else if (event.type == sf::Event::MouseWheelMoved) {
+      std::cout << "wheelscrl d: " << event.mouseWheelScroll.delta << std::endl;
+      std::cout << "wheelscrl x: " << event.mouseWheelScroll.x << std::endl;
+      std::cout << "wheelscrl y: " << event.mouseWheelScroll.y << std::endl;
+      std::cout << "wheelscrl w: " << event.mouseWheelScroll.wheel << std::endl;
     }
   }
   if (has_focus) {
@@ -199,8 +208,13 @@ void SfmlRenderWindow::processMouseAction() {
   last_mouse_pos = mouse_pos;
 }
 
+void SfmlRenderWindow::scrollHack(float f) { camera.ProcessMouseScroll(f); }
 void SfmlRenderWindow::dragMouseLeft(const sf::Vector2i& diff) {
-  F_DEBUG("draggin left x: %d y: %d", diff.x, diff.y);
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
+    camera.ProcessShift(diff.x, diff.y);
+  } else {
+    camera.ProcessRotation(diff.x, diff.y);
+  }
 }
 void SfmlRenderWindow::dragMouseRight(const sf::Vector2i& diff) {
   F_DEBUG("draggin right x: %d y: %d", diff.x, diff.y);
@@ -234,25 +248,21 @@ void SfmlRenderWindow::setPerspective() {
   glClearDepth(1.);
 #endif
 
-  ///
-  // TODO NEEDED EVERYTIME? PUT INTO DIFERENT FUNCTION?
   // Disable lighting
   glDisable(GL_LIGHTING);
   // Configure the viewport (the same size as the window)
   glViewport(0, 0, sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
-  ///
-
 
   // Setup a perspective projection
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 #ifdef SFML_OPENGL_ES
-  GLfloat ratio = static_cast<float>(sf::RenderWindow::getSize().x) /
-                  sf::RenderWindow::getSize().y;
+  const GLfloat ratio = static_cast<float>(sf::RenderWindow::getSize().x) /
+                        sf::RenderWindow::getSize().y;
   glFrustumf(-ratio, ratio, -1.f, 1.f, 1.f, 500.f);
 #else
-  GLdouble ratio = static_cast<double>(sf::RenderWindow::getSize().x) /
-                   sf::RenderWindow::getSize().y;
+  const GLdouble ratio = static_cast<double>(sf::RenderWindow::getSize().x) /
+                         sf::RenderWindow::getSize().y;
   glFrustum(-ratio, ratio, -1., 1., 1., 500.);
 #endif
 

@@ -16,3 +16,6 @@
 [submodule "src/warning_guards"]
 	path = src/warning_guards
 	url = https://github.com/Jakobimatrix/warning_guards
+[submodule "src/stb/include/stb"]
+	path = src/stb/include/stb
+	url = https://github.com/Jakobimatrix/stb.git

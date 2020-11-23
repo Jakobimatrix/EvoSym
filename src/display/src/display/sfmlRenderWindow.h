@@ -1,32 +1,34 @@
 #ifndef SFML_RENDER_WINDOW
 #define SFML_RENDER_WINDOW
 
+
+#include <display_elements/worldMesh.h>
+
 #include <SFML/Graphics.hpp>
-#include <cmath>
-#include <display/displayUtils.hpp>
-#include <display/worldMesh.hpp>
 #include <chrono>
+#include <cmath>
+#include <display_elements/camera.hpp>
+#include <display_elements/displayUtils.hpp>
 #include <timer/timer.hpp>
 
-class SfmlRenderWindow : public sf::RenderWindow{
-public:
+class SfmlRenderWindow : public sf::RenderWindow {
+ public:
   SfmlRenderWindow();
 
-  void init();
+  void init(sf::WindowHandle handle);
 
   void update();
 
-  [[nodiscard]] unsigned long addMesh(const disp_utils::MeshShaderPair& mesh_shader_pair);
+  [[nodiscard]] unsigned long addMesh(const std::shared_ptr<Mesh> &simple_mesh);
 
   [[nodiscard]] bool removeMesh(unsigned long id);
 
-  [[nodiscard]] unsigned long addSimpleMesh(const std::shared_ptr<SimpleMesh>& simple_mesh);
-
-  [[nodiscard]] bool removeSimpleMesh(unsigned long id);
-
   void onResize() override;
 
-  bool isInitialized(){return is_initialized;}
+  bool isInitialized() { return is_initialized; }
+
+  // sfml can not detect mouse wheel scroll, this baaad hack
+  void scrollHack(float f);
 
  private:
   void processInputActions();
@@ -43,24 +45,24 @@ public:
   void draw2DStack();
 
   // SFML entities
+  Camera camera = Camera();
   sf::Vector2i last_mouse_pos = sf::Vector2i(0, 0);
-  const sf::Vector2i STRANGE_MOUSE_OFFSET = sf::Vector2i(0,60);
+  const sf::Vector2i STRANGE_MOUSE_OFFSET = sf::Vector2i(0, 60);
   sf::Clock clock;
 
 
-  std::map<unsigned long, const disp_utils::MeshShaderPair> meshes;
+  std::map<unsigned long, const std::shared_ptr<Mesh>> meshes;
   unsigned long mesh_counter = 0;
-  std::map<unsigned long, const std::shared_ptr<SimpleMesh>> simple_meshes;
-  unsigned long simple_mesh_counter = 0;
 
-  WorldMesh wm;
+  std::shared_ptr<WorldMesh> world_mesh = nullptr;
   bool is_initialized = false;
   bool has_focus = true;
 
   tool::SingleTimer mouse_left_timer;
   tool::SingleTimer mouse_right_timer;
 
-  static constexpr std::chrono::milliseconds MAX_KLICK_DURATION = std::chrono::milliseconds(300);
+  static constexpr std::chrono::milliseconds MAX_KLICK_DURATION =
+      std::chrono::milliseconds(300);
 };
 
 #endif

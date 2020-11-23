@@ -19,6 +19,7 @@ class DisplayQt : public QMainWindow, public Display {
   void closeEvent(QCloseEvent *event) override;
   void resizeEvent(QResizeEvent *event) override;
   void moveEvent(QMoveEvent *event) override;
+  void wheelEvent(QWheelEvent *event) override;
 
  private:
   void setStatus(const std::string &msg, int timeout = 0) override;

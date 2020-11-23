@@ -145,21 +145,27 @@ class Shader {
     glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
   }
 
+  bool isReady() const { return ready; }
+
  private:
+  bool ready = false;
   // utility function for checking shader compilation/linking errors.
   // ------------------------------------------------------------------------
   void checkCompileErrors(GLuint shader, std::string type) {
+    ready = true;
     GLint success;
     GLchar infoLog[1024];
     if (type != "PROGRAM") {
       glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
       if (!success) {
+        ready = false;
         glGetShaderInfoLog(shader, 1024, nullptr, infoLog);
         F_ERROR("SHADER_COMPILATION_ERROR of type: %s \n %s", type.c_str(), infoLog);
       }
     } else {
       glGetProgramiv(shader, GL_LINK_STATUS, &success);
       if (!success) {
+        ready = false;
         glGetProgramInfoLog(shader, 1024, nullptr, infoLog);
         F_ERROR("PROGRAM_LINKING_ERROR of type: %s \n %s", type.c_str(), infoLog);
       }

@@ -1,9 +1,8 @@
 #ifndef WORLD
 #define WORLD
 
-#include <display/displayUtils.hpp>
-#include <display/mesh.hpp>
-#include <display/shader.hpp>
+#include <display_elements/worldMesh.h>
+
 #include <memory>
 #include <string>
 
@@ -19,9 +18,7 @@ class World {
 
   void update();
 
-  disp_utils::MeshShaderPair getWorldsMeshShaderPair() const {
-    return disp_utils::makeMeshShaderPair(world_mesh, world_shader);
-  }
+  std::shared_ptr<Mesh> getWorldsMesh() const { return world_mesh; }
 
   [[nodiscard]] bool save(const std::string& file);
   [[nodiscard]] bool load(const std::string& file);
@@ -29,6 +26,5 @@ class World {
 
  private:
   std::shared_ptr<Mesh> world_mesh = nullptr;
-  std::shared_ptr<Shader> world_shader = nullptr;
 };
 #endif

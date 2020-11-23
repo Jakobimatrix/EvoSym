@@ -3,7 +3,7 @@
 #include <QApplication>
 #include <globals/globals.hpp>
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 
   QApplication app(argc, argv);
   app.setApplicationName(Globals::getInstance().getMainVidowTitle().c_str());

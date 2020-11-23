@@ -7,7 +7,7 @@ target_link_libraries(world_lib
   random_generator
   homography_lib
   settings_lib
-  pre_display_lib
+  display_elements_lib
   globals_lib
   Eigen3::Eigen)
 

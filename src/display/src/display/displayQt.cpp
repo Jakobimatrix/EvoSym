@@ -43,6 +43,12 @@ void DisplayQt::moveEvent(QMoveEvent *event) {
   QMainWindow::moveEvent(event);
 }
 
+void DisplayQt::wheelEvent(QWheelEvent *event) {
+  // delta is +-120
+  const float f = event->delta() / 48;
+  sfml_view->scrollHack(f);
+}
+
 bool DisplayQt::askYesNoQuestion(const std::string &question, const std::string &title) {
   QMessageBox::StandardButton ret;
   ret = QMessageBox::question(

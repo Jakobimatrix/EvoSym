@@ -31,11 +31,8 @@ void QSfmlCanvas::showEvent(QShowEvent*) {
     XFlush(QX11Info::display());
 #endif
 
-    // Create the SFML window with the widget handle
-    sf::RenderWindow::create(winId());
-
     // init sfml
-    init();
+    init(winId());
 
     // Setup the timer to trigger a refresh at specified framerate
     connect(&timer, SIGNAL(timeout()), this, SLOT(repaint()));
