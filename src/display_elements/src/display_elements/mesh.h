@@ -10,13 +10,12 @@ THIRD_PARTY_HEADERS_BEGIN
 THIRD_PARTY_HEADERS_END
 
 #include <array>
+#include <display_elements/shader.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <memory>
 #include <string>
 #include <vector>
-
-#include <display_elements/shader.hpp>
 
 struct Vertex {
   // position
@@ -67,7 +66,7 @@ class Mesh {
             const std::string& texture_path);
 
   // render the mesh
-  void draw() ;
+  void draw();
 
   /*
   [[nodiscard]] bool setShaderSf(std::shared_ptr<sf::Shader>& ptr) {
@@ -94,14 +93,17 @@ class Mesh {
   [[nodiscard]] bool loadShaderSf(const std::string& vertex_shader_file,
                                   const std::string& fragment_shader_file) {
     shader_sf = std::make_shared<sf::Shader>();
-    const bool success = shader_sf->loadFromFile(vertex_shader_file,
-  fragment_shader_file); if (!success) { shader_sf.reset();
+    const bool success = shader_sf->loadFromFile(vertex_shader_file, fragment_shader_file);
+    if (!success) {
+      shader_sf.reset();
     }
+    connectShader(shader_sf->getNativeHandle());
     return success;
   }
 
   [[nodiscard]] bool setShader(std::shared_ptr<Shader>& ptr) {
     shader = ptr;
+    connectShader(shader->ID);
     return true;
   }
 
@@ -113,8 +115,14 @@ class Mesh {
       shader.reset();
       return false;
     }
+    connectShader(shader->ID);
     return true;
   }
+
+  void connectShader(unsigned int shaderProgram);
+
+  static void checkError(const char* file, unsigned int line, const char* expression);
+
 
  protected:
   std::shared_ptr<Shader> shader = nullptr;
@@ -137,8 +145,14 @@ class Mesh {
 
   // initializes all the buffer objects/arrays
   void setupMesh();
-
-  void checkError(const std::string& operation);
 };
+
+#ifdef NDEBUG
+#define glCheck(expr) (expr)
+#else
+#define glCheck(expr) \
+  expr;               \
+  Mesh::checkError(__FILE__, __LINE__, #expr);
+#endif
 
 #endif

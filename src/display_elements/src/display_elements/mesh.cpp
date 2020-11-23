@@ -13,6 +13,7 @@ void Mesh::init(std::vector<Vertex> vertices,
   if (is_initialized) {
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
   }
   this->vertices = vertices;
   this->indices = indices;
@@ -56,39 +57,33 @@ void Mesh::draw() {
   }
   */
 
-  glBindTexture(GL_TEXTURE_2D, texture);
-  checkError("draw0");
+  glCheck(glBindTexture(GL_TEXTURE_2D, texture));
   if (shader != nullptr) {
-    shader->use();
+    glCheck(shader->use());
   }
   if (shader_sf != nullptr) {
-    sf::Shader::bind(shader_sf.get());
+    glCheck(sf::Shader::bind(shader_sf.get()));
   }
 
   // draw mesh
-  glBindVertexArray(VAO);
-  checkError("draw1");
-  glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
-  checkError("draw");
-  glBindVertexArray(0);
-  checkError("draw2");
+  glCheck(glBindVertexArray(VAO));
+  glCheck(glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr));
+  glCheck(glBindVertexArray(0));
 
   if (shader != nullptr) {
-    glUseProgram(0);
+    glCheck(glUseProgram(0));
   }
   if (shader_sf != nullptr) {
-    sf::Shader::bind(nullptr);
+    glCheck(sf::Shader::bind(nullptr));
   }
-  checkError("draw3");
 
   // always good practice to set everything back to defaults once configured.
-  glActiveTexture(GL_TEXTURE0);
-  checkError("draw4");
+  glCheck(glActiveTexture(GL_TEXTURE0));
 }
 
 void Mesh::loadTexture(const std::string& texture_path) {
-  glGenTextures(1, &texture);
-  glBindTexture(GL_TEXTURE_2D, texture);  // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
+  glCheck(glGenTextures(1, &texture));
+  glCheck(glBindTexture(GL_TEXTURE_2D, texture));  // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
   // set the texture wrapping parameters
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);  // set texture wrapping to GL_REPEAT (default wrapping method)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -100,125 +95,127 @@ void Mesh::loadTexture(const std::string& texture_path) {
 
   unsigned char* data = stbi_load(texture_path.c_str(), &width, &height, &nrChannels, 0);
   if (data) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    glCheck(glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data));
+    glCheck(glGenerateMipmap(GL_TEXTURE_2D));
   } else {
     F_ERROR("Failed to load textre from %s.", texture_path.c_str());
   }
   stbi_image_free(data);
-  checkError("loadTexture");
 }
 
 // initializes all the buffer objects/arrays
 void Mesh::setupMesh() {
   // create buffers/arrays
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
-  glGenBuffers(1, &EBO);
+  glCheck(glGenVertexArrays(1, &VAO));
+  glCheck(glGenBuffers(1, &VBO));
+  glCheck(glGenBuffers(1, &EBO));
 
-  glBindVertexArray(VAO);
+  glCheck(glBindVertexArray(VAO));
   // load data into vertex buffers
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glCheck(glBindBuffer(GL_ARRAY_BUFFER, VBO));
   // A great thing about structs is that their memory layout is sequential for all its items.
   // The effect is that we can simply pass a pointer to the struct and it translates perfectly to a glm::vec3/2 array which
   // again translates to 3/2 floats which translates to a byte array.
-  glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+  glCheck(glBufferData(
+      GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW));
 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(
-      GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+  glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO));
+  glCheck(glBufferData(
+      GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW));
+}
+
+void Mesh::connectShader(unsigned int shaderProgram) {
+  /*if (is_initialized) {
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+    WARNING(
+        "You connect a shader after setting up the Mesh. I have to "
+        "reinitialize the mesh...");
+  }
+  Mesh::setupMesh();*/
+
+  auto assignShaderVariable = [&shaderProgram](const std::string& var_name,
+                                               int num_values,
+                                               void* start_position) {
+    const int variable_position = glGetAttribLocation(shaderProgram, var_name.c_str());
+    if (variable_position < 0) {
+      // compiler did optimize away the variable
+      F_WARNING(
+          "Trying to connect to shader variable %s failed. Variable not found",
+          var_name.c_str());
+      return;
+    }
+    glCheck();
+    const unsigned int u_pos = static_cast<unsigned int>(variable_position);
+    glCheck(glEnableVertexAttribArray(u_pos));
+    glCheck(glVertexAttribPointer(
+        u_pos, num_values, GL_FLOAT, GL_FALSE, sizeof(Vertex), start_position));
+  };
 
   // set the vertex attribute pointers
   // vertex Positions
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(POSITION_LOCATION,
-                        COORDS_PER_VERTEX,
-                        GL_FLOAT,
-                        GL_FALSE,
-                        sizeof(Vertex),
-                        reinterpret_cast<void*>(0));
+  assignShaderVariable("meshPos", COORDS_PER_VERTEX, reinterpret_cast<void*>(0));
+
   // vertex normals
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(NORMAL_LOCATION,
-                        COORDS_PER_VERTEX,
-                        GL_FLOAT,
-                        GL_FALSE,
-                        sizeof(Vertex),
-                        reinterpret_cast<void*>(offsetof(Vertex, Normal)));
+  assignShaderVariable(
+      "meshNormal", COORDS_PER_VERTEX, reinterpret_cast<void*>(offsetof(Vertex, Normal)));
+
   // vertex texture coords
-  glEnableVertexAttribArray(2);
-  glVertexAttribPointer(TEXTURE_LOCATION,
-                        COORDS_PER_TEXTURE,
-                        GL_FLOAT,
-                        GL_FALSE,
-                        sizeof(Vertex),
-                        reinterpret_cast<void*>(offsetof(Vertex, TexCoords)));
+  assignShaderVariable("meshTexture",
+                       COORDS_PER_TEXTURE,
+                       reinterpret_cast<void*>(offsetof(Vertex, TexCoords)));
+
   // vertex tangent
-  glEnableVertexAttribArray(3);
-  glVertexAttribPointer(TANGENT_LOCATION,
-                        COORDS_PER_VERTEX,
-                        GL_FLOAT,
-                        GL_FALSE,
-                        sizeof(Vertex),
-                        reinterpret_cast<void*>(offsetof(Vertex, Tangent)));
+  assignShaderVariable("meshTangent",
+                       COORDS_PER_VERTEX,
+                       reinterpret_cast<void*>(offsetof(Vertex, Tangent)));
+
   // vertex bitangent
-  glEnableVertexAttribArray(4);
-  glVertexAttribPointer(BITTANGENT_LOCATION,
-                        COORDS_PER_VERTEX,
-                        GL_FLOAT,
-                        GL_FALSE,
-                        sizeof(Vertex),
-                        reinterpret_cast<void*>(offsetof(Vertex, Bitangent)));
+  assignShaderVariable("meshBittangent",
+                       COORDS_PER_VERTEX,
+                       reinterpret_cast<void*>(offsetof(Vertex, Bitangent)));
 
-  glBindVertexArray(0);
-
-  checkError("setUpMesh");
+  glCheck(glBindVertexArray(0));
 }
 
-void Mesh::checkError(const std::string& operation) {
+void Mesh::checkError(const char* file, unsigned int line, const char* expression) {
   GLenum e;
   do {
     e = glGetError();
-    if (e == GL_INVALID_ENUM) {
-      F_ERROR(
-          "[%s] An unacceptable value is specified for an enumerated argument. "
-          "The offending command is ignored and has no other side effect than "
-          "to set the error flag.",
-          operation.c_str());
+    std::string error;
+    if (e == GL_NO_ERROR) {
+      return;
+    } else if (e == GL_INVALID_ENUM) {
+      error = "An unacceptable value is specified for an enumerated argument.";
     } else if (e == GL_INVALID_VALUE) {
-      F_ERROR(
-          "[%s] A numeric argument is out of range. The offending command is "
-          "ignored and has no other side effect than to set the error flag.",
-          operation.c_str());
+      error = "A numeric argument is out of range.";
     } else if (e == GL_INVALID_OPERATION) {
-      F_ERROR(
-          "[%s] The specified operation is not allowed in the current state. "
-          "The offending command is ignored and has no other side effect than "
-          "to set the error flag",
-          operation.c_str());
+      error = "The specified operation is not allowed in the current state. ";
     } else if (e == GL_INVALID_FRAMEBUFFER_OPERATION) {
-      F_ERROR(
-          "[%s] The framebuffer object is not complete. The offending command "
-          "is ignored and has no other side effect than to set the error flag.",
-          operation.c_str());
+      error = "The framebuffer object is not complete.";
     } else if (e == GL_OUT_OF_MEMORY) {
-      F_ERROR(
-          "[%s] There is not enough memory left to execute the command. The "
-          "state of the GL is undefined, except for the state of the error "
-          "flags, after this error is recorded.",
-          operation.c_str());
+      error = "There is not enough memory left to execute the command.";
     } else if (e == GL_STACK_UNDERFLOW) {
-      F_ERROR(
-          "[%s] An attempt has been made to perform an operation that would "
-          "cause an internal stack to underflow.",
-          operation.c_str());
+      error =
+          "An attempt has been made to perform an operation that would "
+          "cause an internal stack to underflow.";
     } else if (e == GL_STACK_OVERFLOW) {
-      F_ERROR(
-          "[%s] An attempt has been made to perform an operation that would "
-          "cause an internal stack to overflow.",
-          operation.c_str());
-    } else if (e != GL_NO_ERROR) {
-      F_ERROR("[%s] An unknown error [%u] occured.", operation.c_str(), e);
+      error =
+          "An attempt has been made to perform an operation that would "
+          "cause an internal stack to overflow.";
+    } else {
+      error = "An unknown error " + std::to_string(e) + " occured.";
     }
+    F_ERROR(
+        "\nAn OpenGL call failed in Line: %u %s \nFunction:\n %s "
+        "\nError "
+        "description: %s\n",
+        line,
+        file,
+        expression,
+        error.c_str());
+
   } while (e != GL_NO_ERROR);
 }

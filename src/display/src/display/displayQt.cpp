@@ -101,7 +101,6 @@ void DisplayQt::open() { WARNING("TODO"); }
 
 
 void DisplayQt::about() {
-  WARNING("TODO");
   QMessageBox::about(this,
                      tr("About EvoSym"),
                      tr("Here <b>could</b> be your advertisement "
@@ -148,7 +147,6 @@ void DisplayQt::createActions() {
 }
 
 void DisplayQt::createMenus() {
-  WARNING("TODO");
   fileMenu = menuBar()->addMenu(tr("&File"));
   if (fileMenu == nullptr) {
     ERROR("filemenue is nullptr :(");
@@ -174,7 +172,6 @@ void DisplayQt::createMenus() {
 }
 
 void DisplayQt::createToolBars() {
-  WARNING("TODO");
   fileToolBar = addToolBar(tr("File"));
   fileToolBar->addAction(newAct);
   fileToolBar->addAction(openAct);

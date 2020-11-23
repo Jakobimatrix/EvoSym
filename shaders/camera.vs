@@ -1,11 +1,10 @@
 #version 130
 
-// for location definition see display/mesh.h
-layout (location=0) in vec3 meshPos;
-layout (location=1) in vec3 meshNormal;
-layout (location=2) in vec2 meshTexture;
-layout (location=3) in vec3 meshTangent;
-layout (location=4) in vec3 meshBittangent;
+in highp vec3 meshPos;
+in lowp vec3 meshNormal;
+in mediump vec2 meshTexture;
+in lowp vec3 meshTangent;
+in lowp vec3 meshBittangent;
 
 uniform mat4 pose;
 uniform mat4 view;
@@ -15,8 +14,7 @@ out vec4 vertexColor; // specify a color output to the fragment shader
 
 void main()
 {
-//
-1
+// 1
   //gl_Position = view * pose * vec4(aPos, 1.0f);
   // gl_Position = vec4(meshPos, 1.0f);
 
@@ -30,7 +28,7 @@ void main()
     //// forward the vertex color
     //gl_FrontColor = gl_Color;
 // 3
-    gl_Position = vec4(meshPos, 1.0); // see how we directly give a vec3 to vec4's constructor
+    gl_Position = view * pose *vec4(meshPos, 1.0);
     vertexColor = vec4(0.5, 0.0, 0.0, 1.0); // set the output variable to a dark-red color
 
 }
