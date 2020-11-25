@@ -4,74 +4,43 @@ void WorldMesh::loadVertices() {
 
 
   std::vector<Vertex> verices_temp;
+  verices_temp.reserve(6 * 6);
   // clang-format off
-   verices_temp.emplace_back(Vertex({-0.6f, -0.6f, -0.6f,
-                                0,0,1,
-                                0,0,
-                                1,0,0,
-                                0,1,0}));
-   verices_temp.emplace_back(Vertex({-0.6f,  0.6f, -0.6f,
-                                0,0,1,
-                                1,0,
-                                1,0,0,
-                                0,1,0}));
-   verices_temp.emplace_back(Vertex({-0.6f, -0.6f,  0.6f,
-                                0,0,1,
-                                0,1,
-                                1,0,0,
-                                0,1,0}));
-   verices_temp.emplace_back(Vertex({-0.6f, -0.6f,  0.6f,
-                                0,0,1,
-                                0,1,
-                                1,0,0,
-                                0,1,0}));
-   verices_temp.emplace_back(Vertex({-0.6f,  0.6f, -0.6f,
-                                0,0,1,
-                                1,0,
-                                1,0,0,
-                                0,1,0}));
-   verices_temp.emplace_back(Vertex({-0.6f,  0.6f,  0.6f,
-                                0,0,1,
-                                1,1,
-                                1,0,0,
-                                0,1,0}));
 
+  std::array<float, 33> alg_vertex =
+  {{1.f, -0.6f, -0.6f,
+    1.f,  0.6f, -0.6f,
+    1.f, -0.6f,  0.6f,
+    1.f, -0.6f,  0.6f,
+    1.f,  0.6f, -0.6f,
+    1.f,  0.6f,  0.6f}};
 
-   verices_temp.emplace_back(Vertex({0.6f, -0.6f, -0.6f,
-                                0,0,1,
-                                0,0,
-                                1,0,0,
-                                0,1,0}));
-   verices_temp.emplace_back(Vertex({0.6f,  0.6f, -0.6f,
-                                0,0,1,
-                                1,0,
-                                1,0,0,
-                                0,1,0}));
-   verices_temp.emplace_back(Vertex({0.6f, -0.6f,  0.6f,
-                                0,0,1,
-                                0,1,
-                                1,0,0,
-                                0,1,0}));
-   verices_temp.emplace_back(Vertex({0.6f, -0.6f,  0.6f,
-                                0,0,1,
-                                0,1,
-                                1,0,0,
-                                0,1,0}));
-   verices_temp.emplace_back(Vertex({0.6f,  0.6f, -0.6f,
-                                0,0,1,
-                                1,0,
-                                1,0,0,
-                                0,1,0}));
-   verices_temp.emplace_back(Vertex({0.6f,  0.6f,  0.6f,
-                                0,0,1,
-                                1,1,
-                                1,0,0,
-                                0,1,0}));
+   std::array<float, 6> vz_x = {{1,-1,1,1,1,1}};
+   std::array<float, 6> vz_y = {{1,1,1,-1,1,1}};
+   std::array<float, 6> vz_z = {{1,1,1,1,1,-1}};
 
+   std::array<unsigned int, 6> x_offset = {{0,0,1,1,2,2}};
+   std::array<unsigned int, 6> y_offset = {{1,1,2,2,0,0}};
+   std::array<unsigned int, 6> z_offset = {{2,2,0,0,1,1}};
+
+   for(unsigned int site = 0; site < 6; site++){
+      for(unsigned int v = 0; v < 6; v++){
+        float x = vz_x[site] * alg_vertex[v*3 + x_offset[site]];
+        float y = vz_y[site] * alg_vertex[v*3 + y_offset[site]];
+        float z = vz_z[site] * alg_vertex[v*3 + z_offset[site]];
+        verices_temp.emplace_back(Vertex({
+                                    x,y,z,
+                                    0,0,1,
+                                    0,0,
+                                    1,0,0,
+                                    0,1,0}));
+      }
+   }
 
     //clang-format on
 
     std::vector<unsigned int> indices_temp;
+    indices_temp.reserve(verices_temp.size());
     for(unsigned int i = 0; i < verices_temp.size(); i++){
       indices_temp.push_back(i);
     }
