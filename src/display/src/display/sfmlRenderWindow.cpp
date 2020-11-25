@@ -19,6 +19,8 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
   settings.minorVersion = 0;
   sf::RenderWindow::create(handle, settings);
 
+  camera.setPosition(0, 0, 0);
+
   setVerticalSyncEnabled(true);
   setPerspective();
 
@@ -38,8 +40,17 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
 
   world_mesh = std::make_shared<WorldMesh>();
   // set perspective for world mesh
-  const glm::mat4 pose = glm::mat4(1.0f);
+  const Eigen::Affine3d pose = Eigen::Affine3d::Identity();
   world_mesh->setPose(pose);
+  // like the "lense" we are looking through
+  glm::mat4 projection =
+      glm::perspective(glm::radians(45.f),
+                       static_cast<float>(sf::RenderWindow::getSize().x) /
+                           sf::RenderWindow::getSize().y,
+                       0.1f,
+                       100.0f);
+  const Eigen::Affine3d projection_eigen = utils::glmMat2EigenAffine(projection);
+  world_mesh->setProjection(projection_eigen);
 
   setActive(false);
   is_initialized = true;
@@ -114,15 +125,9 @@ void SfmlRenderWindow::drawMesh() {
   // glMatrixMode(GL_MODELVIEW);
 
   // draw world
-  const glm::mat4 view = camera.GetViewMatrix();
-  world_mesh->setView(view);
-  const glm::mat4 projection =
-      glm::perspective(glm::radians(camera.Zoom),
-                       static_cast<float>(sf::RenderWindow::getSize().x) /
-                           sf::RenderWindow::getSize().y,
-                       0.1f,
-                       100.0f);
-  world_mesh->setProjection(projection);
+  world_mesh->setView(camera.GetViewMatrix());
+  std::cout << "\n\n" << camera.GetViewMatrix().matrix() << "\n\n" << std::endl;
+
   world_mesh->draw();
 
   for (const auto& mesh_shader_pair : meshes) {

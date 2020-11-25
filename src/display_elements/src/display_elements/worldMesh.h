@@ -1,9 +1,11 @@
 #ifndef WORLD_MESH
 #define WORLD_MESH
 
+#include <Eigen/Geometry>
 #include <glm/gtc/type_ptr.hpp>
 #include <globals/globals.hpp>
 #include <globals/macros.hpp>
+#include <utils/eigen_glm_conversation.hpp>
 
 #include "mesh.h"
 
@@ -15,53 +17,56 @@ class WorldMesh : public Mesh {
     loadShader();
   }
 
-  void setPose(const glm::mat4 &pose) {
+  void setPose(const Eigen::Affine3d &pose) {
     if (shader != nullptr) {
+      const glm::mat4 pose_glm = utils::EigenAffine2GlmMat(pose);
       glCheck(shader->use());
-      glCheck(shader->setMat4("pose", pose));
+      glCheck(shader->setMat4("pose", pose_glm));
       glUseProgram(0);
     }
 
     if (shader_sf != nullptr) {
-      const float *pSource = reinterpret_cast<const float *>(glm::value_ptr(pose));
+      const float *pSource = reinterpret_cast<const float *>(pose.data());
       // TODO better solution for conversation?
-      sf::Glsl::Mat4 todo(pSource);
+      sf::Glsl::Mat4 pose_glsl(pSource);
       glCheck(sf::Shader::bind(shader_sf.get()));
-      glCheck(shader_sf->setUniform("pose", todo));
+      glCheck(shader_sf->setUniform("pose", pose_glsl));
       sf::Shader::bind(nullptr);
     }
   }
 
-  void setView(const glm::mat4 &view) {
+  void setView(const Eigen::Affine3d &view) {
     if (shader != nullptr) {
+      const glm::mat4 view_glm = utils::EigenAffine2GlmMat(view);
       shader->use();
-      shader->setMat4("view", view);
+      shader->setMat4("view", view_glm);
       glUseProgram(0);
     }
 
     if (shader_sf != nullptr) {
-      const float *pSource = reinterpret_cast<const float *>(glm::value_ptr(view));
+      const float *pSource = reinterpret_cast<const float *>(view.data());
       // TODO better solution for conversation?
-      sf::Glsl::Mat4 todo(pSource);
+      sf::Glsl::Mat4 view_glsl(pSource);
       glCheck(sf::Shader::bind(shader_sf.get()));
-      glCheck(shader_sf->setUniform("view", todo));
+      glCheck(shader_sf->setUniform("view", view_glsl));
       sf::Shader::bind(nullptr);
     }
   }
 
-  void setProjection(const glm::mat4 &projection) {
+  void setProjection(const Eigen::Affine3d &projection) {
     if (shader != nullptr) {
+      const glm::mat4 projection_glm = utils::EigenAffine2GlmMat(projection);
       shader->use();
-      shader->setMat4("projection", projection);
+      shader->setMat4("projection", projection_glm);
       glUseProgram(0);
     }
 
     if (shader_sf != nullptr) {
-      const float *pSource = reinterpret_cast<const float *>(glm::value_ptr(projection));
+      const float *pSource = reinterpret_cast<const float *>(projection.data());
       // TODO better solution for conversation?
-      sf::Glsl::Mat4 todo(pSource);
+      sf::Glsl::Mat4 projection_glsl(pSource);
       glCheck(sf::Shader::bind(shader_sf.get()));
-      glCheck(shader_sf->setUniform("projection", todo));
+      glCheck(shader_sf->setUniform("projection", projection_glsl));
       sf::Shader::bind(nullptr);
     }
   }

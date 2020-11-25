@@ -45,7 +45,7 @@ class SfmlRenderWindow : public sf::RenderWindow {
   void draw2DStack();
 
   // SFML entities
-  Camera camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f));
+  Camera camera = Camera();
   sf::Vector2i last_mouse_pos = sf::Vector2i(0, 0);
   const sf::Vector2i STRANGE_MOUSE_OFFSET = sf::Vector2i(0, 60);
   sf::Clock clock;

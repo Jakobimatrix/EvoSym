@@ -3,120 +3,67 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-#include <glad/glad.h>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include <Eigen/Core>
 #include <globals/macros.hpp>
+#include <iostream>
+#include <utils/eigen_conversations.hpp>
 #include <vector>
 
-enum Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT };
 
-// Default camera values
-const float YAW = -90.0f;
-const float PITCH = 0.0f;
-const float SPEED = 2.5f;
-const float SENSITIVITY = 0.1f;
-const float ZOOM = 45.0f;
-
-
-// An abstract camera class that processes input and calculates the corresponding Euler Angles, Vectors and Matrices for use in OpenGL
 class Camera {
  public:
-  // camera Attributes
-  glm::vec3 Position;
-  glm::vec3 Front;
-  glm::vec3 Up;
-  glm::vec3 Right;
-  glm::vec3 WorldUp;
-  // euler Angles
-  float Yaw;
-  float Pitch;
-  // camera options
-  float MovementSpeed;
-  float MouseSensitivity;
-  float Zoom;
-
   // constructor with vectors
-  Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
-         glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),
-         float yaw = YAW,
-         float pitch = PITCH)
-      : Front(glm::vec3(0.0f, 0.0f, -1.0f)),
-        MovementSpeed(SPEED),
-        MouseSensitivity(SENSITIVITY),
-        Zoom(ZOOM) {
-    Position = position;
-    WorldUp = up;
-    Yaw = yaw;
-    Pitch = pitch;
-    updateCameraVectors();
+  Camera() {}
+
+  void setAngles(double roll, double pitch, double yaw) {
+    angles << roll, pitch, yaw;
   }
-  // constructor with scalar values
-  Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch)
-      : Front(glm::vec3(0.0f, 0.0f, -1.0f)),
-        MovementSpeed(SPEED),
-        MouseSensitivity(SENSITIVITY),
-        Zoom(ZOOM) {
-    Position = glm::vec3(posX, posY, posZ);
-    WorldUp = glm::vec3(upX, upY, upZ);
-    Yaw = yaw;
-    Pitch = pitch;
-    updateCameraVectors();
+  void setAngles(const Eigen::Vector3d &angles) { this->angles = angles; }
+
+  void setPosition(double x, double y, double z) { position << x, y, z; }
+
+  void setPosition(const Eigen::Vector3d &pos) { position = pos; }
+
+  // returns the view matrix calculated using Euler Angles and the Position
+  Eigen::Affine3d GetViewMatrix() const {
+    return eigen_utils::pose2Affine(position, angles);
   }
 
-  // returns the view matrix calculated using Euler Angles and the LookAt Matrix
-  glm::mat4 GetViewMatrix() {
-    // F_DEBUG("Up: [%f, %f, %f]", Up.x, Up.y, Up.z);
-    // F_DEBUG("center: [%f, %f, %f]", (Position + Front).x, (Position +
-    // Front).y, (Position + Front).z); F_DEBUG("eye: [%f, %f, %f]", Position.x,
-    // Position.y, Position.z); DEBUG("");
-    return glm::lookAt(Position, Position + Front, Up);
+  // shift current view-plane in x and y
+  void ProcessShift(double xoffset, double yoffset) {
+    const Eigen::Vector3d move(xoffset * shift_sensitivity, yoffset * shift_sensitivity, 0);
+    moveXYZ(move);
   }
 
-  // processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
-  void ProcessShift(float xoffset, float yoffset) {
-    xoffset *= MouseSensitivity;
-    yoffset *= MouseSensitivity;
-    Position += Right * xoffset;
-    Position += Front * yoffset;
+  // rotate current camera pose
+  void ProcessRotation(double xoffset, double yoffset) {
+    const Eigen::Matrix3d current_rotation = eigen_utils::rpy2RotationMatrix(angles);
+    const Eigen::Matrix3d additional_rotation = eigen_utils::rpy2RotationMatrix(
+        Eigen::Vector3d(0, yoffset * rotate_sensitivity, xoffset * rotate_sensitivity));
+
+    angles = eigen_utils::RotationMatrix2rpy(current_rotation * additional_rotation);
   }
 
-  // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
-  void ProcessRotation(float xoffset, float yoffset, GLboolean constrainPitch = true) {
-    xoffset *= MouseSensitivity;
-    yoffset *= MouseSensitivity;
-
-    Yaw += xoffset;
-    Pitch += yoffset;
-
-    // make sure that when pitch is out of bounds, screen doesn't get flipped
-    if (constrainPitch) {
-      if (Pitch > 89.0f)
-        Pitch = 89.0f;
-      if (Pitch < -89.0f)
-        Pitch = -89.0f;
-    }
-
-    // update Front, Right and Up Vectors using the updated Euler angles
-    updateCameraVectors();
+  // processes input received from a mouse scroll-wheel event.
+  void ProcessMouseScroll(double dscroll) {
+    const Eigen::Vector3d move(0, 0, dscroll * scroll_sensitivity);
+    moveXYZ(move);
   }
-
-  // processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
-  void ProcessMouseScroll(float dscroll) { Zoom -= dscroll * MouseSensitivity; }
 
  private:
-  // calculates the front vector from the Camera's (updated) Euler Angles
-  void updateCameraVectors() {
-    // calculate the new Front vector
-    glm::vec3 front;
-    front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-    front.y = sin(glm::radians(Pitch));
-    front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-    Front = glm::normalize(front);
-    // also re-calculate the Right and Up vector
-    Right = glm::normalize(glm::cross(Front, WorldUp));  // normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-    Up = glm::normalize(glm::cross(Right, Front));
+  void moveXYZ(const Eigen::Vector3d &xyz) {
+    const Eigen::Matrix3d r = eigen_utils::rpy2RotationMatrix(angles);
+    const Eigen::Vector3d shift_vector = r * xyz;
+    position += shift_vector;
   }
+
+  // camera Attributes
+  Eigen::Vector3d position = Eigen::Vector3d::Zero();  // X,Y,Z
+  Eigen::Vector3d angles = Eigen::Vector3d::Zero();    // R,P,Y
+
+  // camera options
+  double scroll_sensitivity = 0.1;
+  double shift_sensitivity = 0.01;
+  double rotate_sensitivity = 0.01;
 };
 #endif

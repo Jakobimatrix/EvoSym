@@ -7,7 +7,9 @@ target_link_libraries(pre_display_lib INTERFACE
   glad
   ${SFML_LIBRARIES}
   ${SFML_DEPENDENCIES}
-  globals_lib)
+  globals_lib
+  utils_lib
+  Eigen3::Eigen)
 
 target_include_directories(pre_display_lib INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
@@ -22,6 +24,8 @@ target_link_libraries(display_elements_lib
   pre_display_lib
   glad
   stb_lib
-  globals_lib)
+  globals_lib
+  utils_lib
+  Eigen3::Eigen)
 
 target_include_directories(display_elements_lib PUBLIC STATIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
