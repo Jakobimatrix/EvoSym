@@ -50,7 +50,8 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
                        0.1f,
                        100.0f);
   const Eigen::Affine3d projection_eigen = utils::glmMat2EigenAffine(projection);
-  world_mesh->setProjection(projection_eigen);
+  const Eigen::Affine3d no_projection_eigen = Eigen::Affine3d::Identity();
+  world_mesh->setProjection(no_projection_eigen);
 
   setActive(false);
   is_initialized = true;
@@ -126,7 +127,6 @@ void SfmlRenderWindow::drawMesh() {
 
   // draw world
   world_mesh->setView(camera.GetViewMatrix());
-  std::cout << "\n\n" << camera.GetViewMatrix().matrix() << "\n\n" << std::endl;
 
   world_mesh->draw();
 

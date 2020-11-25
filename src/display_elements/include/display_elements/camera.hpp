@@ -62,8 +62,8 @@ class Camera {
   Eigen::Vector3d angles = Eigen::Vector3d::Zero();    // R,P,Y
 
   // camera options
-  double scroll_sensitivity = 0.1;
-  double shift_sensitivity = 0.01;
-  double rotate_sensitivity = 0.01;
+  double scroll_sensitivity = 0.02;
+  double shift_sensitivity = 0.001;
+  double rotate_sensitivity = 0.001;
 };
 #endif
