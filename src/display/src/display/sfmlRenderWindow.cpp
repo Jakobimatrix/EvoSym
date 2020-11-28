@@ -94,13 +94,13 @@ void SfmlRenderWindow::update() {
   //  // Save the current OpenGL render states and matrices.
   //  // glPushAttrib(GL_ALL_ATTRIB_BITS);
   //  // glPushMatrix();
-  pushGLStates();
+  // pushGLStates();
   //  // resetGLStates();
-  draw2DStack();
+  // draw2DStack();
   //  // Restore the previously saved OpenGL render states and matrices.
   //  // glPopAttrib();
   //  // glPopMatrix();
-  popGLStates();
+  // popGLStates();
 
 
   sf::RenderWindow::display();
