@@ -22,7 +22,9 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
   camera.setPosition(0, 0, 0);
 
   setVerticalSyncEnabled(true);
-  setPerspective();
+
+  // Load OpenGL or OpenGL ES entry points using glad
+  gladLoadGLLoader(reinterpret_cast<GLADloadproc>(sf::Context::getFunction));
 
   setActive(true);
   // SFML bug, first time calling isAvaiable it will deactivate the window
@@ -43,15 +45,18 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
   const Eigen::Affine3d pose = Eigen::Affine3d::Identity();
   world_mesh->setPose(pose);
   // like the "lense" we are looking through
-  glm::mat4 projection =
-      glm::perspective(glm::radians(45.f),
-                       static_cast<float>(sf::RenderWindow::getSize().x) /
-                           sf::RenderWindow::getSize().y,
-                       0.1f,
-                       100.0f);
-  const Eigen::Affine3d projection_eigen = utils::glmMat2EigenAffine(projection);
-  const Eigen::Affine3d no_projection_eigen = Eigen::Affine3d::Identity();
-  world_mesh->setProjection(no_projection_eigen);
+  const float ratio = static_cast<float>(sf::RenderWindow::getSize().x) /
+                      sf::RenderWindow::getSize().y;
+  glm::mat4 projection = glm::perspective(
+      glm::radians(30.f),  // The vertical Field of View, in radians: the amount of "zoom". Think "camera lens". Usually between 90° (extra wide) and 30° (quite zoomed in)
+      ratio,  // Aspect Ratio. Depends on the size of your window. Notice that 4/3 == 800/600 == 1280/960, sounds familiar ?
+      0.1f,  // Near clipping plane. Keep as big as possible, or you'll get precision issues.
+      100.0f  // Far clipping plane. Keep as little as possible.
+  );
+
+  Eigen::Affine3d projection_eigen = utils::glmMat2EigenAffine(projection);
+  projection_eigen = Eigen::Affine3d::Identity();
+  world_mesh->setProjection(projection_eigen);
 
   setActive(false);
   is_initialized = true;
@@ -63,9 +68,9 @@ void SfmlRenderWindow::update() {
     return;
   }
   sf::RenderWindow::clear(sf::Color(100, 100, 100, 255));
+
   processInputActions();
 
-  // draw mesh / OpenGL
   drawMesh();
 
   // not working :(
@@ -121,11 +126,15 @@ void SfmlRenderWindow::draw2DStack() {
 void SfmlRenderWindow::drawMesh() {
   sf::RenderWindow::setActive(true);
 
-  // glEnable(GL_BLEND);
-  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  // glMatrixMode(GL_MODELVIEW);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  // Apply some transformations to rotate the cube
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glTranslatef(0.f, 0.f, -200.f);
 
   // draw world
+
   world_mesh->setView(camera.GetViewMatrix());
 
   world_mesh->draw();
@@ -133,6 +142,8 @@ void SfmlRenderWindow::drawMesh() {
   for (const auto& mesh_shader_pair : meshes) {
     mesh_shader_pair.second->draw();
   }
+
+  // glPopMatrix();  // load the unscaled matrix
 
   sf::RenderWindow::setActive(false);
 }
@@ -230,12 +241,15 @@ void SfmlRenderWindow::dragMouseLeft(const sf::Vector2i& diff) {
     camera.ProcessRotation(diff.x, diff.y);
   }
 }
+
 void SfmlRenderWindow::dragMouseRight(const sf::Vector2i& diff) {
   F_DEBUG("draggin right x: %d y: %d", diff.x, diff.y);
 }
+
 void SfmlRenderWindow::leftKlick(const sf::Vector2i& mouse_pos) {
   F_DEBUG("klick left x: %d y: %d", mouse_pos.x, mouse_pos.y);
 }
+
 void SfmlRenderWindow::rightKlick(const sf::Vector2i& mouse_pos) {
   F_DEBUG("klick right x: %d y: %d", mouse_pos.x, mouse_pos.y);
 }
@@ -243,42 +257,23 @@ void SfmlRenderWindow::rightKlick(const sf::Vector2i& mouse_pos) {
 void SfmlRenderWindow::setPerspective() {
   sf::RenderWindow::setActive(true);
 
-  // Load OpenGL or OpenGL ES entry points using glad
-#ifdef SFML_OPENGL_ES
-  // gladLoadGLES1(reinterpret_cast<GLADloadfunc>(sf::Context::getFunction));
-  ERROR("SFML_OPENGL_ES not supported")
-#else
-  // gladLoadGL(reinterpret_cast<GLADloadproc>(sf::Context::getFunction));
-  gladLoadGLLoader(reinterpret_cast<GLADloadproc>(sf::Context::getFunction));
-  // gladLoadGL();
-#endif
+  const GLdouble ratio = static_cast<double>(sf::RenderWindow::getSize().x) /
+                         sf::RenderWindow::getSize().y;
 
-  // Enable Z-buffer read and write
-  glEnable(GL_DEPTH_TEST);
-  glDepthMask(GL_TRUE);
-#ifdef SFML_OPENGL_ES
-  glClearDepthf(1.f);
-#else
-  glClearDepth(1.);
-#endif
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
 
-  // Disable lighting
-  glDisable(GL_LIGHTING);
   // Configure the viewport (the same size as the window)
   glViewport(0, 0, sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
 
-  // Setup a perspective projection
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-#ifdef SFML_OPENGL_ES
-  const GLfloat ratio = static_cast<float>(sf::RenderWindow::getSize().x) /
-                        sf::RenderWindow::getSize().y;
-  glFrustumf(-ratio, ratio, -1.f, 1.f, 1.f, 500.f);
-#else
-  const GLdouble ratio = static_cast<double>(sf::RenderWindow::getSize().x) /
-                         sf::RenderWindow::getSize().y;
-  glFrustum(-ratio, ratio, -1., 1., 1., 500.);
-#endif
+  const double near = 0.1;
+  const double far = 100;
+  const double bottom = -1.0;
+  const double top = 1.0;
+  const double left = -ratio;
+  const double right = ratio;
+  glFrustum(left, right, bottom, top, near, far);
+
 
   sf::RenderWindow::setActive(false);
 }

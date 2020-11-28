@@ -11,9 +11,9 @@ void Mesh::init(std::vector<Vertex> vertices,
                 const std::string& texture_path) {
 
   if (is_initialized) {
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
+    glCheck(glDeleteVertexArrays(1, &VAO));
+    glCheck(glDeleteBuffers(1, &VBO));
+    glCheck(glDeleteBuffers(1, &EBO));
   }
   this->vertices = vertices;
   this->indices = indices;
@@ -83,6 +83,7 @@ void Mesh::draw() {
 
 void Mesh::loadTexture(const std::string& texture_path) {
   glCheck(glGenTextures(1, &texture));
+
   glCheck(glBindTexture(GL_TEXTURE_2D, texture));  // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
   // set the texture wrapping parameters
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);  // set texture wrapping to GL_REPEAT (default wrapping method)
