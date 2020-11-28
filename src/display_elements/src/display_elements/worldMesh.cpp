@@ -16,8 +16,8 @@ void WorldMesh::loadVertices() {
     1.f,  0.6f,  0.6f}};
 
    std::array<float, 6> vz_x = {{1,-1,1,1,1,1}};
-   std::array<float, 6> vz_y = {{1,1,1,-1,1,1}};
-   std::array<float, 6> vz_z = {{1,1,1,1,1,-1}};
+   std::array<float, 6> vz_y = {{1,1,1,1,1,-1}};
+   std::array<float, 6> vz_z = {{1,1,1,-1,1,1}};
 
    std::array<unsigned int, 6> x_offset = {{0,0,1,1,2,2}};
    std::array<unsigned int, 6> y_offset = {{1,1,2,2,0,0}};
