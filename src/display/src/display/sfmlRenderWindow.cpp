@@ -67,10 +67,9 @@ void SfmlRenderWindow::update() {
   if (!sf::RenderWindow::isOpen() || !is_initialized) {
     return;
   }
-  sf::RenderWindow::clear(sf::Color(100, 100, 100, 255));
-
   processInputActions();
 
+  sf::RenderWindow::clear(sf::Color(100, 100, 100, 255));
   drawMesh();
 
   // not working :(
@@ -79,13 +78,13 @@ void SfmlRenderWindow::update() {
   //  // Save the current OpenGL render states and matrices.
   //  // glPushAttrib(GL_ALL_ATTRIB_BITS);
   //  // glPushMatrix();
-  //  pushGLStates();
+  pushGLStates();
   //  // resetGLStates();
-  //  draw2DStack();
+  draw2DStack();
   //  // Restore the previously saved OpenGL render states and matrices.
   //  // glPopAttrib();
   //  // glPopMatrix();
-  //  popGLStates();
+  popGLStates();
 
 
   sf::RenderWindow::display();
@@ -126,15 +125,13 @@ void SfmlRenderWindow::draw2DStack() {
 void SfmlRenderWindow::drawMesh() {
   sf::RenderWindow::setActive(true);
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  // Apply some transformations to rotate the cube
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-  glTranslatef(0.f, 0.f, -200.f);
 
   // draw world
-
   world_mesh->setView(camera.GetViewMatrix());
 
   world_mesh->draw();
@@ -142,8 +139,6 @@ void SfmlRenderWindow::drawMesh() {
   for (const auto& mesh_shader_pair : meshes) {
     mesh_shader_pair.second->draw();
   }
-
-  // glPopMatrix();  // load the unscaled matrix
 
   sf::RenderWindow::setActive(false);
 }
@@ -177,12 +172,13 @@ void SfmlRenderWindow::processInputActions() {
 
 void SfmlRenderWindow::onResize() {
   setPerspective();
-
+  /*
   sf::View view;
   view.setSize(sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
   view.setCenter(sf::RenderWindow::getSize().x / 2.f,
                  sf::RenderWindow::getSize().y / 2.f);
   sf::RenderWindow::setView(view);
+  */
 }
 
 void SfmlRenderWindow::processMouseAction() {

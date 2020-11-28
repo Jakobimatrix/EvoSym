@@ -3,6 +3,8 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include <math.h>
+
 #include <Eigen/Core>
 #include <globals/macros.hpp>
 #include <iostream>
@@ -28,7 +30,7 @@ class Camera {
 
   // returns the view matrix calculated using Euler Angles and the Position
   Eigen::Affine3d GetViewMatrix() const {
-    return eigen_utils::pose2Affine(position, angles).inverse();
+    return eigen_utils::pose2Affine(-position, -angles, std::exp(zoom));
   }
 
   // shift current view-plane in x and y
@@ -48,8 +50,6 @@ class Camera {
   void ProcessMouseScroll(double dscroll) {
     dscroll *= scroll_sensitivity;
     zoom += dscroll;
-    // const Eigen::Vector3d move(0, 0, dscroll);
-    // moveXYZ(move);
   }
 
 
@@ -69,7 +69,7 @@ class Camera {
   // camera Attributes
   Eigen::Vector3d position = Eigen::Vector3d::Zero();  // X,Y,Z
   Eigen::Vector3d angles = Eigen::Vector3d::Zero();    // R,P,Y
-  double zoom = 0;
+  double zoom = 1;
 
   // camera options
   double scroll_sensitivity = 0.01;
