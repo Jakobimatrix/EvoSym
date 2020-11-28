@@ -10,13 +10,35 @@ uniform mat4 pose;
 uniform mat4 view;
 uniform mat4 projection;
 
-out vec4 vertexColor; // specify a color output to the fragment shader
+out vec4 VertexColor;
+out vec2 TexCoord;
 
 
 void main()
 {
     gl_Position = projection* view * pose *vec4(meshPos, 1.0);
-    vertexColor = vec4(0.5, 0.0, 0.0, 0.8); // set the output variable to a dark-red color
+
+    float r,g,b;
+    if(meshPos.x > 0){
+      r = 1;
+    }else{
+      r = 0;
+    }
+
+    if(meshPos.y > 0){
+      g = 1;
+    }else{
+      g = 0;
+    }
+
+    if(meshPos.z > 0){
+      b = 1;
+    }else{
+      b = 0;
+    }
+    VertexColor = vec4(r, g, b, 0.2); // set the output variable to a dark-red color
+
+    TexCoord = meshTexture;
 
 }
 

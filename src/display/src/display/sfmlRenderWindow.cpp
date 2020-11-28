@@ -40,6 +40,16 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
   printf("Version GL: %s\n", glGetString(GL_VERSION));
   printf("Version GLSL: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
+
+  glEnable(GL_DEPTH_TEST);
+  glDepthMask(GL_TRUE);
+  glDepthFunc(GL_LESS);
+  glDepthRange(1, 0);
+
+
+
+  // init mesh
+
   world_mesh = std::make_shared<WorldMesh>();
   // set perspective for world mesh
   const Eigen::Affine3d pose = Eigen::Affine3d::Identity();
@@ -50,8 +60,8 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
   glm::mat4 projection = glm::perspective(
       glm::radians(30.f),  // The vertical Field of View, in radians: the amount of "zoom". Think "camera lens". Usually between 90° (extra wide) and 30° (quite zoomed in)
       ratio,  // Aspect Ratio. Depends on the size of your window. Notice that 4/3 == 800/600 == 1280/960, sounds familiar ?
-      0.1f,  // Near clipping plane. Keep as big as possible, or you'll get precision issues.
-      100.0f  // Far clipping plane. Keep as little as possible.
+      static_cast<float>(near_clipping),  // Near clipping plane. Keep as big as possible, or you'll get precision issues.
+      static_cast<float>(far_clipping)  // Far clipping plane. Keep as little as possible.
   );
 
   Eigen::Affine3d projection_eigen = utils::glmMat2EigenAffine(projection);
@@ -70,6 +80,12 @@ void SfmlRenderWindow::update() {
   processInputActions();
 
   sf::RenderWindow::clear(sf::Color(100, 100, 100, 255));
+  glClearDepth(1);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+  // glEnable(GL_BLEND);
+  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   drawMesh();
 
   // not working :(
@@ -124,9 +140,6 @@ void SfmlRenderWindow::draw2DStack() {
 
 void SfmlRenderWindow::drawMesh() {
   sf::RenderWindow::setActive(true);
-
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -262,13 +275,11 @@ void SfmlRenderWindow::setPerspective() {
   // Configure the viewport (the same size as the window)
   glViewport(0, 0, sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
 
-  const double near = 0.1;
-  const double far = 100;
   const double bottom = -1.0;
   const double top = 1.0;
   const double left = -ratio;
   const double right = ratio;
-  glFrustum(left, right, bottom, top, near, far);
+  glFrustum(left, right, bottom, top, near_clipping, far_clipping);
 
 
   sf::RenderWindow::setActive(false);

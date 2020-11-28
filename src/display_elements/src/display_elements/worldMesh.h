@@ -15,6 +15,7 @@ class WorldMesh : public Mesh {
   WorldMesh() {
     loadVertices();
     loadShader();
+    setTexture();
   }
 
   void setPose(const Eigen::Affine3d &pose) {
@@ -71,11 +72,15 @@ class WorldMesh : public Mesh {
     }
   }
 
-  void setTExture() {
-    // https://learnopengl.com/Model-Loading/Mesh?????
+  void setTexture() {
     if (shader != nullptr) {
-      glCheck(shader->use());
+      shader->use();
+      shader->setInt("texture", texture);
       glUseProgram(0);
+    }
+
+    if (shader_sf != nullptr) {
+      ERROR("To lazy to implement for now");
     }
   }
 

@@ -15,6 +15,14 @@ void WorldMesh::loadVertices() {
     1.f,  0.6f, -0.6f,
     1.f,  0.6f,  0.6f}};
 
+  std::array<float, 12> alg_texture =
+  {{0.f, 0.f,
+    1.f, 0.f,
+    0.f, 1.f,
+    0.f, 1.f,
+    1.f, 0.f,
+    1.f,  1.f}};
+
    std::array<float, 6> vz_x = {{1,-1,1,1,1,1}};
    std::array<float, 6> vz_y = {{1,1,1,1,1,-1}};
    std::array<float, 6> vz_z = {{1,1,1,-1,1,1}};
@@ -28,10 +36,14 @@ void WorldMesh::loadVertices() {
         float x = vz_x[site] * alg_vertex[v*3 + x_offset[site]];
         float y = vz_y[site] * alg_vertex[v*3 + y_offset[site]];
         float z = vz_z[site] * alg_vertex[v*3 + z_offset[site]];
+
+        float text_x = alg_texture[v*2 + 0];
+        float text_y = alg_texture[v*2 + 1];
+
         verices_temp.emplace_back(Vertex({
                                     x,y,z,
                                     0,0,1,
-                                    0,0,
+                                    text_x,text_y,
                                     1,0,0,
                                     0,1,0}));
       }
@@ -44,7 +56,7 @@ void WorldMesh::loadVertices() {
     for(unsigned int i = 0; i < verices_temp.size(); i++){
       indices_temp.push_back(i);
     }
-    std::string texture = Globals::getInstance().getAbsPath2Resources() + "save.png";
+    std::string texture = Globals::getInstance().getAbsPath2Resources() + "wall.jpg";
     init(verices_temp, indices_temp, texture);
 
     // todo reuse vertice

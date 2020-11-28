@@ -50,6 +50,9 @@ class SfmlRenderWindow : public sf::RenderWindow {
   const sf::Vector2i STRANGE_MOUSE_OFFSET = sf::Vector2i(0, 60);
   sf::Clock clock;
 
+  double far_clipping = 10;
+  double near_clipping = 0.1;
+
 
   std::map<unsigned long, const std::shared_ptr<Mesh>> meshes;
   unsigned long mesh_counter = 0;

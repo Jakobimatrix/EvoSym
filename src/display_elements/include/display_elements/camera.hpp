@@ -30,20 +30,31 @@ class Camera {
 
   // returns the view matrix calculated using Euler Angles and the Position
   Eigen::Affine3d GetViewMatrix() const {
-    return eigen_utils::pose2Affine(-position, -angles, std::exp(zoom));
+    Eigen::Affine3d T = eigen_utils::pose2Affine(position, angles, 1);
+    T.inverse();
+    eigen_utils::scaleAffine3d(T, std::exp(zoom));
+    return T;
   }
 
   // shift current view-plane in x and y
   void ProcessShift(double xoffset, double yoffset) {
-    const Eigen::Vector3d move(-xoffset * shift_sensitivity, yoffset * shift_sensitivity, 0);
+    const Eigen::Vector3d move(xoffset * shift_sensitivity, -yoffset * shift_sensitivity, 0);
     moveXYZ(move);
   }
 
   // rotate current camera pose
   void ProcessRotation(double xoffset, double yoffset) {
-    const Eigen::Vector3d rotation(
-        rotate_sensitivity * yoffset, rotate_sensitivity * xoffset, 0);
-    rotateRPY(rotation);
+
+    const Eigen::Vector3d rotation1(0, rotate_sensitivity * xoffset, 0);
+    Eigen::Vector3d rotation2(rotate_sensitivity * yoffset * std::cos(angles(1)),
+                              0,
+                              rotate_sensitivity * yoffset * std::cos(angles(1)));
+
+    Eigen::Matrix3d R = eigen_utils::rpy2RotationMatrix(angles);
+    rotation2 = R * rotation2;
+
+    // rotateRPY(rotation1);
+    rotateRPY(rotation2);
   }
 
   // processes input received from a mouse scroll-wheel event.
@@ -54,21 +65,13 @@ class Camera {
 
 
  private:
-  void moveXYZ(const Eigen::Vector3d &xyz) {
-    const Eigen::Matrix3d r = eigen_utils::rpy2RotationMatrix(angles);
-    const Eigen::Vector3d shift_vector = r * xyz;
-    position += shift_vector;
-  }
+  void moveXYZ(const Eigen::Vector3d &xyz) { position += xyz; }
 
-  void rotateRPY(const Eigen::Vector3d &rpy) {
-    const Eigen::Matrix3d r = eigen_utils::rpy2RotationMatrix(angles);
-    const Eigen::Vector3d rotate_vector = r * rpy;
-    angles += rotate_vector;
-  }
+  void rotateRPY(const Eigen::Vector3d &rpy) { angles += rpy; }
 
   // camera Attributes
   Eigen::Vector3d position = Eigen::Vector3d::Zero();  // X,Y,Z
-  Eigen::Vector3d angles = Eigen::Vector3d::Zero();    // R,P,Y
+  Eigen::Vector3d angles = Eigen::Vector3d(0, 0, 0);   // R,P,Y
   double zoom = 1;
 
   // camera options
