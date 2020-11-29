@@ -9,6 +9,7 @@
 #include <globals/macros.hpp>
 #include <iostream>
 #include <utils/eigen_conversations.hpp>
+#include <utils/math.hpp>
 #include <vector>
 
 
@@ -63,6 +64,10 @@ class Camera {
     zoom += dscroll;
   }
 
+ public:
+  double far_clipping = 1.;
+  double near_clipping = 0.9;
+  double lense_angle_rad = math::deg2Rad(30.);  // something between 30 and 90 looks ok
 
  private:
   void moveXYZ(const Eigen::Vector3d &xyz) { position += xyz; }
@@ -73,6 +78,7 @@ class Camera {
   Eigen::Vector3d position = Eigen::Vector3d::Zero();  // X,Y,Z
   Eigen::Vector3d angles = Eigen::Vector3d(0, 0, 0);   // R,P,Y
   double zoom = 1;
+
 
   // camera options
   double scroll_sensitivity = 0.01;

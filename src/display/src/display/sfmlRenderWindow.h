@@ -28,7 +28,7 @@ class SfmlRenderWindow : public sf::RenderWindow {
   bool isInitialized() { return is_initialized; }
 
   // sfml can not detect mouse wheel scroll, this baaad hack
-  void scrollHack(float f);
+  void scrollHack(double f);
 
  private:
   void processInputActions();
@@ -50,8 +50,7 @@ class SfmlRenderWindow : public sf::RenderWindow {
   const sf::Vector2i STRANGE_MOUSE_OFFSET = sf::Vector2i(0, 60);
   sf::Clock clock;
 
-  double far_clipping = 10;
-  double near_clipping = 0.1;
+  double window_ratio = 1;
 
 
   std::map<unsigned long, const std::shared_ptr<Mesh>> meshes;

@@ -45,7 +45,7 @@ void DisplayQt::moveEvent(QMoveEvent *event) {
 
 void DisplayQt::wheelEvent(QWheelEvent *event) {
   // delta is +-120
-  const float f = event->delta() / 48;
+  const double f = static_cast<double>(event->delta()) / 48.;
   sfml_view->scrollHack(f);
 }
 

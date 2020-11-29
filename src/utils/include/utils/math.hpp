@@ -16,6 +16,17 @@ constexpr float PI8_F = static_cast<float>(PI8);
 
 constexpr double GOLDEN_RATIO = 1.6180339887498948482045868343656381177203091798057628621354486227;
 constexpr float GOLDEN_RATIO_F = static_cast<float>(GOLDEN_RATIO);
+
+template<class T>
+inline T deg2Rad(T deg){
+  return deg/360.*static_cast<T>(PI);
+}
+
+template<class T>
+inline T rad2Deg(T rad){
+  return rad*360./static_cast<T>(PI);
+}
+
 }
 
 #endif  // !_SIMULATEDUNIT_
