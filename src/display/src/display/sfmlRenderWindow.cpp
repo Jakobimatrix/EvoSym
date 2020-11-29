@@ -83,6 +83,12 @@ void SfmlRenderWindow::update() {
   }
   processInputActions();
 
+  // drawing sfml renderer (2Dstack resets this)
+  glEnable(GL_DEPTH_TEST);
+  glDepthMask(GL_TRUE);
+  glDepthFunc(GL_LEQUAL);
+  glDepthRange(0.0, 1.0);
+
   // sf::RenderWindow::clear(sf::Color(100, 100, 100, 255));
   glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
   glClearDepth(1);

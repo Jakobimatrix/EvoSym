@@ -5,6 +5,7 @@ QSfmlCanvas::QSfmlCanvas(QWidget* Parent, unsigned int fps) : QWidget(Parent) {
   setAttribute(Qt::WA_PaintOnScreen);
   setAttribute(Qt::WA_OpaquePaintEvent);
   setAttribute(Qt::WA_NoSystemBackground);
+  // setSurfaceType(QSurface::OpenGLSurface);
 
   // Set strong focus to enable keyboard events to be received
   setFocusPolicy(Qt::StrongFocus);
