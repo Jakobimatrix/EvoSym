@@ -3,18 +3,14 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include <warning_guards/warning_guards.h>
-
-THIRD_PARTY_HEADERS_BEGIN
-#include <glad/glad.h>
-THIRD_PARTY_HEADERS_END
-
 #include <fstream>
 #include <glm/glm.hpp>
 #include <globals/macros.hpp>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+#include "glad_import.hpp"
 
 class Shader {
  public:

@@ -1,11 +1,8 @@
 #include "sfmlRenderWindow.h"
 
 #include <SFML/OpenGL.hpp>
+#include <display_elements/glad_import.hpp>
 #include <utils/math.hpp>
-
-// THIRD_PARTY_HEADERS_BEGIN
-#include <glad/glad.h>
-// THIRD_PARTY_HEADERS_END
 
 SfmlRenderWindow::SfmlRenderWindow() {}
 

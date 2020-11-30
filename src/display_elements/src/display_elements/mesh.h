@@ -1,15 +1,10 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include <warning_guards/warning_guards.h>
 
 #include <SFML/Graphics/Shader.hpp>
-
-THIRD_PARTY_HEADERS_BEGIN
-#include <glad/glad.h>  // holds all OpenGL type declarations
-THIRD_PARTY_HEADERS_END
-
 #include <array>
+#include <display_elements/glad_import.hpp>
 #include <display_elements/shader.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
