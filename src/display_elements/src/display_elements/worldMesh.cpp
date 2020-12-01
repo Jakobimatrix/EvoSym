@@ -5,22 +5,24 @@ void WorldMesh::loadVertices() {
 
   std::vector<VertexType> verices_temp;
   verices_temp.reserve(6 * 6);
+  std::vector<unsigned int> indices_temp;
+  indices_temp.reserve(6 * 6);
   // clang-format off
 
   std::array<float, 33> alg_vertex =
   {{1.f, -0.6f, -0.6f,
     1.f,  0.6f, -0.6f,
     1.f, -0.6f,  0.6f,
-    1.f, -0.6f,  0.6f,
-    1.f,  0.6f, -0.6f,
+    1.f, -0.6f,  0.6f, // == [2]
+    1.f,  0.6f, -0.6f, // == [1]
     1.f,  0.6f,  0.6f}};
 
   std::array<float, 12> alg_texture =
   {{0.f, 0.f,
     1.f, 0.f,
     0.f, 1.f,
-    0.f, 1.f,
-    1.f, 0.f,
+    0.f, 1.f, // == [2]
+    1.f, 0.f, // == [1]
     1.f,  1.f}};
 
    std::array<float, 6> vz_x = {{1,-1,1,1,1,1}};
@@ -31,8 +33,19 @@ void WorldMesh::loadVertices() {
    std::array<unsigned int, 6> y_offset = {{1,1,2,2,0,0}};
    std::array<unsigned int, 6> z_offset = {{2,2,0,0,1,1}};
 
+   int index = 0;
+
    for(unsigned int site = 0; site < 6; site++){
       for(unsigned int v = 0; v < 6; v++){
+        if(3 == v){
+          indices_temp.emplace_back(index-1);
+          continue;
+        }
+        if(4 == v){
+          indices_temp.emplace_back(index-2);
+          continue;
+        }
+
         float x = vz_x[site] * alg_vertex[v*3 + x_offset[site]];
         float y = vz_y[site] * alg_vertex[v*3 + y_offset[site]];
         float z = vz_z[site] * alg_vertex[v*3 + z_offset[site]];
@@ -42,38 +55,26 @@ void WorldMesh::loadVertices() {
 
         verices_temp.emplace_back(VertexType({
                                     x,y,z,
-                                    text_x,text_y
+                                    0,0,1,
+                                    1,0,0,
+                                    0,1,0,
+                                    text_x,text_y,
+                                    1,1,1
                                     }));
+        indices_temp.emplace_back(index++);
       }
    }
 
-    //clang-format on
+  // clang-format on
 
-    std::vector<unsigned int> indices_temp;
-    indices_temp.reserve(verices_temp.size());
-    for(unsigned int i = 0; i < verices_temp.size(); i++){
-      indices_temp.push_back(i);
-      std::cout << verices_temp[i].getTexturePosition()[0]
-                << verices_temp[i].getTexturePosition()[1]
-                << "\n";
-    }
-    std::string texture = Globals::getInstance().getAbsPath2Resources() + "wall.jpg";
-    init(verices_temp, indices_temp, texture);
-
-    // todo reuse vertice
-
-    /*
-    unsigned int indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
-    };
-    */
-
+  std::string texture =
+      Globals::getInstance().getAbsPath2Resources() + "wall.jpg";
+  init(verices_temp, indices_temp, texture);
 }
 
 
-void WorldMesh::loadShader(){
- const std::string path = Globals::getInstance().getAbsPath2Shaders();
+void WorldMesh::loadShader() {
+  const std::string path = Globals::getInstance().getAbsPath2Shaders();
   const std::string vs = path + "camera.vs";
   const std::string fs = path + "camera.fs";
 
@@ -105,5 +106,4 @@ void WorldMesh::loadShader(){
   } else {
     ERROR("Shader not supported");
   }
-
 }

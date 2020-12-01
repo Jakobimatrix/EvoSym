@@ -57,7 +57,7 @@ inline void checkError(const char* file, unsigned int line, const char* expressi
 
 
 #ifdef NDEBUG
-#define glCheck(expr) (expr)
+#define glCheck(expr) expr
 #else
 #define glCheck(expr) \
   expr;               \

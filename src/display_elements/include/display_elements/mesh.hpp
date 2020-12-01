@@ -47,25 +47,6 @@ class Mesh : public BaseMesh {
   using VertexType =
       Vertex<has_position, has_normal, has_tangent, has_bitangent, has_texture, has_color, num_color_values>;
 
-
-  // mesh Data
-  std::vector<VertexType> vertices;
-  std::vector<unsigned int> indices;
-  unsigned int texture;
-  unsigned int VAO;
-
-  // acces in shader like this:
-  // in vec3 meshPos;
-  const std::string SHADER_IN_POSITION_NAME = "meshPos";
-  const std::string SHADER_IN_NORMAL_NAME = "meshNormal";
-  const std::string SHADER_IN_TANGENT_NAME = "meshTangent";
-  const std::string SHADER_IN_BITANGENT_NAME = "meshBitangent";
-  const std::string SHADER_IN_TEXTURE_NAME = "meshTexture";
-  const std::string SHADER_IN_COLOR_NAME = "meshColor";
-
-
-  bool is_initialized = false;
-
   Mesh() : BaseMesh() {}
 
   /*!
@@ -191,67 +172,61 @@ class Mesh : public BaseMesh {
             var_name.c_str());
         return;
       }
-      // Check errors in case the compiler did not optimize away
-      // but rather I did somthing wrong here...
-      glCheck();
       const unsigned int u_pos = static_cast<unsigned int>(variable_position);
       glCheck(glEnableVertexAttribArray(u_pos));
       glCheck(glVertexAttribPointer(
           u_pos, num_values, GL_FLOAT, GL_FALSE, sizeof(VertexType), start_position));
-      /*
+
       F_DEBUG(
-      "connecting %s with %d values starting at %p. Connected Position is "
-      "%d",
-      var_name.c_str(),
-      num_values,
-      start_position,
-      u_pos);
-      */
+          "connecting %s with %d values starting at %p. Connected Position is "
+          "%d",
+          var_name.c_str(),
+          num_values,
+          start_position,
+          u_pos);
     };
 
     // set the vertex attribute pointers
     // vertex positions
     if constexpr (has_position) {
       assignShaderVariable(SHADER_IN_POSITION_NAME,
-                           VertexPosition<has_position>::NUM,
-                           reinterpret_cast<void*>(VertexType::POSITION_OFFSET_BIT));
+                           VertexType::NUM_POSITION,
+                           reinterpret_cast<void*>(offsetof(VertexType, position)));
     }
 
     // vertex normals
     if constexpr (has_normal) {
       assignShaderVariable(SHADER_IN_NORMAL_NAME,
-                           VertexNormal<has_normal>::NUM,
-                           reinterpret_cast<void*>(VertexType::NORMAL_OFFSET_BIT));
+                           VertexType::NUM_NORMAL,
+                           reinterpret_cast<void*>(offsetof(VertexType, normal)));
     }
 
     // vertex tangent
     if constexpr (has_tangent) {
       assignShaderVariable(SHADER_IN_TANGENT_NAME,
-                           VertexTangent<has_tangent>::NUM,
-                           reinterpret_cast<void*>(VertexType::TANGENT_OFFSET_BIT));
+                           VertexType::NUM_TANGENT,
+                           reinterpret_cast<void*>(offsetof(VertexType, tangent)));
     }
 
     // vertex bitangent
     if constexpr (has_bitangent) {
       assignShaderVariable(SHADER_IN_BITANGENT_NAME,
-                           VertexBitangent<has_bitangent>::NUM,
-                           reinterpret_cast<void*>(VertexType::BITANGENT_OFFSET_BIT));
+                           VertexType::NUM_BITANGENT,
+                           reinterpret_cast<void*>(offsetof(VertexType, bitangent)));
     }
 
     // vertex texture coords
     if constexpr (has_texture) {
-      assignShaderVariable(
-          SHADER_IN_TEXTURE_NAME,
-          VertexTexture<has_texture>::NUM,
-          reinterpret_cast<void*>(offsetof(VertexType, v[VertexType::TEXTURE_OFFSET])));
+      assignShaderVariable(SHADER_IN_TEXTURE_NAME,
+                           VertexType::NUM_TEXTURE,
+                           reinterpret_cast<void*>(offsetof(VertexType, texture_pos)));
     }
 
     // vertex color coords
     if constexpr (has_color) {
-      assignShaderVariable(
-          SHADER_IN_COLOR_NAME,
-          VertexColor<has_color, num_color_values>::NUM,
-          reinterpret_cast<void*>(offsetof(VertexType, v[VertexType::COLOR_OFFSET])));
+      assignShaderVariable(SHADER_IN_COLOR_NAME,
+                           VertexType::NUM_COLOR,
+                           reinterpret_cast<void*>(offsetof(VertexType, color)));
     }
   }
 
@@ -311,10 +286,55 @@ class Mesh : public BaseMesh {
     glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO));
     glCheck(glBufferData(
         GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW));
+
+
+    int float_size = sizeof(float);
+    int b_size = sizeof(VertexType);
+
+    for (unsigned int v = 0; v < vertices.size(); v++) {
+      std::cout << "<Vertex> ";
+      void* void_info = reinterpret_cast<void*>(&vertices[v]);
+      float* info = reinterpret_cast<float*>(void_info);
+      for (int i = 0; i < b_size / float_size; i++) {
+        std::cout << info[i] << " ";
+      }
+      std::cout << "</Vertex>\n";
+
+      std::cout << "pos: " << vertices[v].position[0] << ","
+                << vertices[v].position[1] << "," << vertices[v].position[2] << "\n";
+      std::cout << "norm: " << vertices[v].normal[0] << ","
+                << vertices[v].normal[1] << "," << vertices[v].normal[2] << "\n";
+      std::cout << "tang: " << vertices[v].tangent[0] << ","
+                << vertices[v].tangent[1] << "," << vertices[v].tangent[2] << "\n";
+      std::cout << "bitang: " << vertices[v].bitangent[0] << ","
+                << vertices[v].bitangent[1] << "," << vertices[v].bitangent[2] << "\n";
+      std::cout << "text: " << vertices[v].texture_pos[0] << ","
+                << vertices[v].texture_pos[1] << "\n";
+      std::cout << "colo: " << vertices[v].color[0] << ","
+                << vertices[v].color[1] << "," << vertices[v].color[2] << "\n";
+    }
   }
 
   // render data
   unsigned int VBO, EBO;
+
+  // mesh Data
+  std::vector<VertexType> vertices;
+  std::vector<unsigned int> indices;
+  unsigned int texture;
+  unsigned int VAO;
+
+  // acces in shader like this:
+  // in vec3 meshPos;
+  const std::string SHADER_IN_POSITION_NAME = "meshPos";
+  const std::string SHADER_IN_NORMAL_NAME = "meshNormal";
+  const std::string SHADER_IN_TANGENT_NAME = "meshTangent";
+  const std::string SHADER_IN_BITANGENT_NAME = "meshBitangent";
+  const std::string SHADER_IN_TEXTURE_NAME = "meshTexture";
+  const std::string SHADER_IN_COLOR_NAME = "meshColor";
+
+
+  bool is_initialized = false;
 };
 
 #endif

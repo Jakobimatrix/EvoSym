@@ -9,7 +9,7 @@
 #include <utils/eigen_glm_conversation.hpp>
 
 
-class WorldMesh : public Mesh<true, false, false, false, true, false, 0> {
+class WorldMesh : public Mesh<true, true, true, true, true, true, 3> {
  public:
   WorldMesh() {
     loadVertices();

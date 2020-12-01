@@ -11,5 +11,6 @@ in vec2 TexCoord;
 void main()
 {
     FragColor = texture(texture1, TexCoord) * VertexColor;
+    //FragColor = VertexColor;
 }
 
