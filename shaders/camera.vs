@@ -16,7 +16,7 @@ out vec2 TexCoord;
 
 void main()
 {
-    gl_Position = projection* view * pose *vec4(meshPos, 1.0);
+    gl_Position = projection * view * pose * vec4(meshPos, 1.0);
 
     float r,g,b;
     if(meshPos.x > 0){

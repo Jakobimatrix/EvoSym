@@ -9,6 +9,7 @@ target_link_libraries(pre_display_lib INTERFACE
   ${SFML_DEPENDENCIES}
   globals_lib
   utils_lib
+  utils_func_lib
   Eigen3::Eigen)
 
 target_include_directories(pre_display_lib INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -16,14 +17,12 @@ target_include_directories(pre_display_lib INTERFACE "${CMAKE_CURRENT_SOURCE_DIR
 
 
 add_library(display_elements_lib STATIC
-  src/display_elements/mesh.cpp
-  src/display_elements/worldMesh.cpp)
+  src/display_elements/worldMesh.cpp
+  src/display_elements/arrowMesh.cpp)
 
 target_link_libraries(display_elements_lib
-  warning_guards
   pre_display_lib
   glad
-  stb_lib
   globals_lib
   utils_lib
   Eigen3::Eigen)

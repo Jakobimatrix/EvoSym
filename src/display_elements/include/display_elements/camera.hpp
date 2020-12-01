@@ -46,16 +46,11 @@ class Camera {
   // rotate current camera pose
   void ProcessRotation(double xoffset, double yoffset) {
 
-    const Eigen::Vector3d rotation1(0, rotate_sensitivity * xoffset, 0);
-    Eigen::Vector3d rotation2(rotate_sensitivity * yoffset * std::cos(angles(1)),
-                              0,
-                              rotate_sensitivity * yoffset * std::cos(angles(1)));
+    xoffset *= rotate_sensitivity;
+    yoffset *= rotate_sensitivity;
 
-    Eigen::Matrix3d R = eigen_utils::rpy2RotationMatrix(angles);
-    rotation2 = R * rotation2;
-
-    // rotateRPY(rotation1);
-    rotateRPY(rotation2);
+    const Eigen::Vector3d rotation(0, -xoffset, yoffset);
+    rotateRPY(rotation);
   }
 
   // processes input received from a mouse scroll-wheel event.
