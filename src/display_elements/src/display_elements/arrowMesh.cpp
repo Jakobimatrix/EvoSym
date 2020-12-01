@@ -1,9 +1,8 @@
-#include "worldMesh.h"
+#include "arrowMesh.h"
 
-void WorldMesh::loadVertices() {
+void ArrowMesh::loadVertices() {
 
-
-  std::vector<Vertex> verices_temp;
+  std::vector<VertexType> verices_temp;
   verices_temp.reserve(6 * 6);
   // clang-format off
 
@@ -40,11 +39,8 @@ void WorldMesh::loadVertices() {
         float text_x = alg_texture[v*2 + 0];
         float text_y = alg_texture[v*2 + 1];
 
-        verices_temp.emplace_back(Vertex({
+        verices_temp.emplace_back(VertexType({
                                     x,y,z,
-                                    0,0,1,
-                                    text_x,text_y,
-                                    1,0,0,
                                     0,1,0}));
       }
    }
@@ -71,7 +67,7 @@ void WorldMesh::loadVertices() {
 }
 
 
-void WorldMesh::loadShader(){
+void ArrowMesh::loadShader(){
  const std::string path = Globals::getInstance().getAbsPath2Shaders();
   const std::string vs = path + "camera.vs";
   const std::string fs = path + "camera.fs";

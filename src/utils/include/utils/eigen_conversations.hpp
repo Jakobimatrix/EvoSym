@@ -15,7 +15,20 @@ inline Matrix3d rpy2RotationMatrix(const Vector3d &rpy) {
   return m;
 }
 
+inline Matrix3f rpy2RotationMatrix(const Vector3f &rpy) {
+
+  Matrix3f m;
+  m = AngleAxisf(rpy(2, 0), Vector3f::UnitZ()) *
+      AngleAxisf(rpy(1, 0), Vector3f::UnitY()) *
+      AngleAxisf(rpy(0, 0), Vector3f::UnitX());
+  return m;
+}
+
 inline Vector3d RotationMatrix2rpy(const Matrix3d &r) {
+  return r.eulerAngles(2, 1, 0);
+}
+
+inline Vector3f RotationMatrix2rpy(const Matrix3f &r) {
   return r.eulerAngles(2, 1, 0);
 }
 
@@ -30,6 +43,16 @@ inline Eigen::Affine3d rpy2Affine(const Vector3d &rpy) {
   return rz * ry * rx;
 }
 
+inline Eigen::Affine3f rpy2Affine(const Vector3f &rpy) {
+  Eigen::Affine3f rx =
+      Eigen::Affine3f(Eigen::AngleAxisf(rpy(2, 0), Eigen::Vector3f(1, 0, 0)));
+  Eigen::Affine3f ry =
+      Eigen::Affine3f(Eigen::AngleAxisf(rpy(1, 0), Eigen::Vector3f(0, 1, 0)));
+  Eigen::Affine3f rz =
+      Eigen::Affine3f(Eigen::AngleAxisf(rpy(0, 0), Eigen::Vector3f(0, 0, 1)));
+  return rz * ry * rx;
+}
+
 inline Affine3d pose2Affine(const Vector3d &xyz, const Vector3d &rpy, double zoom) {
   const Eigen::Matrix3d r = rpy2RotationMatrix(rpy);
   Affine3d t;
@@ -39,7 +62,20 @@ inline Affine3d pose2Affine(const Vector3d &xyz, const Vector3d &rpy, double zoo
   return t;
 }
 
-inline void scaleAffine3d(Affine3d &a, double scale) {
+inline Affine3f pose2Affine(const Vector3f &xyz, const Vector3f &rpy, float zoom) {
+  const Eigen::Matrix3f r = rpy2RotationMatrix(rpy);
+  Affine3f t;
+  t.matrix().block<3, 3>(0, 0) = r;
+  t.matrix().block<3, 1>(0, 3) = xyz;
+  t.matrix().block<1, 4>(3, 0) << 0, 0, 0, zoom;
+  return t;
+}
+
+inline void scaleAffine(Affine3d &a, double scale) {
+  a.matrix().block<1, 4>(3, 0) << 0, 0, 0, scale;
+}
+
+inline void scaleAffine(Affine3f &a, float scale) {
   a.matrix().block<1, 4>(3, 0) << 0, 0, 0, scale;
 }
 }  // namespace eigen_utils

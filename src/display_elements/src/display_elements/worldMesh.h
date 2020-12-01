@@ -9,7 +9,7 @@
 #include <utils/eigen_glm_conversation.hpp>
 
 
-class WorldMesh : public Mesh {
+class WorldMesh : public Mesh<true, false, false, false, true, false, 0> {
  public:
   WorldMesh() {
     loadVertices();
@@ -17,16 +17,17 @@ class WorldMesh : public Mesh {
     setTexture();
   }
 
-  void setPose(const Eigen::Affine3d &pose) {
+  void setPose(const Eigen::Affine3f &p) {
+    Mesh::setPose(p);
     if (shader != nullptr) {
-      const glm::mat4 pose_glm = utils::EigenAffine2GlmMat(pose);
+      const glm::mat4 pose_glm = utils::EigenAffine2GlmMat(this->pose);
       glCheck(shader->use());
       glCheck(shader->setMat4("pose", pose_glm));
       glUseProgram(0);
     }
 
     if (shader_sf != nullptr) {
-      const float *pSource = reinterpret_cast<const float *>(pose.data());
+      const float *pSource = reinterpret_cast<const float *>(this->pose.data());
       // TODO better solution for conversation?
       sf::Glsl::Mat4 pose_glsl(pSource);
       glCheck(sf::Shader::bind(shader_sf.get()));
@@ -38,8 +39,8 @@ class WorldMesh : public Mesh {
   void setView(const Eigen::Affine3d &view) {
     if (shader != nullptr) {
       const glm::mat4 view_glm = utils::EigenAffine2GlmMat(view);
-      shader->use();
-      shader->setMat4("view", view_glm);
+      glCheck(shader->use());
+      glCheck(shader->setMat4("view", view_glm));
       glUseProgram(0);
     }
 
@@ -56,8 +57,8 @@ class WorldMesh : public Mesh {
   void setProjection(const Eigen::Affine3d &projection) {
     if (shader != nullptr) {
       const glm::mat4 projection_glm = utils::EigenAffine2GlmMat(projection);
-      shader->use();
-      shader->setMat4("projection", projection_glm);
+      glCheck(shader->use());
+      glCheck(shader->setMat4("projection", projection_glm));
       glUseProgram(0);
     }
 
@@ -73,8 +74,8 @@ class WorldMesh : public Mesh {
 
   void setTexture() {
     if (shader != nullptr) {
-      shader->use();
-      shader->setInt("texture", texture);
+      glCheck(shader->use());
+      glCheck(shader->setInt("texture1", texture));
       glUseProgram(0);
     }
 

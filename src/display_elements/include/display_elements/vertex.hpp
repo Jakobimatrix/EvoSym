@@ -3,7 +3,7 @@
 
 #include <array>
 
-template <bool has_position>
+template <bool has_position = true>
 struct VertexPosition;
 
 template <>
@@ -16,7 +16,7 @@ struct VertexPosition<false> {
   static constexpr int NUM = 0;
 };
 
-template <bool has_normal>
+template <bool has_normal = true>
 struct VertexNormal;
 
 template <>
@@ -29,7 +29,7 @@ struct VertexNormal<false> {
   static constexpr int NUM = 0;
 };
 
-template <bool has_tangent>
+template <bool has_tangent = true>
 struct VertexTangent;
 
 template <>
@@ -42,7 +42,7 @@ struct VertexTangent<false> {
   static constexpr int NUM = 0;
 };
 
-template <bool has_bitangent>
+template <bool has_bitangent = true>
 struct VertexBitangent;
 
 template <>
@@ -55,12 +55,12 @@ struct VertexBitangent<false> {
   static constexpr int NUM = 0;
 };
 
-template <bool has_texture>
+template <bool has_texture = true>
 struct VertexTexture;
 
 template <>
 struct VertexTexture<true> {
-  static constexpr int NUM = 3;
+  static constexpr int NUM = 2;
 };
 
 template <>
@@ -68,7 +68,7 @@ struct VertexTexture<false> {
   static constexpr int NUM = 0;
 };
 
-template <bool has_color, int num_pigments>
+template <bool has_color = true, int num_pigments = 3>
 struct VertexColor;
 
 template <int num_pigments>
@@ -82,17 +82,23 @@ struct VertexColor<false, 0> {
 };
 
 
-template <bool has_position = true, bool has_normal = true, bool has_tangent = true, bool has_bitangent = true, bool has_texture = true, bool has_color = true, int num_color_values = 3>
+template <bool has_position, bool has_normal, bool has_tangent, bool has_bitangent, bool has_texture, bool has_color, int num_color_values>
 struct Vertex {
 
   // offsets are only valide if the has_xxx template parameter is true;
   static constexpr int POSITION_OFFSET = 0;
+  static constexpr int POSITION_OFFSET_BIT = POSITION_OFFSET * sizeof(float);
   static constexpr int NORMAL_OFFSET = POSITION_OFFSET + VertexPosition<has_position>::NUM;
+  static constexpr int NORMAL_OFFSET_BIT = NORMAL_OFFSET * sizeof(float);
   static constexpr int TANGENT_OFFSET = NORMAL_OFFSET + VertexNormal<has_normal>::NUM;
+  static constexpr int TANGENT_OFFSET_BIT = TANGENT_OFFSET * sizeof(float);
   static constexpr int BITANGENT_OFFSET = TANGENT_OFFSET + VertexTangent<has_tangent>::NUM;
+  static constexpr int BITANGENT_OFFSET_BIT = BITANGENT_OFFSET * sizeof(float);
   static constexpr int TEXTURE_OFFSET =
       BITANGENT_OFFSET + VertexBitangent<has_bitangent>::NUM;
+  static constexpr int TEXTURE_OFFSET_BIT = TEXTURE_OFFSET * sizeof(float);
   static constexpr int COLOR_OFFSET = TEXTURE_OFFSET + VertexTexture<has_texture>::NUM;
+  static constexpr int COLOR_OFFSET_BIT = COLOR_OFFSET * sizeof(float);
 
 
   static constexpr int ARRAY_LENGTH =
@@ -144,7 +150,7 @@ struct Vertex {
   int getBitangentSize() const { return VertexBitangent<has_bitangent>::NUM; }
 
   float* getTexturePosition() {
-    static_assert(has_bitangent,
+    static_assert(has_texture,
                   "This Vertex does not have a texture. Calling this function "
                   "will result in undefined behaviour");
 

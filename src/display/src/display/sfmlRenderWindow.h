@@ -9,6 +9,7 @@
 #include <cmath>
 #include <display_elements/camera.hpp>
 #include <display_elements/displayUtils.hpp>
+#include <display_elements/mesh.hpp>
 #include <timer/timer.hpp>
 
 class SfmlRenderWindow : public sf::RenderWindow {
@@ -19,7 +20,7 @@ class SfmlRenderWindow : public sf::RenderWindow {
 
   void update();
 
-  [[nodiscard]] unsigned long addMesh(const std::shared_ptr<Mesh> &simple_mesh);
+  [[nodiscard]] unsigned long addMesh(const std::shared_ptr<BaseMesh> &simple_mesh);
 
   [[nodiscard]] bool removeMesh(unsigned long id);
 
@@ -53,7 +54,7 @@ class SfmlRenderWindow : public sf::RenderWindow {
   double window_ratio = 1;
 
 
-  std::map<unsigned long, const std::shared_ptr<Mesh>> meshes;
+  std::map<unsigned long, const std::shared_ptr<BaseMesh>> meshes;
   unsigned long mesh_counter = 0;
 
   std::shared_ptr<WorldMesh> world_mesh = nullptr;

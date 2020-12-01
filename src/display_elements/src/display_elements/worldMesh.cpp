@@ -3,7 +3,7 @@
 void WorldMesh::loadVertices() {
 
 
-  std::vector<Vertex> verices_temp;
+  std::vector<VertexType> verices_temp;
   verices_temp.reserve(6 * 6);
   // clang-format off
 
@@ -40,12 +40,10 @@ void WorldMesh::loadVertices() {
         float text_x = alg_texture[v*2 + 0];
         float text_y = alg_texture[v*2 + 1];
 
-        verices_temp.emplace_back(Vertex({
+        verices_temp.emplace_back(VertexType({
                                     x,y,z,
-                                    0,0,1,
-                                    text_x,text_y,
-                                    1,0,0,
-                                    0,1,0}));
+                                    text_x,text_y
+                                    }));
       }
    }
 
@@ -55,6 +53,9 @@ void WorldMesh::loadVertices() {
     indices_temp.reserve(verices_temp.size());
     for(unsigned int i = 0; i < verices_temp.size(); i++){
       indices_temp.push_back(i);
+      std::cout << verices_temp[i].getTexturePosition()[0]
+                << verices_temp[i].getTexturePosition()[1]
+                << "\n";
     }
     std::string texture = Globals::getInstance().getAbsPath2Resources() + "wall.jpg";
     init(verices_temp, indices_temp, texture);

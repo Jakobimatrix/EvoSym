@@ -2,6 +2,9 @@
 #define MESH_H
 
 
+#include <stb/stb_image.h>
+
+#include <Eigen/Geometry>
 #include <SFML/Graphics/Shader.hpp>
 #include <array>
 #include <display_elements/displayUtils.hpp>
@@ -13,25 +16,57 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <memory>
 #include <string>
+#include <utils/eigen_conversations.hpp>
 #include <vector>
-#include <utils/functions.h>
+
+class BaseMesh {
+ public:
+  BaseMesh() {}
+  virtual ~BaseMesh() {}
+  virtual void draw() = 0;
+
+  void setPose(const Eigen::Affine3f& p) { pose = p; }
+  void translate(const Eigen::Vector3f& t) { pose.translate(t); }
+  void rotate(const Eigen::Vector3f& rpy) {
+    pose.rotate(eigen_utils::rpy2RotationMatrix(rpy));
+  }
+  void rotateAround(const Eigen::Vector3f& rpy, const Eigen::Vector3f& p) {
+    Eigen::Vector3f diff = pose.translation() - p;
+    pose.translate(-diff);
+    pose.rotate(eigen_utils::rpy2RotationMatrix(rpy));
+    pose.translate(diff);
+  }
+
+ protected:
+  Eigen::Affine3f pose = Eigen::Affine3f::Identity();
+};
 
 template <bool has_position = true, bool has_normal = true, bool has_tangent = true, bool has_bitangent = true, bool has_texture = true, bool has_color = true, int num_color_values = 3>
-class Mesh {
-
+class Mesh : public BaseMesh {
+ public:
   using VertexType =
       Vertex<has_position, has_normal, has_tangent, has_bitangent, has_texture, has_color, num_color_values>;
 
- public:
+
   // mesh Data
   std::vector<VertexType> vertices;
   std::vector<unsigned int> indices;
   unsigned int texture;
   unsigned int VAO;
 
+  // acces in shader like this:
+  // in vec3 meshPos;
+  const std::string SHADER_IN_POSITION_NAME = "meshPos";
+  const std::string SHADER_IN_NORMAL_NAME = "meshNormal";
+  const std::string SHADER_IN_TANGENT_NAME = "meshTangent";
+  const std::string SHADER_IN_BITANGENT_NAME = "meshBitangent";
+  const std::string SHADER_IN_TEXTURE_NAME = "meshTexture";
+  const std::string SHADER_IN_COLOR_NAME = "meshColor";
+
+
   bool is_initialized = false;
 
-  Mesh() {}
+  Mesh() : BaseMesh() {}
 
   /*!
    * \brief Reserves space on GPU for texture and vertices
@@ -59,7 +94,7 @@ class Mesh {
   /*!
    * \brief This renders the mesh using the active shader if set.
    */
-  void draw() {
+  void draw() override {
     if (!is_initialized) {
       return;
     }
@@ -163,35 +198,62 @@ class Mesh {
       glCheck(glEnableVertexAttribArray(u_pos));
       glCheck(glVertexAttribPointer(
           u_pos, num_values, GL_FLOAT, GL_FALSE, sizeof(VertexType), start_position));
+      /*
+      F_DEBUG(
+      "connecting %s with %d values starting at %p. Connected Position is "
+      "%d",
+      var_name.c_str(),
+      num_values,
+      start_position,
+      u_pos);
+      */
     };
 
     // set the vertex attribute pointers
-    // vertex Positions
-
-    // TODO
-    assignShaderVariable("meshPos", COORDS_PER_VERTEX, reinterpret_cast<void*>(0));
+    // vertex positions
+    if constexpr (has_position) {
+      assignShaderVariable(SHADER_IN_POSITION_NAME,
+                           VertexPosition<has_position>::NUM,
+                           reinterpret_cast<void*>(VertexType::POSITION_OFFSET_BIT));
+    }
 
     // vertex normals
-    assignShaderVariable("meshNormal",
-                         COORDS_PER_VERTEX,
-                         reinterpret_cast<void*>(offsetof(VertexType, Normal)));
-
-    // vertex texture coords
-    assignShaderVariable("meshTexture",
-                         COORDS_PER_TEXTURE,
-                         reinterpret_cast<void*>(offsetof(VertexType, TexCoords)));
+    if constexpr (has_normal) {
+      assignShaderVariable(SHADER_IN_NORMAL_NAME,
+                           VertexNormal<has_normal>::NUM,
+                           reinterpret_cast<void*>(VertexType::NORMAL_OFFSET_BIT));
+    }
 
     // vertex tangent
-    assignShaderVariable("meshTangent",
-                         COORDS_PER_VERTEX,
-                         reinterpret_cast<void*>(offsetof(VertexType, Tangent)));
+    if constexpr (has_tangent) {
+      assignShaderVariable(SHADER_IN_TANGENT_NAME,
+                           VertexTangent<has_tangent>::NUM,
+                           reinterpret_cast<void*>(VertexType::TANGENT_OFFSET_BIT));
+    }
 
     // vertex bitangent
-    assignShaderVariable("meshBittangent",
-                         COORDS_PER_VERTEX,
-                         reinterpret_cast<void*>(offsetof(VertexType, Bitangent)));
-  }
+    if constexpr (has_bitangent) {
+      assignShaderVariable(SHADER_IN_BITANGENT_NAME,
+                           VertexBitangent<has_bitangent>::NUM,
+                           reinterpret_cast<void*>(VertexType::BITANGENT_OFFSET_BIT));
+    }
 
+    // vertex texture coords
+    if constexpr (has_texture) {
+      assignShaderVariable(
+          SHADER_IN_TEXTURE_NAME,
+          VertexTexture<has_texture>::NUM,
+          reinterpret_cast<void*>(offsetof(VertexType, v[VertexType::TEXTURE_OFFSET])));
+    }
+
+    // vertex color coords
+    if constexpr (has_color) {
+      assignShaderVariable(
+          SHADER_IN_COLOR_NAME,
+          VertexColor<has_color, num_color_values>::NUM,
+          reinterpret_cast<void*>(offsetof(VertexType, v[VertexType::COLOR_OFFSET])));
+    }
+  }
 
  protected:
   std::shared_ptr<Shader> shader = nullptr;
@@ -217,7 +279,7 @@ class Mesh {
     int width, height, nrChannels;
 
     unsigned char* data =
-        utils::loadTexture(texture_path.c_str(), &width, &height, &nrChannels, 0);
+        stbi_load(texture_path.c_str(), &width, &height, &nrChannels, 0);
     if (data) {
       glCheck(glTexImage2D(
           GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data));
@@ -225,7 +287,7 @@ class Mesh {
     } else {
       F_ERROR("Failed to load textre from %s.", texture_path.c_str());
     }
-    utils::freeTexture(data);
+    stbi_image_free(data);
   }
 
   /*!
@@ -253,15 +315,6 @@ class Mesh {
 
   // render data
   unsigned int VBO, EBO;
-
-  unsigned int POSITION_LOCATION = 0;
-  unsigned int NORMAL_LOCATION = 1;
-  unsigned int TEXTURE_LOCATION = 2;
-  unsigned int TANGENT_LOCATION = 3;
-  unsigned int BITTANGENT_LOCATION = 4;
-
-  int COORDS_PER_VERTEX = 3;
-  int COORDS_PER_TEXTURE = 2;
 };
 
 #endif

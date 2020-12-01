@@ -9,7 +9,7 @@ target_link_libraries(pre_display_lib INTERFACE
   ${SFML_DEPENDENCIES}
   globals_lib
   utils_lib
-  utils_func_lib
+  stb_lib
   Eigen3::Eigen)
 
 target_include_directories(pre_display_lib INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")

@@ -11,9 +11,9 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
 
   // Create the SFML window with the widget handle
   sf::ContextSettings settings;
-  settings.depthBits = 1;
-  settings.stencilBits = 1;
-  settings.antialiasingLevel = 1;
+  settings.depthBits = 24;
+  settings.stencilBits = 8;
+  settings.antialiasingLevel = 4;
   settings.majorVersion = 3;  // 4.2 would be possible but results in error BindTexture
   settings.minorVersion = 0;
   settings.attributeFlags = sf::ContextSettings::Default;
@@ -54,7 +54,7 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
 
   world_mesh = std::make_shared<WorldMesh>();
   // set perspective for world mesh
-  const Eigen::Affine3d pose = Eigen::Affine3d::Identity();
+  const Eigen::Affine3f pose = Eigen::Affine3f::Identity();
   world_mesh->setPose(pose);
   // like the "lense" we are looking through
   const float ratio = static_cast<float>(sf::RenderWindow::getSize().x) /
@@ -124,7 +124,7 @@ void SfmlRenderWindow::update() {
   sf::RenderWindow::display();
 }
 
-unsigned long SfmlRenderWindow::addMesh(const std::shared_ptr<Mesh>& simple_mesh) {
+unsigned long SfmlRenderWindow::addMesh(const std::shared_ptr<BaseMesh>& simple_mesh) {
   meshes.emplace(std::make_pair(mesh_counter, simple_mesh));
   return mesh_counter++;
 }

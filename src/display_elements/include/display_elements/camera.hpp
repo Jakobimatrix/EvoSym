@@ -33,7 +33,7 @@ class Camera {
   Eigen::Affine3d GetViewMatrix() const {
     Eigen::Affine3d T = eigen_utils::pose2Affine(position, angles, 1);
     T.inverse();
-    eigen_utils::scaleAffine3d(T, std::exp(zoom));
+    eigen_utils::scaleAffine(T, std::exp(zoom));
     return T;
   }
 
@@ -45,6 +45,9 @@ class Camera {
 
   // rotate current camera pose
   void ProcessRotation(double xoffset, double yoffset) {
+    // TODO use translate()
+    // rotate
+    // pre_rotate()
 
     xoffset *= rotate_sensitivity;
     yoffset *= rotate_sensitivity;

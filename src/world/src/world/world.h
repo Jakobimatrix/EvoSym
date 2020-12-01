@@ -18,13 +18,13 @@ class World {
 
   void update();
 
-  std::shared_ptr<Mesh> getWorldsMesh() const { return world_mesh; }
+  std::shared_ptr<BaseMesh> getWorldsMesh() const { return world_mesh; }
 
   [[nodiscard]] bool save(const std::string& file);
   [[nodiscard]] bool load(const std::string& file);
 
 
  private:
-  std::shared_ptr<Mesh> world_mesh = nullptr;
+  std::shared_ptr<BaseMesh> world_mesh = nullptr;
 };
 #endif

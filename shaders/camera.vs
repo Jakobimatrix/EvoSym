@@ -2,9 +2,9 @@
 
 in highp vec3 meshPos;
 in lowp vec3 meshNormal;
-in mediump vec2 meshTexture;
 in lowp vec3 meshTangent;
-in lowp vec3 meshBittangent;
+in lowp vec3 meshBitangent;
+in mediump vec2 meshTexture;
 
 uniform mat4 pose;
 uniform mat4 view;
@@ -36,7 +36,7 @@ void main()
     }else{
       b = 0;
     }
-    VertexColor = vec4(r, g, b, 0.2); // set the output variable to a dark-red color
+    VertexColor = vec4(r, g, b, 1);
 
     TexCoord = meshTexture;
 
