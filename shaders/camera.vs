@@ -1,10 +1,11 @@
 #version 130
 
-in highp vec3 meshPos;
-in lowp vec3 meshNormal;
-in lowp vec3 meshTangent;
-in lowp vec3 meshBitangent;
-in mediump vec2 meshTexture;
+in highp vec3 vertexPos;
+in lowp vec3 vertexNormal;
+in lowp vec3 vertexTangent;
+in lowp vec3 vertexBitangent;
+in mediump vec2 vertexTexturePos;
+in mediump vec3 vertexColor;
 
 uniform mat4 pose;
 uniform mat4 view;
@@ -16,29 +17,29 @@ out vec2 TexCoord;
 
 void main()
 {
-    gl_Position = projection * view * pose * vec4(meshPos, 1.0);
+    gl_Position = projection * view * pose * vec4(vertexPos, 1.0);
 
     float r,g,b;
-    if(meshPos.x > 0){
+    if(vertexPos.x > 0){
       r = 1;
     }else{
       r = 0;
     }
 
-    if(meshPos.y > 0){
+    if(vertexPos.y > 0){
       g = 1;
     }else{
       g = 0;
     }
 
-    if(meshPos.z > 0){
+    if(vertexPos.z > 0){
       b = 1;
     }else{
       b = 0;
     }
-    VertexColor = vec4(r, g, b, 1);
+    VertexColor = vec4(vertexColor, 1.0);
 
-    TexCoord = meshTexture;
+    TexCoord = vertexTexturePos;
 
 }
 

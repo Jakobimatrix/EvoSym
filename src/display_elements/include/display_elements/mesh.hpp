@@ -318,6 +318,7 @@ class Mesh : public BaseMesh {
   // render data
   unsigned int VBO, EBO;
 
+ protected:
   // mesh Data
   std::vector<VertexType> vertices;
   std::vector<unsigned int> indices;
@@ -325,13 +326,13 @@ class Mesh : public BaseMesh {
   unsigned int VAO;
 
   // acces in shader like this:
-  // in vec3 meshPos;
-  const std::string SHADER_IN_POSITION_NAME = "meshPos";
-  const std::string SHADER_IN_NORMAL_NAME = "meshNormal";
-  const std::string SHADER_IN_TANGENT_NAME = "meshTangent";
-  const std::string SHADER_IN_BITANGENT_NAME = "meshBitangent";
-  const std::string SHADER_IN_TEXTURE_NAME = "meshTexture";
-  const std::string SHADER_IN_COLOR_NAME = "meshColor";
+  // in vec3 vertexPos;
+  const std::string SHADER_IN_POSITION_NAME = "vertexPos";
+  const std::string SHADER_IN_NORMAL_NAME = "vertexNormal";
+  const std::string SHADER_IN_TANGENT_NAME = "vertexTangent";
+  const std::string SHADER_IN_BITANGENT_NAME = "vertexBitangent";
+  const std::string SHADER_IN_TEXTURE_NAME = "vertexTexturePos";
+  const std::string SHADER_IN_COLOR_NAME = "vertexColor";
 
 
   bool is_initialized = false;
