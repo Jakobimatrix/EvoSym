@@ -12,9 +12,9 @@
 class ArrowMesh : public Mesh<true, false, false, false, false, true, 3> {
  public:
   ArrowMesh() {
-    loadVertices();
-    loadShader();
-    setTexture();
+    // loadVertices();
+    // loadShader();
+    // setTexture();
   }
 
   void setPose(const Eigen::Affine3d &pose) {

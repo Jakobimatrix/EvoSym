@@ -49,6 +49,8 @@ class Mesh : public BaseMesh {
 
   Mesh() : BaseMesh() {}
 
+  ~Mesh() { clean(); }
+
   /*!
    * \brief Reserves space on GPU for texture and vertices
    * \param vertices The vector of vertices describeing the mesh and what not.
@@ -60,9 +62,7 @@ class Mesh : public BaseMesh {
             const std::string& texture_path) {
 
     if (is_initialized) {
-      glCheck(glDeleteVertexArrays(1, &VAO));
-      glCheck(glDeleteBuffers(1, &VBO));
-      glCheck(glDeleteBuffers(1, &EBO));
+      clean();
     }
     this->vertices = vertices;
     this->indices = indices;
@@ -101,7 +101,7 @@ class Mesh : public BaseMesh {
     }
 
     // always good practice to set everything back to defaults once configured.
-    glCheck(glActiveTexture(GL_TEXTURE0));
+    // glCheck(glActiveTexture(GL_TEXTURE0));
   }
 
 
@@ -244,24 +244,28 @@ class Mesh : public BaseMesh {
     glCheck(glGenTextures(1, &texture));
 
     glCheck(glBindTexture(GL_TEXTURE_2D, texture));  // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
-    // set the texture wrapping parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);  // set texture wrapping to GL_REPEAT (default wrapping method)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // set texture filtering parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
     // load image, create texture and generate mipmaps
     int width, height, nrChannels;
 
     unsigned char* data =
         stbi_load(texture_path.c_str(), &width, &height, &nrChannels, 0);
-    if (data) {
-      glCheck(glTexImage2D(
-          GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data));
-      glCheck(glGenerateMipmap(GL_TEXTURE_2D));
-    } else {
+    if (data == nullptr) {
       F_ERROR("Failed to load textre from %s.", texture_path.c_str());
+      return;
     }
+
+    glCheck(glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data));
+    // glCheck(glGenerateMipmap(GL_TEXTURE_2D));
+
+    // set the texture wrapping parameters
+    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));  // set texture wrapping to GL_REPEAT (default wrapping method)
+    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+    // set texture filtering parameters
+    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
     stbi_image_free(data);
   }
 
@@ -287,7 +291,7 @@ class Mesh : public BaseMesh {
     glCheck(glBufferData(
         GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW));
 
-
+    /* DEBUG
     int float_size = sizeof(float);
     int b_size = sizeof(VertexType);
 
@@ -301,18 +305,26 @@ class Mesh : public BaseMesh {
       std::cout << "</Vertex>\n";
 
       std::cout << "pos: " << vertices[v].position[0] << ","
-                << vertices[v].position[1] << "," << vertices[v].position[2] << "\n";
-      std::cout << "norm: " << vertices[v].normal[0] << ","
-                << vertices[v].normal[1] << "," << vertices[v].normal[2] << "\n";
-      std::cout << "tang: " << vertices[v].tangent[0] << ","
-                << vertices[v].tangent[1] << "," << vertices[v].tangent[2] << "\n";
-      std::cout << "bitang: " << vertices[v].bitangent[0] << ","
-                << vertices[v].bitangent[1] << "," << vertices[v].bitangent[2] << "\n";
-      std::cout << "text: " << vertices[v].texture_pos[0] << ","
+                << vertices[v].position[1] << "," << vertices[v].position[2] <<
+  "\n"; std::cout << "norm: " << vertices[v].normal[0] << ","
+                << vertices[v].normal[1] << "," << vertices[v].normal[2] <<
+  "\n"; std::cout << "tang: " << vertices[v].tangent[0] << ","
+                << vertices[v].tangent[1] << "," << vertices[v].tangent[2] <<
+  "\n"; std::cout << "bitang: " << vertices[v].bitangent[0] << ","
+                << vertices[v].bitangent[1] << "," << vertices[v].bitangent[2]
+  << "\n"; std::cout << "text: " << vertices[v].texture_pos[0] << ","
                 << vertices[v].texture_pos[1] << "\n";
       std::cout << "colo: " << vertices[v].color[0] << ","
                 << vertices[v].color[1] << "," << vertices[v].color[2] << "\n";
     }
+
+  */
+  }
+  void clean() {
+    glCheck(glDeleteVertexArrays(1, &VAO));
+    glCheck(glDeleteBuffers(1, &VBO));
+    glCheck(glDeleteBuffers(1, &EBO));
+    glCheck(glDeleteTextures(1, &texture));
   }
 
   // render data

@@ -91,6 +91,8 @@ class Shader {
     if (geometryPath != nullptr)
       glDeleteShader(geometry);
   }
+
+  ~Shader() { glDeleteProgram(ID); }
   // activate the shader
   // ------------------------------------------------------------------------
   void use() { glUseProgram(ID); }
