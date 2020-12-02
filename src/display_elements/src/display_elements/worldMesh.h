@@ -72,10 +72,10 @@ class WorldMesh : public Mesh<true, false, false, false, true, true, 3> {
     }
   }
 
-  void setTexture() {
+  void setTexture(int sample_nr = 0) {
     if (shader != nullptr) {
       glCheck(shader->use());
-      glCheck(shader->setInt("texture1", texture));
+      glCheck(shader->setInt("texture1", sample_nr));
       glUseProgram(0);
     }
 
