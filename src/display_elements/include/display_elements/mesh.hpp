@@ -17,6 +17,7 @@
 #include <memory>
 #include <string>
 #include <utils/eigen_conversations.hpp>
+#include <utils/eigen_glm_conversation.hpp>
 #include <vector>
 
 class BaseMesh {
@@ -25,10 +26,17 @@ class BaseMesh {
   virtual ~BaseMesh() {}
   virtual void draw() = 0;
 
-  void setPose(const Eigen::Affine3f& p) { pose = p; }
-  void translate(const Eigen::Vector3f& t) { pose.translate(t); }
+  void setPose(const Eigen::Affine3f& p) {
+    pose = p;
+    updatePose();
+  }
+  void translate(const Eigen::Vector3f& t) {
+    pose.translate(t);
+    updatePose();
+  }
   void rotate(const Eigen::Vector3f& rpy) {
     pose.rotate(eigen_utils::rpy2RotationMatrix(rpy));
+    updatePose();
   }
   void rotateAround(const Eigen::Vector3f& rpy, const Eigen::Vector3f& p) {
     Eigen::Vector3f diff = pose.translation() - p;
@@ -37,8 +45,185 @@ class BaseMesh {
     pose.translate(diff);
   }
 
+  void setView(const Eigen::Affine3d& view) {
+    if (shader != nullptr) {
+      const glm::mat4 view_glm = utils::EigenAffine2GlmMat(view);
+      glCheck(shader->use());
+      glCheck(shader->setMat4(SHADER_UNIFORM_VIEW_NAME, view_glm));
+      glUseProgram(0);
+    }
+
+    if (shader_sf != nullptr) {
+      const float* pSource = reinterpret_cast<const float*>(view.data());
+      // TODO better solution for conversation?
+      sf::Glsl::Mat4 view_glsl(pSource);
+      glCheck(sf::Shader::bind(shader_sf.get()));
+      glCheck(shader_sf->setUniform(SHADER_UNIFORM_VIEW_NAME, view_glsl));
+      sf::Shader::bind(nullptr);
+    }
+  }
+
+  void setProjection(const Eigen::Affine3d& projection) {
+    if (shader != nullptr) {
+      const glm::mat4 projection_glm = utils::EigenAffine2GlmMat(projection);
+      glCheck(shader->use());
+      glCheck(shader->setMat4(SHADER_UNIFORM_PROJECTION_NAME, projection_glm));
+      glUseProgram(0);
+    }
+
+    if (shader_sf != nullptr) {
+      const float* pSource = reinterpret_cast<const float*>(projection.data());
+      // TODO better solution for conversation?
+      sf::Glsl::Mat4 projection_glsl(pSource);
+      glCheck(sf::Shader::bind(shader_sf.get()));
+      glCheck(shader_sf->setUniform(SHADER_UNIFORM_PROJECTION_NAME, projection_glsl));
+      sf::Shader::bind(nullptr);
+    }
+  }
+
+  void setTexture(int sample_nr = 0) {
+    if (shader != nullptr) {
+      glCheck(shader->use());
+      glCheck(shader->setInt("texture1", sample_nr));
+      glUseProgram(0);
+    }
+
+    if (shader_sf != nullptr) {
+      ERROR("To lazy to implement for now");
+    }
+  }
+
  protected:
+  /*!
+   * \brief Loads and connects a new shader to this mesh.
+   * This uses the s::shader class. An existing shader will be deleted.
+   * \param vertex_shader_file The path to the vertex shader file.
+   * \param fragment_shader_file The path to the vertex shader file.
+   */
+  [[nodiscard]] bool loadShaderSf(const std::string& vertex_shader_file,
+                                  const std::string& fragment_shader_file) {
+    shader_sf = std::make_shared<sf::Shader>();
+    const bool success = shader_sf->loadFromFile(vertex_shader_file, fragment_shader_file);
+    if (!success) {
+      shader_sf.reset();
+    }
+    shader.reset();
+    connectShader(shader_sf->getNativeHandle());
+    return success;
+  }
+
+  /*!
+   * \brief Loads and connects a new shader to this mesh.
+   * This uses the own shader class. An existing shader will be deleted.
+   * \param vertex_shader_file The path to the vertex shader file.
+   * \param fragment_shader_file The path to the vertex shader file.
+   */
+  [[nodiscard]] bool loadShader(const std::string& vertex_shader_file,
+                                const std::string& fragment_shader_file) {
+    shader = std::make_shared<Shader>(vertex_shader_file.c_str(),
+                                      fragment_shader_file.c_str());
+    if (!shader->isReady()) {
+      shader.reset();
+      return false;
+    }
+    shader_sf.reset();
+    connectShader(shader->ID);
+    return true;
+  }
+
+  /*!
+   * \brief Load texture and talk to openGL to request some space for the
+   * texture.
+   * \param texture_path The path to the texture/image.
+   */
+  void loadTexture(const std::string& texture_path) {
+    glCheck(glGenTextures(1, &texture));
+
+    glCheck(glBindTexture(GL_TEXTURE_2D, texture));  // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
+
+    // load image, create texture and generate mipmaps
+    int width, height, nrChannels;
+
+    unsigned char* data =
+        stbi_load(texture_path.c_str(), &width, &height, &nrChannels, 0);
+    if (data == nullptr) {
+      F_ERROR("Failed to load textre from %s.", texture_path.c_str());
+      return;
+    }
+
+    glCheck(glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data));
+    // glCheck(glGenerateMipmap(GL_TEXTURE_2D));
+
+    // set the texture wrapping parameters
+    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));  // set texture wrapping to GL_REPEAT (default wrapping method)
+    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+    // set texture filtering parameters
+    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+
+    stbi_image_free(data);
+  }
+
+  /*!
+   * \brief Deletes the buffers.
+   */
+  void clean() {
+    glCheck(glDeleteVertexArrays(1, &VAO));
+    glCheck(glDeleteBuffers(1, &VBO));
+    glCheck(glDeleteBuffers(1, &EBO));
+    glCheck(glDeleteTextures(1, &texture));
+    is_initialized = false;
+  }
+
+  // render data
+  unsigned int VBO, EBO;
+
+  std::shared_ptr<Shader> shader = nullptr;
+  std::shared_ptr<sf::Shader> shader_sf = nullptr;
+
+  virtual void connectShader(unsigned int shaderProgram) = 0;
+
+  // mesh Data
+  unsigned int texture;
+  unsigned int VAO;
+
+  // access in shader like this:
+  // in vec3 vertexPos;
+  const std::string SHADER_IN_POSITION_NAME = "vertexPos";
+  const std::string SHADER_IN_NORMAL_NAME = "vertexNormal";
+  const std::string SHADER_IN_TANGENT_NAME = "vertexTangent";
+  const std::string SHADER_IN_BITANGENT_NAME = "vertexBitangent";
+  const std::string SHADER_IN_TEXTURE_NAME = "vertexTexturePos";
+  const std::string SHADER_IN_COLOR_NAME = "vertexColor";
+
+  // shader standard uniform
+  const std::string SHADER_UNIFORM_POSE_NAME = "pose";
+  const std::string SHADER_UNIFORM_VIEW_NAME = "view";
+  const std::string SHADER_UNIFORM_PROJECTION_NAME = "projection";
+
+
+  bool is_initialized = false;
   Eigen::Affine3f pose = Eigen::Affine3f::Identity();
+
+ private:
+  void updatePose() {
+    if (shader != nullptr) {
+      const glm::mat4 pose_glm = utils::EigenAffine2GlmMat(pose);
+      glCheck(shader->use());
+      glCheck(shader->setMat4(SHADER_UNIFORM_POSE_NAME, pose_glm));
+      glUseProgram(0);
+    }
+
+    if (shader_sf != nullptr) {
+      const float* pSource = reinterpret_cast<const float*>(pose.data());
+      // TODO better solution for conversation?
+      sf::Glsl::Mat4 pose_glsl(pSource);
+      glCheck(sf::Shader::bind(shader_sf.get()));
+      glCheck(shader_sf->setUniform(SHADER_UNIFORM_POSE_NAME, pose_glsl));
+      sf::Shader::bind(nullptr);
+    }
+  }
 };
 
 template <bool has_position = true, bool has_normal = true, bool has_tangent = true, bool has_bitangent = true, bool has_texture = true, bool has_color = true, int num_color_values = 3>
@@ -101,46 +286,65 @@ class Mesh : public BaseMesh {
     }
 
     // always good practice to set everything back to defaults once configured.
-    // glCheck(glActiveTexture(GL_TEXTURE0));
+    glCheck(glActiveTexture(GL_TEXTURE0));
   }
 
+ protected:
+  // mesh Data
+  std::vector<VertexType> vertices;
+  std::vector<unsigned int> indices;
 
+ private:
   /*!
-   * \brief Loads and connects a new shader to this mesh.
-   * This uses the s::shader class. An existing shader will be deleted.
-   * \param vertex_shader_file The path to the vertex shader file.
-   * \param fragment_shader_file The path to the vertex shader file.
+   * \brief Talks to openGL to reserve space for the mesh.
    */
-  [[nodiscard]] bool loadShaderSf(const std::string& vertex_shader_file,
-                                  const std::string& fragment_shader_file) {
-    shader_sf = std::make_shared<sf::Shader>();
-    const bool success = shader_sf->loadFromFile(vertex_shader_file, fragment_shader_file);
-    if (!success) {
-      shader_sf.reset();
-    }
-    shader.reset();
-    connectShader(shader_sf->getNativeHandle());
-    return success;
-  }
+  void setupMesh() {
+    // create buffers/arrays
+    glCheck(glGenVertexArrays(1, &VAO));
+    glCheck(glGenBuffers(1, &VBO));
+    glCheck(glGenBuffers(1, &EBO));
 
+    glCheck(glBindVertexArray(VAO));
+    // load data into vertex buffers
+    glCheck(glBindBuffer(GL_ARRAY_BUFFER, VBO));
+    // A great thing about structs is that their memory layout is sequential for all its items.
+    // The effect is that we can simply pass a pointer to the struct and it translates perfectly to a glm::vec3/2 array which
+    // again translates to 3/2 floats which translates to a byte array.
+    glCheck(glBufferData(
+        GL_ARRAY_BUFFER, vertices.size() * sizeof(VertexType), &vertices[0], GL_STATIC_DRAW));
 
-  /*!
-   * \brief Loads and connects a new shader to this mesh.
-   * This uses the own shader class. An existing shader will be deleted.
-   * \param vertex_shader_file The path to the vertex shader file.
-   * \param fragment_shader_file The path to the vertex shader file.
-   */
-  [[nodiscard]] bool loadShader(const std::string& vertex_shader_file,
-                                const std::string& fragment_shader_file) {
-    shader = std::make_shared<Shader>(vertex_shader_file.c_str(),
-                                      fragment_shader_file.c_str());
-    if (!shader->isReady()) {
-      shader.reset();
-      return false;
+    glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO));
+    glCheck(glBufferData(
+        GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW));
+
+    /* DEBUG
+    int float_size = sizeof(float);
+    int b_size = sizeof(VertexType);
+
+    for (unsigned int v = 0; v < vertices.size(); v++) {
+      std::cout << "<Vertex> ";
+      void* void_info = reinterpret_cast<void*>(&vertices[v]);
+      float* info = reinterpret_cast<float*>(void_info);
+      for (int i = 0; i < b_size / float_size; i++) {
+        std::cout << info[i] << " ";
+      }
+      std::cout << "</Vertex>\n";
+
+      std::cout << "pos: " << vertices[v].position[0] << ","
+                << vertices[v].position[1] << "," << vertices[v].position[2] <<
+  "\n"; std::cout << "norm: " << vertices[v].normal[0] << ","
+                << vertices[v].normal[1] << "," << vertices[v].normal[2] <<
+  "\n"; std::cout << "tang: " << vertices[v].tangent[0] << ","
+                << vertices[v].tangent[1] << "," << vertices[v].tangent[2] <<
+  "\n"; std::cout << "bitang: " << vertices[v].bitangent[0] << ","
+                << vertices[v].bitangent[1] << "," << vertices[v].bitangent[2]
+  << "\n"; std::cout << "text: " << vertices[v].texture_pos[0] << ","
+                << vertices[v].texture_pos[1] << "\n";
+      std::cout << "colo: " << vertices[v].color[0] << ","
+                << vertices[v].color[1] << "," << vertices[v].color[2] << "\n";
     }
-    shader_sf.reset();
-    connectShader(shader->ID);
-    return true;
+
+  */
   }
 
   /*!
@@ -153,7 +357,7 @@ class Mesh : public BaseMesh {
    * in vec3 meshBittangent;
    * This is kinda hard coded for now.
    */
-  void connectShader(unsigned int shaderProgram) {
+  void connectShader(unsigned int shaderProgram) override {
 
     // Rather then using the recomended glBindAttribLocation prior to linking the
     // shader I did that here, which is bad according to some. but it works for
@@ -229,125 +433,6 @@ class Mesh : public BaseMesh {
                            reinterpret_cast<void*>(offsetof(VertexType, color)));
     }
   }
-
- protected:
-  std::shared_ptr<Shader> shader = nullptr;
-  std::shared_ptr<sf::Shader> shader_sf = nullptr;
-
- private:
-  /*!
-   * \brief Load texture and talk to openGL to request some space for the
-   * texture.
-   * \param texture_path The path to the texture/image.
-   */
-  void loadTexture(const std::string& texture_path) {
-    glCheck(glGenTextures(1, &texture));
-
-    glCheck(glBindTexture(GL_TEXTURE_2D, texture));  // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
-
-    // load image, create texture and generate mipmaps
-    int width, height, nrChannels;
-
-    unsigned char* data =
-        stbi_load(texture_path.c_str(), &width, &height, &nrChannels, 0);
-    if (data == nullptr) {
-      F_ERROR("Failed to load textre from %s.", texture_path.c_str());
-      return;
-    }
-
-    glCheck(glTexImage2D(
-        GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data));
-    // glCheck(glGenerateMipmap(GL_TEXTURE_2D));
-
-    // set the texture wrapping parameters
-    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));  // set texture wrapping to GL_REPEAT (default wrapping method)
-    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
-    // set texture filtering parameters
-    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-
-    stbi_image_free(data);
-  }
-
-  /*!
-   * \brief Talks to openGL to reserve space for the mesh.
-   */
-  void setupMesh() {
-    // create buffers/arrays
-    glCheck(glGenVertexArrays(1, &VAO));
-    glCheck(glGenBuffers(1, &VBO));
-    glCheck(glGenBuffers(1, &EBO));
-
-    glCheck(glBindVertexArray(VAO));
-    // load data into vertex buffers
-    glCheck(glBindBuffer(GL_ARRAY_BUFFER, VBO));
-    // A great thing about structs is that their memory layout is sequential for all its items.
-    // The effect is that we can simply pass a pointer to the struct and it translates perfectly to a glm::vec3/2 array which
-    // again translates to 3/2 floats which translates to a byte array.
-    glCheck(glBufferData(
-        GL_ARRAY_BUFFER, vertices.size() * sizeof(VertexType), &vertices[0], GL_STATIC_DRAW));
-
-    glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO));
-    glCheck(glBufferData(
-        GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW));
-
-    /* DEBUG
-    int float_size = sizeof(float);
-    int b_size = sizeof(VertexType);
-
-    for (unsigned int v = 0; v < vertices.size(); v++) {
-      std::cout << "<Vertex> ";
-      void* void_info = reinterpret_cast<void*>(&vertices[v]);
-      float* info = reinterpret_cast<float*>(void_info);
-      for (int i = 0; i < b_size / float_size; i++) {
-        std::cout << info[i] << " ";
-      }
-      std::cout << "</Vertex>\n";
-
-      std::cout << "pos: " << vertices[v].position[0] << ","
-                << vertices[v].position[1] << "," << vertices[v].position[2] <<
-  "\n"; std::cout << "norm: " << vertices[v].normal[0] << ","
-                << vertices[v].normal[1] << "," << vertices[v].normal[2] <<
-  "\n"; std::cout << "tang: " << vertices[v].tangent[0] << ","
-                << vertices[v].tangent[1] << "," << vertices[v].tangent[2] <<
-  "\n"; std::cout << "bitang: " << vertices[v].bitangent[0] << ","
-                << vertices[v].bitangent[1] << "," << vertices[v].bitangent[2]
-  << "\n"; std::cout << "text: " << vertices[v].texture_pos[0] << ","
-                << vertices[v].texture_pos[1] << "\n";
-      std::cout << "colo: " << vertices[v].color[0] << ","
-                << vertices[v].color[1] << "," << vertices[v].color[2] << "\n";
-    }
-
-  */
-  }
-  void clean() {
-    glCheck(glDeleteVertexArrays(1, &VAO));
-    glCheck(glDeleteBuffers(1, &VBO));
-    glCheck(glDeleteBuffers(1, &EBO));
-    glCheck(glDeleteTextures(1, &texture));
-  }
-
-  // render data
-  unsigned int VBO, EBO;
-
- protected:
-  // mesh Data
-  std::vector<VertexType> vertices;
-  std::vector<unsigned int> indices;
-  unsigned int texture;
-  unsigned int VAO;
-
-  // acces in shader like this:
-  // in vec3 vertexPos;
-  const std::string SHADER_IN_POSITION_NAME = "vertexPos";
-  const std::string SHADER_IN_NORMAL_NAME = "vertexNormal";
-  const std::string SHADER_IN_TANGENT_NAME = "vertexTangent";
-  const std::string SHADER_IN_BITANGENT_NAME = "vertexBitangent";
-  const std::string SHADER_IN_TEXTURE_NAME = "vertexTexturePos";
-  const std::string SHADER_IN_COLOR_NAME = "vertexColor";
-
-
-  bool is_initialized = false;
 };
 
 #endif
