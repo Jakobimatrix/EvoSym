@@ -5,4 +5,6 @@ list(APPEND evosym_start_SOURCES
   PRIVATE display_lib
   Qt5::Widgets
 )
+
+MESSAGE("--------rtrtzhtrhtrhtrhtr-----${LIBS}------------")
 target_link_libraries(evosym_start ${evosym_start_SOURCES} ${LIBS})

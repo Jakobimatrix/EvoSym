@@ -19,10 +19,17 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
   settings.attributeFlags = sf::ContextSettings::Default;
   // settings.attributeFlags = sf::ContextSettings::Core; // changes v3 to v4
   sf::RenderWindow::create(handle, settings);
-
-  camera.setPosition(0, 0, 0);
-
   setVerticalSyncEnabled(true);
+  onResize();
+
+  Camera::CallbackCameraChange viewChange =
+      std::bind(&SfmlRenderWindow::updateMeshesView, this);
+  Camera::CallbackCameraChange perspectiveChange =
+      std::bind(&SfmlRenderWindow::updateMeshesPerspective, this);
+
+  camera.addCallbackPerspectiveChange(perspectiveChange);
+  camera.addCallbackViewChange(viewChange);
+
 
   // Load OpenGL or OpenGL ES entry points using glad
   gladLoadGLLoader(reinterpret_cast<GLADloadproc>(sf::Context::getFunction));
@@ -49,27 +56,19 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
   glDepthRange(0.0, 1.0);
 
 
-
   // init mesh
-
   world_mesh = std::make_shared<WorldMesh>();
   // set perspective for world mesh
   const Eigen::Affine3f pose = Eigen::Affine3f::Identity();
   world_mesh->setPose(pose);
-  // like the "lense" we are looking through
-  const float ratio = static_cast<float>(sf::RenderWindow::getSize().x) /
-                      sf::RenderWindow::getSize().y;
-  glm::mat4 projection = glm::perspective(static_cast<float>(camera.lense_angle_rad),  // The vertical Field of View, in radians: the amount of "zoom". Think "camera lens". Usually between 90° (extra wide) and 30° (quite zoomed in)
-                                          ratio,  // Aspect Ratio. Depends on the size of your window. Notice that 4/3 == 800/600 == 1280/960, sounds familiar ?
-                                          static_cast<float>(camera.near_clipping),  // Near clipping plane. Keep as big as possible, or you'll get precision issues.
-                                          static_cast<float>(camera.far_clipping)  // Far clipping plane. Keep as little as possible.
-  );
 
-  Eigen::Affine3d projection_eigen = utils::glmMat2EigenAffine(projection);
-  projection_eigen = Eigen::Affine3d::Identity();
-  world_mesh->setProjection(projection_eigen);
+  unsigned int wmid = addMesh(world_mesh);
 
   setActive(false);
+
+  // init meshes
+  updateMeshesView();
+  updateMeshesPerspective();
   is_initialized = true;
 }
 
@@ -159,13 +158,8 @@ void SfmlRenderWindow::draw2DStack() {
 void SfmlRenderWindow::drawMesh() {
   sf::RenderWindow::setActive(true);
 
-  // draw world
-  world_mesh->setView(camera.GetViewMatrix());
-
-  world_mesh->draw();
-
-  for (const auto& mesh_shader_pair : meshes) {
-    mesh_shader_pair.second->draw();
+  for (const auto& mesh : meshes) {
+    mesh.second->draw();
   }
 
   sf::RenderWindow::setActive(false);
@@ -201,7 +195,11 @@ void SfmlRenderWindow::processInputActions() {
 void SfmlRenderWindow::onResize() {
   window_ratio = static_cast<double>(sf::RenderWindow::getSize().x) /
                  sf::RenderWindow::getSize().y;
-  setPerspective();
+  camera.setAspectRatio(window_ratio);
+
+  for (auto& mesh : meshes) {
+    mesh.second->setProjection(camera.getProjectionMatrix());
+  }
 }
 
 void SfmlRenderWindow::processMouseAction() {
@@ -273,6 +271,17 @@ void SfmlRenderWindow::rightKlick(const sf::Vector2i& mouse_pos) {
   F_DEBUG("klick right x: %d y: %d", mouse_pos.x, mouse_pos.y);
 }
 
+void SfmlRenderWindow::updateMeshesView() {
+  for (auto& mesh : meshes) {
+    mesh.second->setView(camera.getViewMatrix());
+  }
+}
+
+void SfmlRenderWindow::updateMeshesPerspective() {
+  for (auto& mesh : meshes) {
+    mesh.second->setProjection(camera.getProjectionMatrix());
+  }
+}
 void SfmlRenderWindow::setPerspective() {
   sf::RenderWindow::setActive(true);
 
@@ -288,9 +297,9 @@ void SfmlRenderWindow::setPerspective() {
   */
 
 
-
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
+  // projection without the use of a camera
+  // glMatrixMode(GL_PROJECTION);
+  // glLoadIdentity();
 
   //  const double bottom = -1.0;
   //  const double top = 1.0;
@@ -299,10 +308,9 @@ void SfmlRenderWindow::setPerspective() {
   //  glFrustum(left, right, bottom, top, near_clipping, far_clipping);
 
   // perspective clipping like glm::perspective() or gluPerspective()
-  const double fH = tan(camera.lense_angle_rad) * camera.near_clipping;
-  const double fW = fH * window_ratio;
-  glFrustum(-fW, fW, -fH, fH, camera.near_clipping, camera.far_clipping);
-
+  // const double fH = tan(camera.lense_angle_rad) * camera.near_clipping;
+  // const double fW = fH * window_ratio;
+  // glFrustum(-fW, fW, -fH, fH, camera.near_clipping, camera.far_clipping);
 
   sf::RenderWindow::setActive(false);
 }

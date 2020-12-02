@@ -37,7 +37,7 @@ void main()
     }else{
       b = 0;
     }
-    VertexColor = vec4(vertexColor, 1.0);
+    VertexColor = vec4(vertexColor, 0.2);
 
     TexCoord = vertexTexturePos;
 

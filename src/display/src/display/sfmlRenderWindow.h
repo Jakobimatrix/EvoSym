@@ -39,6 +39,9 @@ class SfmlRenderWindow : public sf::RenderWindow {
   void leftKlick(const sf::Vector2i &mouse_pos);
   void rightKlick(const sf::Vector2i &mouse_pos);
 
+  void updateMeshesView();
+  void updateMeshesPerspective();
+
 
   void setPerspective();
 
