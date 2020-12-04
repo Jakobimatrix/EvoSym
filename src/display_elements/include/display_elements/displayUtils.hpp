@@ -58,10 +58,14 @@ inline void checkError(const char* file, unsigned int line, const char* expressi
 
 #ifdef NDEBUG
 #define glCheck(expr) expr
+#define glCheckAfter()
 #else
 #define glCheck(expr) \
   expr;               \
   disp_utils::checkError(__FILE__, __LINE__, #expr);
+
+#define glCheckAfter() \
+  disp_utils::checkError(__FILE__, __LINE__, "Somewhere above this.");
 #endif
 
 #endif

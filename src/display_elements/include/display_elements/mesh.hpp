@@ -368,6 +368,7 @@ class Mesh : public BaseMesh {
                                                  int num_values,
                                                  void* start_position) {
       const int variable_position = glGetAttribLocation(shaderProgram, var_name.c_str());
+      glCheckAfter();
       if (variable_position < 0) {
         // compiler did optimize away the variable
         F_WARNING(
