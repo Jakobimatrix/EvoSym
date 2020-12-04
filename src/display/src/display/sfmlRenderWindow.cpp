@@ -4,6 +4,7 @@
 #include <display_elements/glad_import.hpp>
 #include <utils/math.hpp>
 
+
 SfmlRenderWindow::SfmlRenderWindow() {}
 
 void SfmlRenderWindow::init(sf::WindowHandle handle) {
