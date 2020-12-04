@@ -76,7 +76,7 @@ class Camera {
 
   // shift current view-plane in x and y
   void ProcessShift(double xoffset, double yoffset) {
-    const Eigen::Vector3d move(xoffset * shift_sensitivity, -yoffset * shift_sensitivity, 0);
+    const Eigen::Vector3d move(xoffset * shift_sensitivity, yoffset * shift_sensitivity, 0);
     moveXYZ(move);
   }
 
@@ -96,7 +96,8 @@ class Camera {
   // processes input received from a mouse scroll-wheel event.
   void ProcessMouseScroll(double dscroll) {
     dscroll *= scroll_sensitivity;
-    zoom += dscroll;
+    const Eigen::Vector3d move(0, 0, dscroll);
+    moveXYZ(move);
     updateView();
   }
 
@@ -108,12 +109,18 @@ class Camera {
         eigen_utils::pose2Affine(Eigen::Vector3d::Zero(), angles, 1);
     Eigen::Affine3d transformation = rotation * translation;
     transformation.inverse();
-    eigen_utils::scaleAffine(transformation, std::exp(zoom));
+    // eigen_utils::scaleAffine(transformation, std::exp(zoom));
     view = transformation;
+
+    std::cout << "\n"
+              << position.transpose() << "\n"
+              << angles.transpose() << "\n";
     callbackViewChange();
   }
   void moveXYZ(const Eigen::Vector3d &xyz) {
-    position += xyz;
+    const Eigen::Matrix3d r = eigen_utils::rpy2RotationMatrix(angles).transpose();
+    position += r * xyz;
+    // position = view * xyz;
     updateView();
   }
 
@@ -135,6 +142,8 @@ class Camera {
     projection.matrix()(2, 3) = 1;
     projection.matrix()(3, 2) =
         -(far_clipping * near_clipping) / (far_clipping - near_clipping);
+
+    projection = Eigen::Affine3d::Identity();
     callbackProjectionChange();
   }
 
@@ -145,8 +154,8 @@ class Camera {
   Eigen::Vector3d angles = Eigen::Vector3d(0, 0, 0);   // R,P,Y
   double zoom = 1;
 
-  double far_clipping = 1.;
-  double near_clipping = 0.9;
+  double far_clipping = 100.;
+  double near_clipping = 0.1;
   double lense_angle_rad =
       math::deg2Rad(30.);  //  field-of-view something between 30 and 90 looks ok
   double aspect_ratio = 1;

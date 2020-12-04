@@ -11,12 +11,12 @@ void WorldMesh::loadVertices() {
   // clang-format off
 
   std::array<float, 33> alg_vertex =
-  {{1.f, -0.6f, -0.6f,
-    1.f,  0.6f, -0.6f,
-    1.f, -0.6f,  0.6f,
-    1.f, -0.6f,  0.6f, // == [2]
-    1.f,  0.6f, -0.6f, // == [1]
-    1.f,  0.6f,  0.6f}};
+  {{0.8f, -0.6f, -0.6f,
+    0.8f,  0.6f, -0.6f,
+    0.8f, -0.6f,  0.6f,
+    0.8f, -0.6f,  0.6f, // == [2]
+    0.8f,  0.6f, -0.6f, // == [1]
+    0.8f,  0.6f,  0.6f}};
 
   std::array<float, 12> alg_texture =
   {{0.f, 0.f,

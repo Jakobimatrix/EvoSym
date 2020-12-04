@@ -7,9 +7,23 @@
 
 SfmlRenderWindow::SfmlRenderWindow() {}
 
-void SfmlRenderWindow::init(sf::WindowHandle handle) {
+void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
+  initOpenGl(handle);
+  printGraphicCardInformation();
+  initCamera();
 
+  activateIf();
+  // init mesh
+  world_mesh = std::make_shared<WorldMesh>();
+  // set perspective for world mesh
+  const Eigen::Affine3f pose = Eigen::Affine3f::Identity();
+  world_mesh->setPose(pose);
+  deactivateIf();
 
+  unsigned int wmid = addMesh(world_mesh);
+}
+
+void SfmlRenderWindow::initOpenGl(const sf::WindowHandle& handle) {
   // Create the SFML window with the widget handle
   sf::ContextSettings settings;
   settings.depthBits = 24;
@@ -21,7 +35,26 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
   // settings.attributeFlags = sf::ContextSettings::Core; // changes v3 to v4
   sf::RenderWindow::create(handle, settings);
   setVerticalSyncEnabled(true);
-  onResize();
+  // Load OpenGL or OpenGL ES entry points using glad
+  gladLoadGLLoader(reinterpret_cast<GLADloadproc>(sf::Context::getFunction));
+
+  // kill bugs
+  sf::RenderWindow::setActive(true);
+  // SFML bug, first time calling isAvaiable it will deactivate the window
+  // https://en.sfml-dev.org/forums/index.php?topic=17243.0
+  sf::Shader::isAvailable();
+  sf::RenderWindow::setActive(true);
+  sf::Texture::getMaximumSize();
+
+  enable3dDepth();
+
+  updateWindowRatio();
+
+  is_initialized = true;
+}
+
+void SfmlRenderWindow::initCamera() {
+  setActive(true);
 
   Camera::CallbackCameraChange viewChange =
       std::bind(&SfmlRenderWindow::updateMeshesView, this);
@@ -30,47 +63,27 @@ void SfmlRenderWindow::init(sf::WindowHandle handle) {
 
   camera.addCallbackPerspectiveChange(perspectiveChange);
   camera.addCallbackViewChange(viewChange);
+  camera.setPosition(0, 0, 0);
 
+  camera.setAspectRatio(window_ratio);
 
-  // Load OpenGL or OpenGL ES entry points using glad
-  gladLoadGLLoader(reinterpret_cast<GLADloadproc>(sf::Context::getFunction));
+  setActive(false);
+}
 
+void SfmlRenderWindow::printGraphicCardInformation() {
+  if (is_initialized) {
+    printf("Vendor graphic card: %s\n", glGetString(GL_VENDOR));
+    printf("Renderer: %s\n", glGetString(GL_RENDERER));
+    printf("Version GL: %s\n", glGetString(GL_VERSION));
+    printf("Version GLSL: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+  }
+}
 
-  setActive(true);
-  // SFML bug, first time calling isAvaiable it will deactivate the window
-  // https://en.sfml-dev.org/forums/index.php?topic=17243.0
-  sf::Shader::isAvailable();
-  setActive(true);
-  sf::Texture::getMaximumSize();
-  setActive(true);
-
-
-  printf("Vendor graphic card: %s\n", glGetString(GL_VENDOR));
-  printf("Renderer: %s\n", glGetString(GL_RENDERER));
-  printf("Version GL: %s\n", glGetString(GL_VERSION));
-  printf("Version GLSL: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-
+void SfmlRenderWindow::enable3dDepth() {
   glEnable(GL_DEPTH_TEST);
   glDepthMask(GL_TRUE);
   glDepthFunc(GL_LEQUAL);
-  glDepthRange(0.0, 1.0);
-
-
-  // init mesh
-  world_mesh = std::make_shared<WorldMesh>();
-  // set perspective for world mesh
-  const Eigen::Affine3f pose = Eigen::Affine3f::Identity();
-  world_mesh->setPose(pose);
-
-  unsigned int wmid = addMesh(world_mesh);
-
-  setActive(false);
-
-  // init meshes
-  updateMeshesView();
-  updateMeshesPerspective();
-  is_initialized = true;
+  glDepthRange(-1.0, 1.0);
 }
 
 void SfmlRenderWindow::update() {
@@ -79,32 +92,14 @@ void SfmlRenderWindow::update() {
     return;
   }
   processInputActions();
-
-  // drawing sfml renderer (2Dstack resets this)
-  glEnable(GL_DEPTH_TEST);
-  glDepthMask(GL_TRUE);
-  glDepthFunc(GL_LEQUAL);
-  glDepthRange(0.0, 1.0);
-
-  // sf::RenderWindow::clear(sf::Color(100, 100, 100, 255));
+  setActive(true);
   glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
   glClearDepth(1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
-  // glEnable(GL_COLOR_MATERIAL);
-  // glEnable(GL_LIGHTING);
-  // glEnable(GL_LIGHT0);
-  // GLfloat sun_direction[] = {0.0, 0.0, -1.0, 0.0};
-  // glLightfv(GL_LIGHT0, GL_POSITION, sun_direction);
-
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-
-
-  // glEnable(GL_BLEND);
-  // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   drawMesh();
+  setActive(false);
 
   // not working :(
   //  // reset transformation for SFML
@@ -112,13 +107,13 @@ void SfmlRenderWindow::update() {
   //  // Save the current OpenGL render states and matrices.
   //  // glPushAttrib(GL_ALL_ATTRIB_BITS);
   //  // glPushMatrix();
-  // pushGLStates();
+  sf::RenderTarget::pushGLStates();
   //  // resetGLStates();
-  // draw2DStack();
+  draw2DStack();
   //  // Restore the previously saved OpenGL render states and matrices.
   //  // glPopAttrib();
   //  // glPopMatrix();
-  // popGLStates();
+  sf::RenderTarget::popGLStates();
 
 
   sf::RenderWindow::display();
@@ -126,6 +121,10 @@ void SfmlRenderWindow::update() {
 
 unsigned long SfmlRenderWindow::addMesh(const std::shared_ptr<BaseMesh>& simple_mesh) {
   meshes.emplace(std::make_pair(mesh_counter, simple_mesh));
+  activateIf();
+  simple_mesh->setProjection(camera.getProjectionMatrix());
+  simple_mesh->setView(camera.getViewMatrix());
+  deactivateIf();
   return mesh_counter++;
 }
 
@@ -139,6 +138,7 @@ bool SfmlRenderWindow::removeMesh(unsigned long id) {
 }
 
 void SfmlRenderWindow::draw2DStack() {
+
   sf::RectangleShape rectangle;
   rectangle.setSize(sf::Vector2f(10, 10));
   rectangle.setFillColor(sf::Color::Red);
@@ -157,13 +157,11 @@ void SfmlRenderWindow::draw2DStack() {
 }
 
 void SfmlRenderWindow::drawMesh() {
-  sf::RenderWindow::setActive(true);
-
+  activateIf();
   for (const auto& mesh : meshes) {
     mesh.second->draw();
   }
-
-  sf::RenderWindow::setActive(false);
+  deactivateIf();
 }
 
 void SfmlRenderWindow::processInputActions() {
@@ -193,14 +191,16 @@ void SfmlRenderWindow::processInputActions() {
   }
 }
 
-void SfmlRenderWindow::onResize() {
+void SfmlRenderWindow::updateWindowRatio() {
+
   window_ratio = static_cast<double>(sf::RenderWindow::getSize().x) /
                  sf::RenderWindow::getSize().y;
-  camera.setAspectRatio(window_ratio);
+  setPerspective();
+}
 
-  for (auto& mesh : meshes) {
-    mesh.second->setProjection(camera.getProjectionMatrix());
-  }
+void SfmlRenderWindow::onResize() {
+  updateWindowRatio();
+  camera.setAspectRatio(window_ratio);
 }
 
 void SfmlRenderWindow::processMouseAction() {
@@ -273,34 +273,45 @@ void SfmlRenderWindow::rightKlick(const sf::Vector2i& mouse_pos) {
 }
 
 void SfmlRenderWindow::updateMeshesView() {
+  activateIf();
   for (auto& mesh : meshes) {
     mesh.second->setView(camera.getViewMatrix());
   }
+  deactivateIf();
 }
 
 void SfmlRenderWindow::updateMeshesPerspective() {
+  activateIf();
   for (auto& mesh : meshes) {
     mesh.second->setProjection(camera.getProjectionMatrix());
   }
+  deactivateIf();
 }
+
 void SfmlRenderWindow::setPerspective() {
-  sf::RenderWindow::setActive(true);
+  activateIf();
 
   // Configure the viewport (the same size as the window)
   glViewport(0, 0, sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
 
   /*
-  sf::View view;
-  view.setSize(sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
-  view.setCenter(sf::RenderWindow::getSize().x / 2.f,
-                 sf::RenderWindow::getSize().y / 2.f);
-  sf::RenderWindow::setView(view);
-  */
+    sf::View view;
+    view.setSize(sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
+    view.setCenter(sf::RenderWindow::getSize().x / 2.f,
+                   sf::RenderWindow::getSize().y / 2.f);
+    sf::RenderWindow::setView(view);
 
+    */
 
-  // projection without the use of a camera
-  // glMatrixMode(GL_PROJECTION);
-  // glLoadIdentity();
+  // projection will be calculated in shader
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+
+  // model and view will be calculated in shader
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  // open GL assumes now that every visible VErtex is within [-1,1]^3
 
   //  const double bottom = -1.0;
   //  const double top = 1.0;
@@ -313,5 +324,5 @@ void SfmlRenderWindow::setPerspective() {
   // const double fW = fH * window_ratio;
   // glFrustum(-fW, fW, -fH, fH, camera.near_clipping, camera.far_clipping);
 
-  sf::RenderWindow::setActive(false);
+  deactivateIf();
 }

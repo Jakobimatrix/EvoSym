@@ -16,7 +16,7 @@ class SfmlRenderWindow : public sf::RenderWindow {
  public:
   SfmlRenderWindow();
 
-  void init(sf::WindowHandle handle);
+  void init(const sf::WindowHandle &handle);
 
   void update();
 
@@ -31,7 +31,62 @@ class SfmlRenderWindow : public sf::RenderWindow {
   // sfml can not detect mouse wheel scroll, this baaad hack
   void scrollHack(double f);
 
+  /*!
+   * \brief En- or disables the OpenGL rendering for the window.
+   * In debug mode an error is thrown if the operation was not possible.
+   * \param activate Bool to decide wheather to activate or deactivate.
+   */
+  void setActive(bool activate) {
+    if (is_active == activate) {
+      return;
+    }
+    const bool success = sf::RenderWindow::setActive(activate);
+    is_active = activate;
+    if (!success) {
+      const std::string state = is_active ? "deactivate" : "activate";
+      F_ERROR("Was not able to set the window for OpenGL rendering %s", state.c_str());
+    }
+  }
+
  private:
+  void initOpenGl(const sf::WindowHandle &handle);
+
+  void initCamera();
+
+  void updateWindowRatio();
+
+  /*!
+   * \brief Activates the OpenGL rendering for the window if it was deactivated.
+   * You have to deactivate the rendering using deactivateIf() in order to not
+   * break the state machine.
+   */
+  void activateIf() {
+    assert(used_conditional_activate == false &&
+           "SfmlRenderWindow::activateIf is supposed to be used with "
+           "deactivateIf. It seems like you used activateIf twice without "
+           "deactivateIf inbetween.");
+    was_active = is_active;
+    used_conditional_activate = true;
+    if (!was_active) {
+      setActive(true);
+    }
+  }
+
+  /*!
+   * \brief Deaktivates the OpenGL rendering for the window if it was deactivated before calling activateIf().
+   * This function is supposed to be called after activateIf() was used.
+   */
+  void deactivateIf() {
+    assert(used_conditional_activate == true &&
+           "SfmlRenderWindow::deactivateIf is supposed to be used after "
+           "activateIf."
+           "deactivateIf inbetween.");
+    used_conditional_activate = false;
+    if (!was_active) {
+      setActive(false);
+    }
+  }
+
   void processInputActions();
   void processMouseAction();
   void dragMouseLeft(const sf::Vector2i &diff);
@@ -42,11 +97,13 @@ class SfmlRenderWindow : public sf::RenderWindow {
   void updateMeshesView();
   void updateMeshesPerspective();
 
-
+  void enable3dDepth();
   void setPerspective();
 
   void drawMesh();
   void draw2DStack();
+
+  void printGraphicCardInformation();
 
   // SFML entities
   Camera camera = Camera();
@@ -55,7 +112,12 @@ class SfmlRenderWindow : public sf::RenderWindow {
   sf::Clock clock;
 
   double window_ratio = 1;
+  bool is_active = false;
 
+  // Not thread save!
+  // state used by activateIf and deactivateIf
+  bool was_active;
+  bool used_conditional_activate = false;
 
   std::map<unsigned long, const std::shared_ptr<BaseMesh>> meshes;
   unsigned long mesh_counter = 0;
