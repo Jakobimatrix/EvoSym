@@ -24,6 +24,34 @@ inline Vector3f quaternion2rpy(const Quaternionf &q) {
   return q.toRotationMatrix().eulerAngles(2, 1, 0);
 }
 
+inline double quaternion2Yaw(const Quaterniond &q) {
+  return std::atan2(2.0 * (q.z() * q.w() + q.x() * q.y()),
+                    -1.0 + 2.0 * (q.w() * q.w() + q.x() * q.x()));
+}
+
+inline float quaternion2Yaw(const Quaternionf &q) {
+  return std::atan2(2.f * (q.z() * q.w() + q.x() * q.y()),
+                    -1.f + 2.f * (q.w() * q.w() + q.x() * q.x()));
+}
+
+inline double quaternion2Pitch(const Quaterniond &q) {
+  return std::asin(2.0 * (q.y() * q.w() - q.z() * q.x()));
+}
+
+inline float quaternion2Pitch(const Quaternionf &q) {
+  return std::asin(2.f * (q.y() * q.w() - q.z() * q.x()));
+}
+
+inline double quaternion2Roll(const Quaterniond &q) {
+  return std::atan2(2.0 * (q.z() * q.y() + q.w() * q.x()),
+                    1.0 - 2.0 * (q.x() * q.x() + q.y() * q.y()));
+}
+
+inline float quaternion2Roll(const Quaternionf &q) {
+  return std::atan2(2.f * (q.z() * q.y() + q.w() * q.x()),
+                    1.f - 2.f * (q.x() * q.x() + q.y() * q.y()));
+}
+
 inline Quaterniond getZeroRotation(const Vector3d &axis) {
   Quaterniond q;
   q.vec() = axis;
