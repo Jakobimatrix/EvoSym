@@ -85,19 +85,7 @@ class Camera {
 
     const Eigen::Vector3d d_angles(-yoffset, -xoffset, 0);
 
-
-    // const Eigen::Quaterniond d_rot_screen = eigen_utils::rpy2Quaternion(d_angles);
-
-    Eigen::Quaterniond d_rot_screen;
-    d_rot_screen.w() = 0;
-    d_rot_screen.vec() = d_angles;
-
-    const Eigen::Quaterniond d_rot_camera = angles.inverse() * d_rot_screen * angles;
-    // const Eigen::Quaterniond d_rot_camera = angles * d_rot_screen * angles.inverse();
-    const Eigen::Vector3d d_angles_screen = d_rot_camera.vec();
-    angles = angles * eigen_utils::rpy2Quaternion(d_angles_screen);
-
-    updateView();
+    rotateRPY(d_angles);
   }
 
   // processes input received from a mouse scroll-wheel event.
@@ -125,11 +113,17 @@ class Camera {
   }
 
   void rotateRPY(const Eigen::Vector3d &rpy) {
-    // const double pitch = angles(1);
-    // const Eigen::Matrix3d r =
-    //    eigen_utils::rpy2RotationMatrix(Eigen::Vector3d(0, 0, pitch));
-    // angles += r * rpy;
-    // angles += rpy;
+    Eigen::Quaterniond d_rot_screen;
+    d_rot_screen.w() = 0;
+    d_rot_screen.vec() = rpy;
+
+    // Rotate the vector of rpy such that it is rotated like the current camera pose.
+    const Eigen::Quaterniond d_rot_camera = angles.inverse() * d_rot_screen * angles;
+    // Retrive the rotated rpy.
+    const Eigen::Vector3d d_angles_screen = d_rot_camera.vec();
+    // Add the rotated rpy angles to the camera rotation.
+    angles = angles * eigen_utils::rpy2Quaternion(d_angles_screen);
+
     updateView();
   }
 
