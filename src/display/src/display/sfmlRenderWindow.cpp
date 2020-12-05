@@ -71,12 +71,12 @@ void SfmlRenderWindow::initCamera() {
 }
 
 void SfmlRenderWindow::printGraphicCardInformation() {
-  if (is_initialized) {
-    printf("Vendor graphic card: %s\n", glGetString(GL_VENDOR));
-    printf("Renderer: %s\n", glGetString(GL_RENDERER));
-    printf("Version GL: %s\n", glGetString(GL_VERSION));
-    printf("Version GLSL: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-  }
+  activateIf();
+  printf("Vendor graphic card: %s\n", glGetString(GL_VENDOR));
+  printf("Renderer: %s\n", glGetString(GL_RENDERER));
+  printf("Version GL: %s\n", glGetString(GL_VERSION));
+  printf("Version GLSL: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+  deactivateIf();
 }
 
 void SfmlRenderWindow::enable3dDepth() {
