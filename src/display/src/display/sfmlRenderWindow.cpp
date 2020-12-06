@@ -66,6 +66,7 @@ void SfmlRenderWindow::initCamera() {
   camera.setPosition(0, 0, 0);
 
   camera.setAspectRatio(window_ratio);
+  camera.setLenseAngleRad(math::deg2Rad(30));
 
   setActive(false);
 }
@@ -254,14 +255,14 @@ void SfmlRenderWindow::processMouseAction() {
 void SfmlRenderWindow::scrollHack(double f) { camera.ProcessMouseScroll(f); }
 void SfmlRenderWindow::dragMouseLeft(const sf::Vector2i& diff) {
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
-    camera.ProcessShift(diff.x, diff.y);
+    camera.shiftXY(diff.x, diff.y);
   } else {
-    camera.ProcessRotation(diff.x, diff.y);
+    camera.rotatePY(diff.x, diff.y);
   }
 }
 
 void SfmlRenderWindow::dragMouseRight(const sf::Vector2i& diff) {
-  F_DEBUG("draggin right x: %d y: %d", diff.x, diff.y);
+  camera.rollCamera(math::getSignedAbsMax(diff.x, diff.y));
 }
 
 void SfmlRenderWindow::leftKlick(const sf::Vector2i& mouse_pos) {

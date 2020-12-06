@@ -21,6 +21,21 @@ inline T rad2Deg(T rad) {
   return rad * 360. / static_cast<T>(M_PI);
 }
 
+/*!
+ * \brief Return the absolute grater value of two keeping the sign.
+ * \param a The first value
+ * \param b The second value
+ * \return The signed absolute greatest value of the given two.
+ */
+template <class T>
+inline T getSignedAbsMax(T a, T b) {
+  if (std::abs(a) > std::abs(b)) {
+    return a;
+  } else {
+    return b;
+  }
+}
+
 template <typename T1, typename T2>
 inline auto positiveModulo_detail(T1 x, T2 y, std::true_type, std::false_type) {
   static_assert(std::is_signed<T1>::value && std::is_signed<T2>::value,
@@ -194,7 +209,7 @@ inline void comparableAngle(T& a, T& b) {
 
 /*! \brief almost_equal checks if two floating points differ in epsilon
  * https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
- * \param a,b floating point numbers checked to be within epsilon
+ * \param x,y floating point numbers checked to be within epsilon
  * \psrsm ulp (units in the last place of precision) ((GTest uses 4 ULP's for
  * its EXPECT_DOUBLE_EQ))
  * \return true if abs(a-b) < epsilon

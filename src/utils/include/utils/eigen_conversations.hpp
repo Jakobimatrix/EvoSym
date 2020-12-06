@@ -108,7 +108,7 @@ inline Affine3d quaternion2Affine(const Eigen::Quaterniond &q) {
   Affine3d t;
   t.matrix().block<3, 3>(0, 0) = r;
   t.matrix().block<3, 1>(0, 3) << 0, 0, 0;
-  t.matrix().block<1, 4>(3, 0) << 0, 0, 0, 0;
+  t.matrix().block<1, 4>(3, 0) << 0, 0, 0, 1;
   return t;
 }
 
@@ -117,7 +117,7 @@ inline Affine3f quaternion2Affine(const Eigen::Quaternionf &q) {
   Affine3f t;
   t.matrix().block<3, 3>(0, 0) = r;
   t.matrix().block<3, 1>(0, 3) << 0, 0, 0;
-  t.matrix().block<1, 4>(3, 0) << 0, 0, 0, 0;
+  t.matrix().block<1, 4>(3, 0) << 0, 0, 0, 1;
   return t;
 }
 
