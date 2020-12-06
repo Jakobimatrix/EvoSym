@@ -85,21 +85,21 @@ inline Matrix3f rpy2RotationMatrix(const Vector3f &rpy) {
 }
 
 
-inline Affine3d pose2Affine(const Vector3d &xyz, const Vector3d &rpy, double zoom = 1) {
+inline Affine3d pose2Affine(const Vector3d &xyz, const Vector3d &rpy) {
   const Matrix3d r = rpy2RotationMatrix(rpy);
   Affine3d t;
   t.matrix().block<3, 3>(0, 0) = r;
   t.matrix().block<3, 1>(0, 3) = xyz;
-  t.matrix().block<1, 4>(3, 0) << 0, 0, 0, zoom;
+  t.matrix().block<1, 4>(3, 0) << 0, 0, 0, 1;
   return t;
 }
 
-inline Affine3f pose2Affine(const Vector3f &xyz, const Vector3f &rpy, float zoom = 1) {
+inline Affine3f pose2Affine(const Vector3f &xyz, const Vector3f &rpy) {
   const Matrix3f r = rpy2RotationMatrix(rpy);
   Affine3f t;
   t.matrix().block<3, 3>(0, 0) = r;
   t.matrix().block<3, 1>(0, 3) = xyz;
-  t.matrix().block<1, 4>(3, 0) << 0, 0, 0, zoom;
+  t.matrix().block<1, 4>(3, 0) << 0, 0, 0, 1;
   return t;
 }
 
