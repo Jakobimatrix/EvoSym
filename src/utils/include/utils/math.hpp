@@ -5,29 +5,20 @@
 #include <type_traits>
 
 namespace math {
-constexpr double PI = 3.1415926535897932384626433832795;
-constexpr double TAU = 2. * PI;
-constexpr double PI2 = PI / 2.;
-constexpr double PI4 = PI / 4.;
-constexpr double PI8 = PI / 8.;
+#define M_TAU = 2. * M_PI;
 
-constexpr float PI_F = static_cast<float>(PI);
-constexpr float TAU_F = static_cast<float>(TAU);
-constexpr float PI2_F = static_cast<float>(PI2);
-constexpr float PI4_F = static_cast<float>(PI4);
-constexpr float PI8_F = static_cast<float>(PI8);
 
-constexpr double GOLDEN_RATIO = 1.6180339887498948482045868343656381177203091798057628621354486227;
-constexpr float GOLDEN_RATIO_F = static_cast<float>(GOLDEN_RATIO);
+#define GOLDEN_RATIO \
+  = 1.6180339887498948482045868343656381177203091798057628621354486227;
 
 template <class T>
 inline T deg2Rad(T deg) {
-  return deg / 360. * static_cast<T>(PI);
+  return deg / 360. * static_cast<T>(M_PI);
 }
 
 template <class T>
 inline T rad2Deg(T rad) {
-  return rad * 360. / static_cast<T>(PI);
+  return rad * 360. / static_cast<T>(M_PI);
 }
 
 template <typename T1, typename T2>
@@ -81,7 +72,7 @@ inline T wrapAngleMinusPiToPi(T angle) {
   static_assert(
       std::is_floating_point<T>::value,
       "you can only wrap floating point angles (float, double, long double)");
-  return positiveModulo(angle + PI, 2 * PI) - PI;
+  return positiveModulo(angle + M_PI, 2 * M_PI) - M_PI;
 }
 
 /*!
@@ -101,9 +92,9 @@ inline T wrapAngleAroundGivenAngle(T angle, T given) {
 /*!
  * \brief Returns the closest angle to given goal-angle in 2*n*pi distance to
  * given angle.
- * \param angle The angle to normalize rellative to goal.
+ * \param angle The angle to normalize relative to goal.
  * \param goal The angle to be as close as possible to.
- * \return the normalizeed angle.
+ * \return the normalized angle.
  */
 template <typename T>
 inline T findCloseAngle(T angle, T goal) {
