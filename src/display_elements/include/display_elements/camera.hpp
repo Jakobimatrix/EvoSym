@@ -100,11 +100,10 @@ class Camera {
     rotateRPY(d_angles);
   }
 
-  // processes input received from a mouse scroll-wheel event.
-  void ProcessMouseScroll(double dscroll) {
-    dscroll *= scroll_sensitivity;
+  void shiftZ(double dz) {
+    dz *= scroll_sensitivity;
     // zoom == move camera along Z-axis
-    const Eigen::Vector3d move(0, 0, dscroll);
+    const Eigen::Vector3d move(0, 0, dz);
     moveXYZ(move);
   }
 
@@ -220,16 +219,16 @@ class Camera {
     assert(abs(aspect_ratio - std::numeric_limits<double>::epsilon()) >
            static_cast<double>(0));
 
-    const double tanHalfFovy = tan(lense_angle_rad / 2.0);
+    const double tanHalfFovy = std::tan(lense_angle_rad / 2.0);
 
-    projection.matrix()(0, 0) = 1.0 / (aspect_ratio * tanHalfFovy);
-    projection.matrix()(1, 1) = 1.0 / (tanHalfFovy);
-    projection.matrix()(2, 2) = far_clipping / (far_clipping - near_clipping);
-    projection.matrix()(2, 3) = 1;
-    projection.matrix()(3, 2) =
-        -(far_clipping * near_clipping) / (far_clipping - near_clipping);
+    projection(0, 0) = 1.0 / (aspect_ratio * tanHalfFovy);
+    projection(1, 1) = 1.0 / tanHalfFovy;
+    projection(2, 2) = (far_clipping + near_clipping) / (near_clipping - far_clipping);
+    projection(2, 3) = (2 * far_clipping * near_clipping) / (near_clipping - far_clipping);
+    projection(3, 2) = -1;
+    projection(3, 3) = 0;
 
-    projection = Eigen::Affine3d::Identity();
+    // projection = Eigen::Affine3d::Identity();
     callbackProjectionChange();
   }
 
@@ -239,8 +238,8 @@ class Camera {
   Eigen::Vector3d position = Eigen::Vector3d::Zero();  // X,Y,Z
   Eigen::Quaterniond angles = eigen_utils::getZeroRotation(Eigen::Vector3d(0, 0, 1));  // vec,w
 
-  double far_clipping = 10000.;
-  double near_clipping = 0.001;
+  double far_clipping = 10.;
+  double near_clipping = 0.1;
   double lense_angle_rad =
       math::deg2Rad(30.);  //  field-of-view something between 30 and 90 looks ok
   double aspect_ratio = 1;
