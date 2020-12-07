@@ -12,6 +12,22 @@ inline Vector3d rotationMatrix2rpy(const Matrix3d &r) {
   return r.eulerAngles(2, 1, 0);
 }
 
+inline Vector4d vector2Affine(const Vector3d &v) {
+  return Vector4d(v.x(), v.y(), v.z(), 1);
+}
+
+inline Vector4f vector2Affine(const Vector3f &v) {
+  return Vector4f(v.x(), v.y(), v.z(), 1);
+}
+
+inline Vector3d affine2Vector(const Vector4d &v) {
+  return Vector3d(v.x(), v.y(), v.z());
+}
+
+inline Vector3f affine2Vector(const Vector4f &v) {
+  return Vector3f(v.x(), v.y(), v.z());
+}
+
 inline Vector3f rotationMatrix2rpy(const Matrix3f &r) {
   return r.eulerAngles(2, 1, 0);
 }
@@ -50,6 +66,15 @@ inline double quaternion2Roll(const Quaterniond &q) {
 inline float quaternion2Roll(const Quaternionf &q) {
   return std::atan2(2.f * (q.z() * q.y() + q.w() * q.x()),
                     1.f - 2.f * (q.x() * q.x() + q.y() * q.y()));
+}
+
+inline Vector3d rotate(const Quaterniond &q, const Vector3d &abc) {
+  Eigen::Quaterniond q_abc;
+  q_abc.w() = 0;
+  q_abc.vec() = abc;
+
+  q_abc = q.inverse() * q_abc * q;
+  return q_abc.vec();
 }
 
 inline Quaterniond getZeroRotation(const Vector3d &axis) {

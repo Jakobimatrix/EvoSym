@@ -50,15 +50,24 @@ class Camera {
     updateView();
   }
 
+  Eigen::Vector3d getPosition() { return position; }
+
+  Eigen::Quaterniond getAngles() { return angles; }
+
   void setCameraRotationInverted(bool invert) { invert_rotation = invert; }
 
   // from viewers perspective fix roll movement. In Camera coordinates that is the rotation around z-Axis (yaw)
   void setFixCameraRoll(bool fix) { fix_camera_yaw = fix; }
 
   void setLenseAngleRad(double angle) {
-    lense_angle_rad = angle;
-    updateProjection();
+    // focal length must be positive. Good values are between 30 and 90
+    if (angle > 1) {
+      lense_angle_rad = angle;
+      updateProjection();
+    }
   }
+
+  double getLenseAngleRad() { return lense_angle_rad; }
 
   void setClippingDistance(double near, double far) {
     near_clipping = near;
@@ -95,7 +104,41 @@ class Camera {
     rotateRPY(Eigen::Vector3d(yaw, pitch, 0));
   }
 
+  void rotatePYaround(double pitch, double yaw, double distance) {
+    const Eigen::Vector3d p(0, 0, distance);
+    rotatePYaround(pitch, yaw, p);
+  }
+
+  void rotatePYaround(double pitch, double yaw, const Eigen::Vector3d &p_world) {
+
+    if (invert_rotation) {
+      pitch *= -rotate_sensitivity;
+      yaw *= -rotate_sensitivity;
+    } else {
+      pitch *= rotate_sensitivity;
+      yaw *= rotate_sensitivity;
+    }
+
+    const Eigen::Vector3d rotation_input(yaw, pitch, 0);
+    // need to transform camera position into world
+    const Eigen::Vector3d p_camera = eigen_utils::rotate(angles, position);
+
+    const Eigen::Vector3d ndiff = p_camera - p_world;
+    const Eigen::Vector3d diff = p_world - p_camera;
+    // we need to rotate ndiff about the added rotation
+    // const Eigen::Quaterniond d_rot = eigen_utils::rpy2Quaternion(rotation_input);
+    // const Eigen::Vector3d ndiff_rot = eigen_utils::rotate(d_rot, diff);
+
+    moveXYZ(diff, false);
+    rotateRPY(rotation_input, false);
+    moveXYZ(ndiff);
+  }
+
   void rollCamera(double roll) {
+    if (fix_camera_yaw) {
+      WARNING(
+          "Roll is currently disabled. To roll use setFixCameraRoll(flase).");
+    }
     const Eigen::Vector3d d_angles(0, 0, rotate_sensitivity * roll);
     rotateRPY(d_angles);
   }
@@ -108,25 +151,16 @@ class Camera {
   }
 
  private:
-  void moveXYZ(const Eigen::Vector3d &xyz) {
-    Eigen::Quaterniond d_rot_screen;
-    d_rot_screen.w() = 0;
-    d_rot_screen.vec() = xyz;
-
-    const Eigen::Quaterniond d_shift_camera = angles.inverse() * d_rot_screen * angles;
-    position += d_shift_camera.vec();
-    updateView();
+  void moveXYZ(const Eigen::Vector3d &xyz, bool update_view = true) {
+    position += eigen_utils::rotate(angles, xyz);
+    if (update_view) {
+      updateView();
+    }
   }
 
-  void rotateRPY(const Eigen::Vector3d &rpy) {
-    Eigen::Quaterniond d_rot_screen;
-    d_rot_screen.w() = 0;
-    d_rot_screen.vec() = rpy;
-
+  void rotateRPY(const Eigen::Vector3d &rpy, bool update_view = true) {
     // Rotate the vector of rpy such that it is rotated like the current camera pose.
-    const Eigen::Quaterniond d_rot_camera = angles.inverse() * d_rot_screen * angles;
-    // Retrive the rotated rpy.
-    const Eigen::Vector3d d_angles_screen = d_rot_camera.vec();
+    const Eigen::Vector3d d_angles_screen = eigen_utils::rotate(angles, rpy);
     // Add the rotated rpy angles to the camera rotation.
     angles = angles * eigen_utils::rpy2Quaternion(d_angles_screen);
 
@@ -156,7 +190,8 @@ class Camera {
       // This corresponds to (roll = pi/2 && pitch = 0) || (roll = -pi/2 && pitch = pi)
       // in that case the rotation around y canot be distinguished from the rotation around z
       // Thats called gimbal lock. We just avoid this.
-      if (!math::almost_equal(dot_product, 0., 7)) {
+      constexpr int unit_last_place_precision = 7;
+      if (!math::almost_equal(dot_product, 0., unit_last_place_precision)) {
 
         // constexpr double norm_y_axis_c = 1;  // is always 1 doesnt matter how we rotate it
         // Funny: the norm of the projection is the sqrt of the dot product in our case.
@@ -192,13 +227,15 @@ class Camera {
 
         // just roll back by calling this function again
         fix_camera_yaw = false;  // make sure not to have an infinit loop.
-        rotateRPY(Eigen::Vector3d(0, 0, roll_cv));
+        rotateRPY(Eigen::Vector3d(0, 0, roll_cv), update_view);
         fix_camera_yaw = true;  // set it back true
         // No need to update the view again.
         return;
       }
     }
-    updateView();
+    if (update_view) {
+      updateView();
+    }
   }
 
   void updateView() {
@@ -206,14 +243,13 @@ class Camera {
         eigen_utils::pose2Affine(position, Eigen::Vector3d::Zero());
     const Eigen::Affine3d rotation = eigen_utils::quaternion2Affine(angles);
     Eigen::Affine3d transformation = rotation * translation;
-    transformation.inverse();
+    transformation.inverse(Eigen::TransformTraits::Affine);
     view = transformation;
     callbackViewChange();
   }
 
   void updateProjection() {
-    // https://www.scratchapixel.com/lessons/3d-basic-rendering/perspective-and-orthographic-projection-matrix/building-basic-perspective-projection-matrix
-
+    // https://wiki.delphigl.com/index.php/glFrustum
     // crunch every visible vertex into [-1,1]^3 unit qube
 
     assert(abs(aspect_ratio - std::numeric_limits<double>::epsilon()) >
@@ -238,14 +274,14 @@ class Camera {
   Eigen::Vector3d position = Eigen::Vector3d::Zero();  // X,Y,Z
   Eigen::Quaterniond angles = eigen_utils::getZeroRotation(Eigen::Vector3d(0, 0, 1));  // vec,w
 
-  double far_clipping = 10.;
+  double far_clipping = 500.;
   double near_clipping = 0.1;
   double lense_angle_rad =
       math::deg2Rad(30.);  //  field-of-view something between 30 and 90 looks ok
   double aspect_ratio = 1;
 
   // camera options
-  double scroll_sensitivity = 0.01;
+  double scroll_sensitivity = 0.07;
   double shift_sensitivity = 0.001;
   double rotate_sensitivity = 0.001;
   bool invert_rotation = false;

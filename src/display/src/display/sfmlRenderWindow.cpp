@@ -63,7 +63,7 @@ void SfmlRenderWindow::initCamera() {
 
   camera.addCallbackPerspectiveChange(perspectiveChange);
   camera.addCallbackViewChange(viewChange);
-  camera.setPosition(0, 0, 0);
+  camera.setPosition(0, 0, -10);
 
   camera.setAspectRatio(window_ratio);
   camera.setLenseAngleRad(math::deg2Rad(30.));
@@ -252,18 +252,28 @@ void SfmlRenderWindow::processMouseAction() {
   last_mouse_pos = mouse_pos;
 }
 
-void SfmlRenderWindow::scrollHack(double f) { camera.shiftZ(f); }
+void SfmlRenderWindow::scrollHack(double f) {
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
+    camera.setLenseAngleRad(math::deg2Rad(f) + camera.getLenseAngleRad());
+  } else {
+    camera.shiftZ(f);
+  }
+}
 
 void SfmlRenderWindow::dragMouseLeft(const sf::Vector2i& diff) {
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
-    camera.shiftXY(diff.x, diff.y);
+    // FRE COMMAND SPACE
   } else {
     camera.rotatePY(diff.x, diff.y);
   }
 }
 
 void SfmlRenderWindow::dragMouseRight(const sf::Vector2i& diff) {
-  camera.rollCamera(math::getSignedAbsMax(diff.x, diff.y));
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
+    camera.shiftXY(diff.x, diff.y);
+  } else {
+    camera.rotatePYaround(diff.x, diff.y, Eigen::Vector3d(0, 0, 0));
+  }
 }
 
 void SfmlRenderWindow::leftKlick(const sf::Vector2i& mouse_pos) {
