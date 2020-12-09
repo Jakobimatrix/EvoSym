@@ -6,7 +6,7 @@
 
 # dependencies
 - eigen
-  header only lib
+  header only lib eg. via ´sudo apt install libeigen3-dev´
 - boost
   ´sudo apt-get install libboost-all-dev´ 
 - sfml
