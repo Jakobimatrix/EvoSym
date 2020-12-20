@@ -105,7 +105,8 @@ class Camera {
   }
 
   void rotatePYaround(double pitch, double yaw, double distance) {
-    const Eigen::Vector3d p(0, 0, distance);
+    const Eigen::Vector3d p =
+        position + eigen_utils::rotate(angles, Eigen::Vector3d(0, 0, distance));
     rotatePYaround(pitch, yaw, p);
   }
 
@@ -120,18 +121,18 @@ class Camera {
     }
 
     const Eigen::Vector3d rotation_input(yaw, pitch, 0);
-    // need to transform camera position into world
-    const Eigen::Vector3d p_camera = eigen_utils::rotate(angles, position);
 
-    const Eigen::Vector3d ndiff = p_camera - p_world;
-    const Eigen::Vector3d diff = p_world - p_camera;
-    // we need to rotate ndiff about the added rotation
-    // const Eigen::Quaterniond d_rot = eigen_utils::rpy2Quaternion(rotation_input);
-    // const Eigen::Vector3d ndiff_rot = eigen_utils::rotate(d_rot, diff);
+    // we want to rotate the camera (on a circle) around a point given in world frame:
+    // move camera to that point (circle center)
+    // rotate camera using existing rotation around the cameras center
+    // move camera back to the circles border
+    const double circle_diameter = (p_world - position).norm();
+    const Eigen::Vector3d move_to_center(0, 0, circle_diameter);
+    const Eigen::Vector3d move_from_center(0, 0, -circle_diameter);
 
-    moveXYZ(diff, false);
+    moveXYZ(move_to_center, false);
     rotateRPY(rotation_input, false);
-    moveXYZ(ndiff);
+    moveXYZ(move_from_center);
   }
 
   void rollCamera(double roll) {
