@@ -57,9 +57,9 @@ void SfmlRenderWindow::initCamera() {
   setActive(true);
 
   Camera::CallbackCameraChange viewChange =
-      std::bind(&SfmlRenderWindow::updateMeshesView, this);
+      std::bind(&SfmlRenderWindow::onCameraPositionUpdate, this);
   Camera::CallbackCameraChange perspectiveChange =
-      std::bind(&SfmlRenderWindow::updateMeshesPerspective, this);
+      std::bind(&SfmlRenderWindow::onCameraPerspectiveUpdate, this);
 
   camera.addCallbackPerspectiveChange(perspectiveChange);
   camera.addCallbackViewChange(viewChange);
@@ -284,15 +284,19 @@ void SfmlRenderWindow::rightKlick(const sf::Vector2i& mouse_pos) {
   F_DEBUG("klick right x: %d y: %d", mouse_pos.x, mouse_pos.y);
 }
 
-void SfmlRenderWindow::updateMeshesView() {
+void SfmlRenderWindow::onCameraPositionUpdate() {
   activateIf();
+  const Eigen::Vector3d cam_pos = camera.getPosition();
+  const Eigen::Vector3d light_source_pos = 1.5 * cam_pos;
   for (auto& mesh : meshes) {
     mesh.second->setView(camera.getViewMatrix());
+    mesh.second->setLightPosition(light_source_pos);
+    mesh.second->setCameraPosition(cam_pos);
   }
   deactivateIf();
 }
 
-void SfmlRenderWindow::updateMeshesPerspective() {
+void SfmlRenderWindow::onCameraPerspectiveUpdate() {
   activateIf();
   for (auto& mesh : meshes) {
     mesh.second->setProjection(camera.getProjectionMatrix());

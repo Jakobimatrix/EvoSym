@@ -72,33 +72,12 @@ void ArrowMesh::loadShader(){
   const std::string vs = path + "camera.vs";
   const std::string fs = path + "camera.fs";
 
-  const bool load_shader_sf = false;
-  const bool load_shader_self = true;
-
-  if (sf::Shader::isAvailable()) {
-    if (load_shader_self) {
-      if (!Mesh::loadShader(vs, fs)) {
-        F_ERROR(
-            "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
-            "%s} ",
-            vs.c_str(),
-            fs.c_str());
-      } else {
-        DEBUG("Using Self made shader class.");
-      }
-    } else if (load_shader_sf) {
-      if (!Mesh::loadShaderSf(vs, fs)) {
-        F_ERROR(
-            "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
-            "%s} ",
-            vs.c_str(),
-            fs.c_str());
-      } else {
-        DEBUG("Using sf::shader class.");
-      }
-    }
-  } else {
-    ERROR("Shader not supported");
+  if (!Mesh::loadShader(vs, fs)) {
+    F_ERROR(
+        "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
+        "%s} ",
+        vs.c_str(),
+        fs.c_str());
   }
 
 }

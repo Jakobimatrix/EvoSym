@@ -27,6 +27,24 @@ inline glm::mat4 EigenAffine2GlmMat(const Eigen::Affine3f &affine) {
 }
 
 /*!
+ * \brief Converts a Vector3d representation into a glm vec3
+ * \param glm vec3 The Eigen vector
+ * \return glm vec3 copied data from affine.
+ */
+inline glm::vec3 EigenVec32GlmMat(const Eigen::Vector3d &vec) {
+  return glm::make_vec3<double>(vec.data());
+}
+
+/*!
+ * \brief Converts a Vector3f representation into a glm vec3
+ * \param glm vec3 The Eigen vector
+ * \return glm vec3 copied data from affine.
+ */
+inline glm::vec3 EigenVec32GlmMat(const Eigen::Vector3f &vec) {
+  return glm::make_vec3<float>(vec.data());
+}
+
+/*!
  * \brief Converts a 4x4 matrix given in glm to eigen affine 3d
  * \param mat The input matrix. Although it is not defined constant, I am not changeing the values. Its just necessary to access pointer.
  * \return Eigen::Affine3d copied data from mat.

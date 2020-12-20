@@ -7,39 +7,26 @@ in lowp vec3 vertexBitangent;
 in mediump vec2 vertexTexturePos;
 in mediump vec3 vertexColor;
 
+// called model in diverse tutorials
 uniform mat4 pose;
 uniform mat4 view;
 uniform mat4 projection;
 
-out vec4 VertexColor;
+out vec3 VertexColor;
 out vec2 TexCoord;
+out vec3 FragPos;
+out vec3 FragNormal;
 
 
 void main()
 {
     gl_Position = projection * view * pose * vec4(vertexPos, 1.0);
 
-    float r,g,b;
-    if(vertexPos.x > 0){
-      r = 1;
-    }else{
-      r = 0;
-    }
-
-    if(vertexPos.y > 0){
-      g = 1;
-    }else{
-      g = 0;
-    }
-
-    if(vertexPos.z > 0){
-      b = 1;
-    }else{
-      b = 0;
-    }
-    VertexColor = vec4(vertexColor, 0.2);
-
+    // outs
+    FragNormal = vertexNormal;
+    VertexColor = vertexColor;
     TexCoord = vertexTexturePos;
+    FragPos = vec3(pose * vec4(vertexPos, 1.0));
 
 }
 

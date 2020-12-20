@@ -5,7 +5,6 @@
 #include <stb/stb_image.h>
 
 #include <Eigen/Geometry>
-#include <SFML/Graphics/Shader.hpp>
 #include <array>
 #include <display_elements/displayUtils.hpp>
 #include <display_elements/glad_import.hpp>
@@ -52,14 +51,23 @@ class BaseMesh {
       glCheck(shader->setMat4(SHADER_UNIFORM_VIEW_NAME, view_glm));
       glUseProgram(0);
     }
+  }
 
-    if (shader_sf != nullptr) {
-      const float* pSource = reinterpret_cast<const float*>(view.data());
-      // TODO better solution for conversation?
-      sf::Glsl::Mat4 view_glsl(pSource);
-      glCheck(sf::Shader::bind(shader_sf.get()));
-      glCheck(shader_sf->setUniform(SHADER_UNIFORM_VIEW_NAME, view_glsl));
-      sf::Shader::bind(nullptr);
+  void setLightPosition(const Eigen::Vector3d& pos) {
+    if (shader != nullptr) {
+      const glm::vec3 view_glm = utils::EigenVec32GlmMat(pos);
+      glCheck(shader->use());
+      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_POSITION_NAME, view_glm));
+      glUseProgram(0);
+    }
+  }
+
+  void setCameraPosition(const Eigen::Vector3d& pos) {
+    if (shader != nullptr) {
+      const glm::vec3 view_glm = utils::EigenVec32GlmMat(pos);
+      glCheck(shader->use());
+      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_POSITION_NAME, view_glm));
+      glUseProgram(0);
     }
   }
 
@@ -70,15 +78,6 @@ class BaseMesh {
       glCheck(shader->setMat4(SHADER_UNIFORM_PROJECTION_NAME, projection_glm));
       glUseProgram(0);
     }
-
-    if (shader_sf != nullptr) {
-      const float* pSource = reinterpret_cast<const float*>(projection.data());
-      // TODO better solution for conversation?
-      sf::Glsl::Mat4 projection_glsl(pSource);
-      glCheck(sf::Shader::bind(shader_sf.get()));
-      glCheck(shader_sf->setUniform(SHADER_UNIFORM_PROJECTION_NAME, projection_glsl));
-      sf::Shader::bind(nullptr);
-    }
   }
 
   void setTexture(int sample_nr = 0) {
@@ -87,31 +86,9 @@ class BaseMesh {
       glCheck(shader->setInt("texture1", sample_nr));
       glUseProgram(0);
     }
-
-    if (shader_sf != nullptr) {
-      ERROR("To lazy to implement for now");
-    }
   }
 
  protected:
-  /*!
-   * \brief Loads and connects a new shader to this mesh.
-   * This uses the s::shader class. An existing shader will be deleted.
-   * \param vertex_shader_file The path to the vertex shader file.
-   * \param fragment_shader_file The path to the vertex shader file.
-   */
-  [[nodiscard]] bool loadShaderSf(const std::string& vertex_shader_file,
-                                  const std::string& fragment_shader_file) {
-    shader_sf = std::make_shared<sf::Shader>();
-    const bool success = shader_sf->loadFromFile(vertex_shader_file, fragment_shader_file);
-    if (!success) {
-      shader_sf.reset();
-    }
-    shader.reset();
-    connectShader(shader_sf->getNativeHandle());
-    return success;
-  }
-
   /*!
    * \brief Loads and connects a new shader to this mesh.
    * This uses the own shader class. An existing shader will be deleted.
@@ -126,7 +103,6 @@ class BaseMesh {
       shader.reset();
       return false;
     }
-    shader_sf.reset();
     connectShader(shader->ID);
     return true;
   }
@@ -180,7 +156,6 @@ class BaseMesh {
   unsigned int VBO, EBO;
 
   std::shared_ptr<Shader> shader = nullptr;
-  std::shared_ptr<sf::Shader> shader_sf = nullptr;
 
   virtual void connectShader(unsigned int shaderProgram) = 0;
 
@@ -200,6 +175,8 @@ class BaseMesh {
   // shader standard uniform
   const std::string SHADER_UNIFORM_POSE_NAME = "pose";
   const std::string SHADER_UNIFORM_VIEW_NAME = "view";
+  const std::string SHADER_UNIFORM_LIGHT_POSITION_NAME = "lightPos";
+  const std::string SHADER_UNIFORM_CAMERA_POSITION_NAME = "cameraPos";
   const std::string SHADER_UNIFORM_PROJECTION_NAME = "projection";
 
 
@@ -213,15 +190,6 @@ class BaseMesh {
       glCheck(shader->use());
       glCheck(shader->setMat4(SHADER_UNIFORM_POSE_NAME, pose_glm));
       glUseProgram(0);
-    }
-
-    if (shader_sf != nullptr) {
-      const float* pSource = reinterpret_cast<const float*>(pose.data());
-      // TODO better solution for conversation?
-      sf::Glsl::Mat4 pose_glsl(pSource);
-      glCheck(sf::Shader::bind(shader_sf.get()));
-      glCheck(shader_sf->setUniform(SHADER_UNIFORM_POSE_NAME, pose_glsl));
-      sf::Shader::bind(nullptr);
     }
   }
 };
@@ -269,9 +237,6 @@ class Mesh : public BaseMesh {
     if (shader != nullptr) {
       glCheck(shader->use());
     }
-    if (shader_sf != nullptr) {
-      glCheck(sf::Shader::bind(shader_sf.get()));
-    }
 
     // draw mesh
     glCheck(glBindVertexArray(VAO));
@@ -280,9 +245,6 @@ class Mesh : public BaseMesh {
 
     if (shader != nullptr) {
       glCheck(glUseProgram(0));
-    }
-    if (shader_sf != nullptr) {
-      glCheck(sf::Shader::bind(nullptr));
     }
 
     // always good practice to set everything back to defaults once configured.

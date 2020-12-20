@@ -58,33 +58,39 @@ void WorldMesh::loadVertices() {
       float r = 0;
       float g = 0;
       float b = 0;
+      Eigen::Vector3f normal(0, 0, 0);
       if (site == 0) {
         r = 1;
+        normal.x() = -1;
       }
       if (site == 1) {
         g = 1;
+        normal.x() = 1;
       }
       if (site == 2) {
         b = 1;
+        normal.z() = -1;
       }
       if (site == 3) {
         r = 1;
         g = 1;
+        normal.z() = 1;
       }
       if (site == 4) {
         g = 1;
         b = 1;
+        normal.y() = -1;
       }
       if (site == 5) {
         r = 1;
         b = 1;
+        normal.y() = 1;
       }
-
 
       // clang-format off
         verices_temp.emplace_back(VertexType({
                                     x,y,z,
-                                    //0,0,1,
+                                    normal.x(),normal.y(),normal.z(),
                                     //1,0,0,
                                     //0,1,0,
                                     text_x,text_y,
@@ -107,32 +113,11 @@ void WorldMesh::loadShader() {
   const std::string vs = path + "camera.vs";
   const std::string fs = path + "camera.fs";
 
-  const bool load_shader_sf = false;
-  const bool load_shader_self = true;
-
-  if (sf::Shader::isAvailable()) {
-    if (load_shader_self) {
-      if (!Mesh::loadShader(vs, fs)) {
-        F_ERROR(
-            "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
-            "%s} ",
-            vs.c_str(),
-            fs.c_str());
-      } else {
-        DEBUG("Using Self made shader class.");
-      }
-    } else if (load_shader_sf) {
-      if (!Mesh::loadShaderSf(vs, fs)) {
-        F_ERROR(
-            "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
-            "%s} ",
-            vs.c_str(),
-            fs.c_str());
-      } else {
-        DEBUG("Using sf::shader class.");
-      }
-    }
-  } else {
-    ERROR("Shader not supported");
+  if (!Mesh::loadShader(vs, fs)) {
+    F_ERROR(
+        "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
+        "%s} ",
+        vs.c_str(),
+        fs.c_str());
   }
 }
