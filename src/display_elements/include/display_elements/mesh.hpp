@@ -274,35 +274,6 @@ class Mesh : public BaseMesh {
     glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO));
     glCheck(glBufferData(
         GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW));
-
-    /* DEBUG
-    int float_size = sizeof(float);
-    int b_size = sizeof(VertexType);
-
-    for (unsigned int v = 0; v < vertices.size(); v++) {
-      std::cout << "<Vertex> ";
-      void* void_info = reinterpret_cast<void*>(&vertices[v]);
-      float* info = reinterpret_cast<float*>(void_info);
-      for (int i = 0; i < b_size / float_size; i++) {
-        std::cout << info[i] << " ";
-      }
-      std::cout << "</Vertex>\n";
-
-      std::cout << "pos: " << vertices[v].position[0] << ","
-                << vertices[v].position[1] << "," << vertices[v].position[2] <<
-  "\n"; std::cout << "norm: " << vertices[v].normal[0] << ","
-                << vertices[v].normal[1] << "," << vertices[v].normal[2] <<
-  "\n"; std::cout << "tang: " << vertices[v].tangent[0] << ","
-                << vertices[v].tangent[1] << "," << vertices[v].tangent[2] <<
-  "\n"; std::cout << "bitang: " << vertices[v].bitangent[0] << ","
-                << vertices[v].bitangent[1] << "," << vertices[v].bitangent[2]
-  << "\n"; std::cout << "text: " << vertices[v].texture_pos[0] << ","
-                << vertices[v].texture_pos[1] << "\n";
-      std::cout << "colo: " << vertices[v].color[0] << ","
-                << vertices[v].color[1] << "," << vertices[v].color[2] << "\n";
-    }
-
-  */
   }
 
   /*!
