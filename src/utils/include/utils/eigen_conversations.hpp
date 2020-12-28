@@ -134,14 +134,14 @@ inline Transform<T, 3, Projective> getPerspectiveProjection(T lense_angle_rad,
 }
 
 template <typename T>
-inline Matrix<T, 3, 1> rotationMatrix2rpy(const Matrix<T, 3, 3> &r) {
-  const Matrix<T, 3, 1> ypr = rotationMatrix2ypr(r);
-  return Matrix<T, 3, 1>(ypr.z(), ypr.y(), ypr.x());
+inline Matrix<T, 3, 1> rotationMatrix2ypr(const Matrix<T, 3, 3> &r) {
+  return r.eulerAngles(2, 1, 0);
 }
 
 template <typename T>
-inline Matrix<T, 3, 1> rotationMatrix2ypr(const Matrix<T, 3, 3> &r) {
-  return r.eulerAngles(2, 1, 0);
+inline Matrix<T, 3, 1> rotationMatrix2rpy(const Matrix<T, 3, 3> &r) {
+  const Matrix<T, 3, 1> ypr = rotationMatrix2ypr(r);
+  return Matrix<T, 3, 1>(ypr.z(), ypr.y(), ypr.x());
 }
 
 template <typename T>
