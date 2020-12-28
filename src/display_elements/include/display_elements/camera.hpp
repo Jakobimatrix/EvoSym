@@ -217,15 +217,18 @@ class Camera {
         // This happens if fix_camera_yaw is false and the camera gets rotated
         // (since it can in that situation) more than 90 deg (Image is now wrong
         // way)
-        roll_cv = (y_axis_c.y() < 0) ? roll_cv : 2 * M_PI - roll_cv;
+        roll_cv = (y_axis_c.y() > 0) ? roll_cv : 2 * M_PI - roll_cv;
 
         // To decide in which direction we have to roll back, we look at
         // the the y_axis_c. If it looks down (relative to world), we have to
-        // rotate clockwize if it looks up, we have to rotate counter clock
+        // rotate counter clockwize if it looks up, we have to rotate clock
         // wize. We decide this by checking the x value
-        if (y_axis_c.x() > 0) {
+        if (y_axis_c.x() < 0) {
           roll_cv = -roll_cv;
         }
+
+        // If fore some reson you want y to be looking down all the time, switch
+        // the > and < in the lats to if's
 
         // just roll back by calling this function again
         fix_camera_yaw = false;  // make sure not to have an infinit loop.
