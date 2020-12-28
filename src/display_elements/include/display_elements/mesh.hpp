@@ -46,36 +46,32 @@ class BaseMesh {
 
   void setView(const Eigen::Affine3d& view) {
     if (shader != nullptr) {
-      const glm::mat4 view_glm = utils::EigenAffine2GlmMat(view);
       glCheck(shader->use());
-      glCheck(shader->setMat4(SHADER_UNIFORM_VIEW_NAME, view_glm));
+      glCheck(shader->setMat4(SHADER_UNIFORM_VIEW_NAME, view.matrix()));
       glUseProgram(0);
     }
   }
 
   void setLightPosition(const Eigen::Vector3d& pos) {
     if (shader != nullptr) {
-      const glm::vec3 view_glm = utils::EigenVec32GlmMat(pos);
       glCheck(shader->use());
-      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_POSITION_NAME, view_glm));
+      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_POSITION_NAME, pos));
       glUseProgram(0);
     }
   }
 
   void setCameraPosition(const Eigen::Vector3d& pos) {
     if (shader != nullptr) {
-      const glm::vec3 view_glm = utils::EigenVec32GlmMat(pos);
       glCheck(shader->use());
-      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_POSITION_NAME, view_glm));
+      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_POSITION_NAME, pos));
       glUseProgram(0);
     }
   }
 
   void setProjection(const Eigen::Affine3d& projection) {
     if (shader != nullptr) {
-      const glm::mat4 projection_glm = utils::EigenAffine2GlmMat(projection);
       glCheck(shader->use());
-      glCheck(shader->setMat4(SHADER_UNIFORM_PROJECTION_NAME, projection_glm));
+      glCheck(shader->setMat4(SHADER_UNIFORM_PROJECTION_NAME, projection.matrix()));
       glUseProgram(0);
     }
   }
@@ -186,9 +182,8 @@ class BaseMesh {
  private:
   void updatePose() {
     if (shader != nullptr) {
-      const glm::mat4 pose_glm = utils::EigenAffine2GlmMat(pose);
       glCheck(shader->use());
-      glCheck(shader->setMat4(SHADER_UNIFORM_POSE_NAME, pose_glm));
+      glCheck(shader->setMat4(SHADER_UNIFORM_POSE_NAME, pose.matrix()));
       glUseProgram(0);
     }
   }

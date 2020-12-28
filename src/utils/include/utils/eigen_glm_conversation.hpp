@@ -9,52 +9,34 @@
 namespace utils {
 
 /*!
- * \brief Converts a Affine3 representation into a 4x4 glm matrix
- * \param affine The Affine representation
- * \return 4x4 glm matrix copied data from affine.
+ * \brief Converts a Eigen 4x4 representation into a 4x4 glm matrix
+ * \param m The Eigen matrix representation
+ * \return 4x4 glm matrix copied data from eigen.
  */
-inline glm::mat4 EigenAffine2GlmMat(const Eigen::Affine3d &affine) {
-  return glm::make_mat4<double>(affine.data());
+template <typename T>
+inline glm::mat4 EigenMat42GlmMat4(const Eigen::Matrix<T, 4, 4> &m) {
+  return glm::make_mat4<T>(m.data());
 }
 
 /*!
- * \brief Converts a Affine3 representation into a 4x4 glm matrix
- * \param affine The Affine representation
- * \return 4x4 glm matrix copied data from affine.
- */
-inline glm::mat4 EigenAffine2GlmMat(const Eigen::Affine3f &affine) {
-  return glm::make_mat4<float>(affine.data());
-}
-
-/*!
- * \brief Converts a Vector3d representation into a glm vec3
- * \param glm vec3 The Eigen vector
+ * \brief Converts a Eigen Vector3 representation into a glm vec3
+ * \param glm vec The Eigen vector
  * \return glm vec3 copied data from affine.
  */
-inline glm::vec3 EigenVec32GlmMat(const Eigen::Vector3d &vec) {
-  return glm::make_vec3<double>(vec.data());
+template <typename T>
+inline glm::vec3 EigenVec32GlmVec3(const Eigen::Matrix<T, 3, 1> &vec) {
+  return glm::make_vec3<T>(vec.data());
 }
 
 /*!
- * \brief Converts a Vector3f representation into a glm vec3
- * \param glm vec3 The Eigen vector
- * \return glm vec3 copied data from affine.
- */
-inline glm::vec3 EigenVec32GlmMat(const Eigen::Vector3f &vec) {
-  return glm::make_vec3<float>(vec.data());
-}
-
-/*!
- * \brief Converts a 4x4 matrix given in glm to eigen affine 3d
+ * \brief Converts a 4x4 matrix given in glm to eigen 4x4 matrix
  * \param mat The input matrix. Although it is not defined constant, I am not changeing the values. Its just necessary to access pointer.
- * \return Eigen::Affine3d copied data from mat.
+ * \return Eigen::Matrix4 copied data from mat.
  */
-inline Eigen::Affine3d glmMat2EigenAffine(glm::mat4 &mat) {
-  float *array_ptr = reinterpret_cast<float *>(glm::value_ptr(mat));
-
-  Eigen::Affine3f affine;
-  affine.matrix() = Eigen::Map<Eigen::Matrix<float, 4, 4, Eigen::RowMajor> >(array_ptr);
-  return affine.cast<double>();
+template <typename T>
+inline Eigen::Matrix<T, 4, 4> glmMat42EigenMat4(glm::mat4 &mat) {
+  float *array_ptr = reinterpret_cast<T *>(glm::value_ptr(mat));
+  return Eigen::Map<Eigen::Matrix<T, 4, 4, Eigen::RowMajor> >(array_ptr);
 }
 
 }  // namespace utils
