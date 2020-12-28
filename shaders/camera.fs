@@ -1,41 +1,54 @@
-#version 130 
+#version 130
 
-uniform sampler2D texture1;
+struct Material {
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    float shininess;
+};
+struct Light {
+    vec3 position;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+};
+
+uniform Light light;
+uniform Material material;
+uniform sampler2D objectTexture;
+uniform sampler2D shadowMap;
 uniform vec3 lightPos;
 uniform vec3 cameraPos;
-
-out vec4 FragColor;
   
 in vec3 FragNormal;
 in vec3 VertexColor;
 in vec2 TexCoord;
 in vec3 FragPos;
+in vec4 FragPosLightSpace;
 
-float ambient_strength = 0.1; // TODO input?
-vec3 light_source_color = vec3(1,1,1); // TODO input?
-float specular_strength = 0.5; // TODO input?
-float shininess = 32; // TODO input, must be power of 2, the higher the more diffuse is the reflection of the light source
-
+out vec4 FragColor;
 
 void main()
 {
     /// lightning
     // ambient
-    vec3 ambient = ambient_strength * light_source_color;
+    vec3 ambient = light.ambient * material.ambient;
 
     // diffuse
-    vec3 frag_normal = normalize(FragNormal);     // TODO THIS SHOULD BE GIVEN!
-    vec3 light_direction = normalize(lightPos - FragPos);
-    float angle_rad = max(dot(frag_normal, light_direction), 0.0);
-    vec3 diffuse = angle_rad * light_source_color;
+    vec3 frag_normal = normalize(FragNormal);  // TODO THIS SHOULD BE GIVEN!
+    vec3 light_direction = normalize(light.position - FragPos);
+    float diffuse_value = max(dot(frag_normal, light_direction), 0.0);
+    vec3 diffuse = light.diffuse * (diffuse_value * material.diffuse);
 
     // specular
     vec3 view_direction = normalize(cameraPos - FragPos);
     vec3 reflect_direction = reflect(-light_direction, frag_normal);
-    float spec = pow(max(dot(view_direction, reflect_direction), 0.0), shininess);
-    vec3 specular = specular_strength * spec * light_source_color;
+    // vec3 reflect_direction = normalize(light_direction + view_direction);
+    float spec = pow(max(dot(view_direction, reflect_direction), 0.0), material.shininess);
+    vec3 specular = light.specular * (spec * material.specular);
 
-    vec3 result_color = (ambient + diffuse + specular) * VertexColor;
-    FragColor = vec4(result_color, 1.0);
+
+    vec3 lighting = (ambient + diffuse + specular) * VertexColor;
+    FragColor = vec4(lighting, 1.0);
 }
 

@@ -2,10 +2,16 @@
 
 #include <SFML/OpenGL.hpp>
 #include <display_elements/glad_import.hpp>
+#include <globals/globals.hpp>
+#include <randomGenerator.hpp>
 #include <utils/math.hpp>
 
 
-SfmlRenderWindow::SfmlRenderWindow() {}
+SfmlRenderWindow::SfmlRenderWindow()
+    : light(Globals::getInstance().getPath2LightSettings()) {
+  Light::CallbackLightChange posChange = std::bind(&SfmlRenderWindow::onLightChange, this);
+  light.setCallbackPositionChange(posChange);
+}
 
 void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
   initOpenGl(handle);
@@ -94,6 +100,14 @@ void SfmlRenderWindow::update() {
   }
   processInputActions();
   activateIf();
+
+  // draw shadow shader
+
+  // glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+  // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  drawShadows();
+
+  // draw scene
   glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
   glClearDepth(1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -125,6 +139,8 @@ unsigned long SfmlRenderWindow::addMesh(const std::shared_ptr<BaseMesh>& simple_
   activateIf();
   simple_mesh->setProjection(camera.getProjectionMatrix());
   simple_mesh->setView(camera.getViewMatrix());
+  simple_mesh->setCameraPosition(camera.getPosition());
+  simple_mesh->setLight(light);
   deactivateIf();
   return mesh_counter++;
 }
@@ -162,6 +178,34 @@ void SfmlRenderWindow::drawMesh() {
   for (const auto& mesh : meshes) {
     mesh.second->draw();
   }
+  deactivateIf();
+}
+
+void SfmlRenderWindow::drawShadows() {
+
+  activateIf();
+  /*
+  // todo this is part of simulation
+  static Eigen::Vector3f nextPos = light.getPosition();
+  if ((nextPos - light.getPosition()).norm() < 0.1f) {
+    tool::RandomGenerator* rg;
+    rg = &rg->getInstance();
+    nextPos.x() = rg->uniformDistribution(-10, 10);
+    nextPos.y() = rg->uniformDistribution(-10, 10);
+    nextPos.z() = rg->uniformDistribution(-10, 10);
+  } else {
+    Eigen::Vector3f diff = nextPos - light.getPosition();
+    diff.normalize();
+    diff *= 0.03f;
+    light.setPosition(light.getPosition() + diff);
+  }
+
+
+    for (const auto& mesh : meshes) {
+      mesh.second->draw(true);
+    }
+  */
+
   deactivateIf();
 }
 
@@ -286,12 +330,9 @@ void SfmlRenderWindow::rightKlick(const sf::Vector2i& mouse_pos) {
 
 void SfmlRenderWindow::onCameraPositionUpdate() {
   activateIf();
-  const Eigen::Vector3d cam_pos = camera.getPosition();
-  const Eigen::Vector3d light_source_pos = 1.5 * cam_pos;
   for (auto& mesh : meshes) {
     mesh.second->setView(camera.getViewMatrix());
-    mesh.second->setLightPosition(light_source_pos);
-    mesh.second->setCameraPosition(cam_pos);
+    mesh.second->setCameraPosition(camera.getPosition());
   }
   deactivateIf();
 }
@@ -300,6 +341,14 @@ void SfmlRenderWindow::onCameraPerspectiveUpdate() {
   activateIf();
   for (auto& mesh : meshes) {
     mesh.second->setProjection(camera.getProjectionMatrix());
+  }
+  deactivateIf();
+}
+
+void SfmlRenderWindow::onLightChange() {
+  activateIf();
+  for (auto& mesh : meshes) {
+    mesh.second->setLight(light);
   }
   deactivateIf();
 }

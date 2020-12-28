@@ -9,6 +9,7 @@
 #include <cmath>
 #include <display_elements/camera.hpp>
 #include <display_elements/displayUtils.hpp>
+#include <display_elements/light.hpp>
 #include <display_elements/mesh.hpp>
 #include <timer/timer.hpp>
 
@@ -89,11 +90,13 @@ class SfmlRenderWindow : public sf::RenderWindow {
 
   void onCameraPositionUpdate();
   void onCameraPerspectiveUpdate();
+  void onLightChange();
 
   void enable3dDepth();
   void setPerspective();
 
   void drawMesh();
+  void drawShadows();
   void draw2DStack();
 
   void printGraphicCardInformation();
@@ -102,7 +105,8 @@ class SfmlRenderWindow : public sf::RenderWindow {
   Camera camera = Camera();
   sf::Vector2i last_mouse_pos = sf::Vector2i(0, 0);
   const sf::Vector2i STRANGE_MOUSE_OFFSET = sf::Vector2i(0, 60);
-  sf::Clock clock;
+
+  Light light;
 
   double window_ratio = 1;
   bool is_active = false;

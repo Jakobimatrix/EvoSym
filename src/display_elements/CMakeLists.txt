@@ -8,6 +8,7 @@ target_link_libraries(pre_display_lib INTERFACE
   ${SFML_LIBRARIES}
   ${SFML_DEPENDENCIES}
   globals_lib
+  settings_lib
   utils_lib
   stb_lib
   Eigen3::Eigen)

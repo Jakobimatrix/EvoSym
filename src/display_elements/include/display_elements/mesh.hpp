@@ -19,6 +19,13 @@
 #include <utils/eigen_glm_conversation.hpp>
 #include <vector>
 
+#include "light.hpp"
+#include "material.hpp"
+
+
+// for using "string"sv in constexpr map
+using namespace std::literals::string_view_literals;
+
 class BaseMesh {
  public:
   BaseMesh() {}
@@ -33,10 +40,12 @@ class BaseMesh {
     pose.translate(t);
     updatePose();
   }
+
   void rotate(const Eigen::Vector3d& rpy) {
     pose.rotate(eigen_utils::rpy2RotationMatrix(rpy));
     updatePose();
   }
+
   void rotateAround(const Eigen::Vector3d& rpy, const Eigen::Vector3d& p) {
     Eigen::Vector3d diff = pose.translation() - p;
     pose.translate(-diff);
@@ -52,10 +61,13 @@ class BaseMesh {
     }
   }
 
-  void setLightPosition(const Eigen::Vector3d& pos) {
+  void setLight(const Light& light) {
     if (shader != nullptr) {
       glCheck(shader->use());
-      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_POSITION_NAME, pos));
+      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_POSITION_NAME, light.getPosition()));
+      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_AMBIENT_NAME, light.getAmbient()));
+      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_DIFFUSE_NAME, light.getDiffuse()));
+      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_SPECULAR_NAME, light.getSpecular()));
       glUseProgram(0);
     }
   }
@@ -63,7 +75,7 @@ class BaseMesh {
   void setCameraPosition(const Eigen::Vector3d& pos) {
     if (shader != nullptr) {
       glCheck(shader->use());
-      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_POSITION_NAME, pos));
+      glCheck(shader->setVec3(SHADER_UNIFORM_CAMERA_POSITION_NAME, pos));
       glUseProgram(0);
     }
   }
@@ -85,6 +97,18 @@ class BaseMesh {
   }
 
  protected:
+  void setMaterial(const Material& material) {
+    this->material = material;
+    if (shader != nullptr) {
+      glCheck(shader->use());
+      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_AMBIENT_NAME, material.ambient));
+      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_DIFFUSE_NAME, material.diffuse));
+      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_SPECULAR_NAME, material.specular));
+      glCheck(shader->setFloat(SHADER_UNIFORM_MATERIAL_SHININESS_NAME, material.shininess));
+      glUseProgram(0);
+    }
+  }
+
   /*!
    * \brief Loads and connects a new shader to this mesh.
    * This uses the own shader class. An existing shader will be deleted.
@@ -169,16 +193,43 @@ class BaseMesh {
   static constexpr const char* SHADER_IN_COLOR_NAME = "vertexColor";
 
   // shader standard uniform
-  static constexpr const char* SHADER_UNIFORM_POSE_NAME = "pose";
-  static constexpr const char* SHADER_UNIFORM_VIEW_NAME = "view";
-  static constexpr const char* SHADER_UNIFORM_LIGHT_POSITION_NAME = "lightPos";
+  static constexpr const char* SHADER_UNIFORM_POSE_NAME =
+      "objectPoseTransformation";
+  static constexpr const char* SHADER_UNIFORM_VIEW_NAME =
+      "invCameraViewTransformation";
   static constexpr const char* SHADER_UNIFORM_CAMERA_POSITION_NAME =
       "cameraPos";
   static constexpr const char* SHADER_UNIFORM_PROJECTION_NAME = "projection";
+  static constexpr const char* SHADER_UNIFORM_CAMERA_OBJECT_TEXTURE_NAME =
+      "objectTexture";
+  static constexpr int SHADER_UNIFORM_CAMERA_OBJECT_TEXTURE_ID = 0;
+  static constexpr const char* SHADER_UNIFORM_CAMERA_SHADOW_TEXTURE_NAME =
+      "shadowTexture";
+  static constexpr int SHADER_UNIFORM_CAMERA_SHADOW_TEXTURE_ID = 1;
+  static constexpr const char* SHADER_UNIFORM_SHADOW_TEXTURE_NAME =
+      "shadowBufferTexture";
+  static constexpr int SHADER_UNIFORM_SHADOW_TEXTURE_ID = 0;
+  static constexpr const char* SHADER_UNIFORM_LIGHT_POSITION_NAME =
+      "light.position";
+  static constexpr const char* SHADER_UNIFORM_LIGHT_AMBIENT_NAME =
+      "light.ambient";
+  static constexpr const char* SHADER_UNIFORM_LIGHT_DIFFUSE_NAME =
+      "light.diffuse";
+  static constexpr const char* SHADER_UNIFORM_LIGHT_SPECULAR_NAME =
+      "light.specular";
+  static constexpr const char* SHADER_UNIFORM_MATERIAL_AMBIENT_NAME =
+      "material.ambient";
+  static constexpr const char* SHADER_UNIFORM_MATERIAL_DIFFUSE_NAME =
+      "material.diffuse";
+  static constexpr const char* SHADER_UNIFORM_MATERIAL_SPECULAR_NAME =
+      "material.specular";
+  static constexpr const char* SHADER_UNIFORM_MATERIAL_SHININESS_NAME =
+      "material.shininess";
 
 
   bool is_initialized = false;
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  Material material;
 
  private:
   void updatePose() {
@@ -225,6 +276,9 @@ class Mesh : public BaseMesh {
    * \brief This renders the mesh using the active shader if set.
    */
   void draw() override {
+
+    // TODO deal with uninitialized material, light, etc
+
     if (!is_initialized) {
       return;
     }
