@@ -25,26 +25,26 @@ class BaseMesh {
   virtual ~BaseMesh() {}
   virtual void draw() = 0;
 
-  void setPose(const Eigen::Affine3f& p) {
+  void setPose(const Eigen::Isometry3d& p) {
     pose = p;
     updatePose();
   }
-  void translate(const Eigen::Vector3f& t) {
+  void translate(const Eigen::Vector3d& t) {
     pose.translate(t);
     updatePose();
   }
-  void rotate(const Eigen::Vector3f& rpy) {
+  void rotate(const Eigen::Vector3d& rpy) {
     pose.rotate(eigen_utils::rpy2RotationMatrix(rpy));
     updatePose();
   }
-  void rotateAround(const Eigen::Vector3f& rpy, const Eigen::Vector3f& p) {
-    Eigen::Vector3f diff = pose.translation() - p;
+  void rotateAround(const Eigen::Vector3d& rpy, const Eigen::Vector3d& p) {
+    Eigen::Vector3d diff = pose.translation() - p;
     pose.translate(-diff);
     pose.rotate(eigen_utils::rpy2RotationMatrix(rpy));
     pose.translate(diff);
   }
 
-  void setView(const Eigen::Affine3d& view) {
+  void setView(const Eigen::Isometry3d& view) {
     if (shader != nullptr) {
       glCheck(shader->use());
       glCheck(shader->setMat4(SHADER_UNIFORM_VIEW_NAME, view.matrix()));
@@ -68,7 +68,7 @@ class BaseMesh {
     }
   }
 
-  void setProjection(const Eigen::Affine3d& projection) {
+  void setProjection(const Eigen::Projective3d& projection) {
     if (shader != nullptr) {
       glCheck(shader->use());
       glCheck(shader->setMat4(SHADER_UNIFORM_PROJECTION_NAME, projection.matrix()));
@@ -178,7 +178,7 @@ class BaseMesh {
 
 
   bool is_initialized = false;
-  Eigen::Affine3f pose = Eigen::Affine3f::Identity();
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
 
  private:
   void updatePose() {

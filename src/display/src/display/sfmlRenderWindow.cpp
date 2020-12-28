@@ -16,7 +16,7 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
   // init mesh
   world_mesh = std::make_shared<WorldMesh>();
   // set perspective for world mesh
-  const Eigen::Affine3f pose = Eigen::Affine3f::Identity();
+  const Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   world_mesh->setPose(pose);
   deactivateIf();
 

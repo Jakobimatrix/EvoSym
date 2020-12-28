@@ -20,6 +20,8 @@ class Camera {
 
   // constructor with vectors
   Camera() {
+    projection = eigen_utils::getPerspectiveProjection(
+        lense_angle_rad, near_clipping, far_clipping, aspect_ratio);
     updateProjection();
     updateView();
   }
@@ -81,9 +83,9 @@ class Camera {
   }
 
   // returns the view matrix calculated using Euler Angles and the Position
-  Eigen::Affine3d getViewMatrix() const { return view; }
+  Eigen::Isometry3d getViewMatrix() const { return view; }
 
-  Eigen::Affine3d getProjectionMatrix() const { return projection; }
+  Eigen::Projective3d getProjectionMatrix() const { return projection; }
 
   // shift current view-plane in x and y
   void shiftXY(double xoffset, double yoffset) {
@@ -240,38 +242,25 @@ class Camera {
   }
 
   void updateView() {
-    const Eigen::Affine3d translation =
-        eigen_utils::pose2Affine(position, Eigen::Vector3d::Zero());
-    const Eigen::Affine3d rotation = eigen_utils::quaternion2Affine(angles);
-    Eigen::Affine3d transformation = rotation * translation;
-    transformation.inverse(Eigen::TransformTraits::Affine);
+    const Eigen::Vector3d zero_rotation(0, 0, 0);
+    const Eigen::Isometry3d translation =
+        eigen_utils::pose2Isometry(position, zero_rotation);
+    const Eigen::Isometry3d rotation = eigen_utils::quaternion2Isometry(angles);
+    Eigen::Isometry3d transformation = rotation * translation;
+    transformation.inverse(Eigen::TransformTraits::Isometry);
     view = transformation;
     callbackViewChange();
   }
 
   void updateProjection() {
-    // https://wiki.delphigl.com/index.php/glFrustum
-    // crunch every visible vertex into [-1,1]^3 unit qube
-
-    assert(abs(aspect_ratio - std::numeric_limits<double>::epsilon()) >
-           static_cast<double>(0));
-
-    const double tanHalfFovy = std::tan(lense_angle_rad / 2.0);
-
-    projection(0, 0) = 1.0 / (aspect_ratio * tanHalfFovy);
-    projection(1, 1) = 1.0 / tanHalfFovy;
-    projection(2, 2) = (far_clipping + near_clipping) / (near_clipping - far_clipping);
-    projection(2, 3) = (2 * far_clipping * near_clipping) / (near_clipping - far_clipping);
-    projection(3, 2) = -1;
-    projection(3, 3) = 0;
-
-    // projection = Eigen::Affine3d::Identity();
+    eigen_utils::updatePerspectiveProjection(
+        projection, lense_angle_rad, near_clipping, far_clipping, aspect_ratio);
     callbackProjectionChange();
   }
 
   // camera Attributes
-  Eigen::Affine3d view = Eigen::Affine3d::Identity();
-  Eigen::Affine3d projection = Eigen::Affine3d::Identity();
+  Eigen::Isometry3d view = Eigen::Isometry3d::Identity();
+  Eigen::Projective3d projection;
   Eigen::Vector3d position = Eigen::Vector3d::Zero();  // X,Y,Z
   Eigen::Quaterniond angles = eigen_utils::getZeroRotation(Eigen::Vector3d(0, 0, 1));  // vec,w
 
