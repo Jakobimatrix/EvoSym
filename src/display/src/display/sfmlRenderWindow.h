@@ -61,15 +61,8 @@ class SfmlRenderWindow : public sf::RenderWindow {
    * break the state machine.
    */
   void activateIf() {
-    assert(used_conditional_activate == false &&
-           "SfmlRenderWindow::activateIf is supposed to be used with "
-           "deactivateIf. It seems like you used activateIf twice without "
-           "deactivateIf inbetween.");
-    was_active = is_active;
-    used_conditional_activate = true;
-    if (!was_active) {
-      setActive(true);
-    }
+    activation_count++;
+    setActive(true);
   }
 
   /*!
@@ -77,12 +70,12 @@ class SfmlRenderWindow : public sf::RenderWindow {
    * This function is supposed to be called after activateIf() was used.
    */
   void deactivateIf() {
-    assert(used_conditional_activate == true &&
+    activation_count--;
+
+    assert(activation_count >= 0 &&
            "SfmlRenderWindow::deactivateIf is supposed to be used after "
-           "activateIf."
-           "deactivateIf inbetween.");
-    used_conditional_activate = false;
-    if (!was_active) {
+           "activateIf().");
+    if (activation_count <= 0) {
       setActive(false);
     }
   }
@@ -116,8 +109,7 @@ class SfmlRenderWindow : public sf::RenderWindow {
 
   // Not thread save!
   // state used by activateIf and deactivateIf
-  bool was_active;
-  bool used_conditional_activate = false;
+  int activation_count = 0;
 
   std::map<unsigned long, const std::shared_ptr<BaseMesh>> meshes;
   unsigned long mesh_counter = 0;

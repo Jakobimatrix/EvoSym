@@ -93,14 +93,14 @@ void SfmlRenderWindow::update() {
     return;
   }
   processInputActions();
-  setActive(true);
+  activateIf();
   glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
   glClearDepth(1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
   drawMesh();
-  setActive(false);
+  deactivateIf();
 
   // not working :(
   //  // reset transformation for SFML
