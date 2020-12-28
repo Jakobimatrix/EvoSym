@@ -161,19 +161,20 @@ class BaseMesh {
 
   // access in shader like this:
   // in vec3 vertexPos;
-  const std::string SHADER_IN_POSITION_NAME = "vertexPos";
-  const std::string SHADER_IN_NORMAL_NAME = "vertexNormal";
-  const std::string SHADER_IN_TANGENT_NAME = "vertexTangent";
-  const std::string SHADER_IN_BITANGENT_NAME = "vertexBitangent";
-  const std::string SHADER_IN_TEXTURE_NAME = "vertexTexturePos";
-  const std::string SHADER_IN_COLOR_NAME = "vertexColor";
+  static constexpr const char* SHADER_IN_POSITION_NAME = "vertexPos";
+  static constexpr const char* SHADER_IN_NORMAL_NAME = "vertexNormal";
+  static constexpr const char* SHADER_IN_TANGENT_NAME = "vertexTangent";
+  static constexpr const char* SHADER_IN_BITANGENT_NAME = "vertexBitangent";
+  static constexpr const char* SHADER_IN_TEXTURE_NAME = "vertexTexturePos";
+  static constexpr const char* SHADER_IN_COLOR_NAME = "vertexColor";
 
   // shader standard uniform
-  const std::string SHADER_UNIFORM_POSE_NAME = "pose";
-  const std::string SHADER_UNIFORM_VIEW_NAME = "view";
-  const std::string SHADER_UNIFORM_LIGHT_POSITION_NAME = "lightPos";
-  const std::string SHADER_UNIFORM_CAMERA_POSITION_NAME = "cameraPos";
-  const std::string SHADER_UNIFORM_PROJECTION_NAME = "projection";
+  static constexpr const char* SHADER_UNIFORM_POSE_NAME = "pose";
+  static constexpr const char* SHADER_UNIFORM_VIEW_NAME = "view";
+  static constexpr const char* SHADER_UNIFORM_LIGHT_POSITION_NAME = "lightPos";
+  static constexpr const char* SHADER_UNIFORM_CAMERA_POSITION_NAME =
+      "cameraPos";
+  static constexpr const char* SHADER_UNIFORM_PROJECTION_NAME = "projection";
 
 
   bool is_initialized = false;
@@ -321,17 +322,17 @@ class Mesh : public BaseMesh {
     // sfml shaders too which are linked somewhere deep in sfml.
     // also since I am stuck with #version 130 (GLSL 1.30)
     // I cannot use layout(location = 0) which is avaiable in GLSL 1.40
-    auto assignShaderVariable = [&shaderProgram](const std::string& var_name,
+    auto assignShaderVariable = [&shaderProgram](const char* var_name,
                                                  int num_values,
                                                  void* start_position) {
-      const int variable_position = glGetAttribLocation(shaderProgram, var_name.c_str());
+      const int variable_position = glGetAttribLocation(shaderProgram, var_name);
       glCheckAfter();
       if (variable_position < 0) {
         // compiler did optimize away the variable
         F_WARNING(
             "Trying to connect to shader variable %s failed. Variable not "
             "found",
-            var_name.c_str());
+            var_name);
         return;
       }
       const unsigned int u_pos = static_cast<unsigned int>(variable_position);
@@ -342,7 +343,7 @@ class Mesh : public BaseMesh {
       F_DEBUG(
           "connecting %s with %d values starting at %p. Connected Position is "
           "%d",
-          var_name.c_str(),
+          var_name,
           num_values,
           start_position,
           u_pos);
