@@ -135,7 +135,8 @@ inline Transform<T, 3, Projective> getPerspectiveProjection(T lense_angle_rad,
 
 template <typename T>
 inline Matrix<T, 3, 1> rotationMatrix2rpy(const Matrix<T, 3, 3> &r) {
-  return r.eulerAngles(2, 1, 0);
+  const Matrix<T, 3, 1> ypr = r.eulerAngles(2, 1, 0);
+  return Matrix<T, 3, 1>(ypr.z(), ypr.y().ypr.x());
 }
 
 template <typename T>
@@ -150,7 +151,7 @@ inline Matrix<T, 3, 1> affine2Vector(const Matrix<T, 4, 1> &v) {
 
 template <typename T>
 inline Matrix<T, 3, 1> quaternion2rpy(const Quaternion<T> &q) {
-  return q.toRotationMatrix().eulerAngles(2, 1, 0);
+  return rotationMatrix2rpy(q.toRotationMatrix());
 }
 
 template <typename T>
@@ -187,9 +188,9 @@ inline Matrix<T, 3, 1> rotate(const Quaternion<T> &q, const Matrix<T, 3, 1> &abc
 template <typename T>
 inline Quaternion<T> getZeroRotation(const Matrix<T, 3, 1> &axis) {
   Quaternion<T> q;
-  q.vec() = axis;
-  q.w() = static_cast<T>(0);
-  q.normalize();
+  const T zero = static_cast<T>(0);
+  q.vec() << zero, zero, zero;
+  q.w() = static_cast<T>(1);
   return q;
 }
 
