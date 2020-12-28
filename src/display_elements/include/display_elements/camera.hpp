@@ -22,7 +22,6 @@ class Camera {
   Camera() {
     projection = eigen_utils::getPerspectiveProjection(
         lense_angle_rad, near_clipping, far_clipping, aspect_ratio);
-    updateProjection();
     updateView();
   }
 
@@ -52,9 +51,10 @@ class Camera {
     updateView();
   }
 
-  Eigen::Vector3d getPosition() { return position; }
+  const Eigen::Vector3d &getPosition() const { return position; }
 
-  Eigen::Quaterniond getAngles() { return angles; }
+  const Eigen::Quaterniond &getAngles() const { return angles; }
+
 
   void setCameraRotationInverted(bool invert) { invert_rotation = invert; }
 
@@ -82,10 +82,9 @@ class Camera {
     updateProjection();
   }
 
-  // returns the view matrix calculated using Euler Angles and the Position
-  Eigen::Isometry3d getViewMatrix() const { return view; }
+  const Eigen::Isometry3d &getViewMatrix() const { return view; }
 
-  Eigen::Projective3d getProjectionMatrix() const { return projection; }
+  const Eigen::Projective3d &getProjectionMatrix() const { return projection; }
 
   // shift current view-plane in x and y
   void shiftXY(double xoffset, double yoffset) {
@@ -253,6 +252,7 @@ class Camera {
   }
 
   void updateProjection() {
+    // projection must have been initialized before calling this!
     eigen_utils::updatePerspectiveProjection(
         projection, lense_angle_rad, near_clipping, far_clipping, aspect_ratio);
     callbackProjectionChange();
