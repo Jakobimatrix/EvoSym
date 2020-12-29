@@ -1,9 +1,14 @@
 #ifndef EIGEN_CONVERSATIONS
 #define EIGEN_CONVERSATIONS
 
+#include <assert.h>
+
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
+#include <iostream>
 #include <map>
+
+#include "math.hpp"
 
 namespace eigen_utils {
 
@@ -57,17 +62,23 @@ inline Transform<T, 3, Projective> getOrthogonalProjection(
 
 template <typename T>
 inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &translation,
-                                                   const Matrix<T, 3, 1> &view_direction) {
-  // TODO IF view_direction == up
+                                                   const Matrix<T, 3, 1> &view_direction_normalized) {
+
+  assert(true == math::almost_equal(view_direction_normalized.norm(), static_cast<T>(1), 4) &&
+         "given view_direction_normalized is not normalized.");
+
+  if (math::almost_equal(view_direction_normalized.y(), static_cast<T>(1), 2)) {
+    // TODO IF view_direction == up
+    assert(false && "todo view direction up.");
+  }
 
   // y-axis is up
   const Matrix<T, 3, 1> up(0, 1, 0);
   // z-axis is view direction
-  Matrix<T, 3, 1> z = view_direction;
-  z.normalize();
-  // x-axis is orthogonal to z and y
-  Matrix<T, 3, 1> x = z.colwise().cross(up);
-  x.normalize();
+  const Matrix<T, 3, 1> z = view_direction_normalized;
+  // x-axis is orthogonal to z and y. Both are normalized, so x is too.
+  const Matrix<T, 3, 1> x = z.colwise().cross(up);
+
   // y-axis actually does not necessary look up directly but is probably tilted
   const Matrix<T, 3, 1> y = x.colwise().cross(z);
 
@@ -79,7 +90,6 @@ inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &transl
   const T tx = (x.cwiseProduct(translation)).sum();
   const T ty = (y.cwiseProduct(translation)).sum();
   const T tz = (z.cwiseProduct(translation)).sum();
-
 
   /*
   AXIS     TRANSFORM

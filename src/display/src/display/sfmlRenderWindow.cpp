@@ -21,12 +21,24 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
   activateIf();
   // init mesh
   world_mesh = std::make_shared<WorldMesh>();
+  world_mesh2 = std::make_shared<WorldMesh>();
   // set perspective for world mesh
   const Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   world_mesh->setPose(pose);
+  Eigen::Vector3d rot(1, 2, 2);
+  rot.normalize();
+  world_mesh2->setPose(eigen_utils::getTransformation(Eigen::Vector3d(1, 2, 1), rot));
+
+
+  sun = std::make_shared<SunMesh>();
+  Eigen::Isometry3d pose_sun;
+  pose_sun.matrix() = light.getPose().matrix().cast<double>();
+  sun->setPose(pose_sun);
   deactivateIf();
 
   unsigned int wmid = addMesh(world_mesh);
+  unsigned int wmid2 = addMesh(world_mesh2);
+  unsigned int sid = addMesh(sun);
 }
 
 void SfmlRenderWindow::initOpenGl(const sf::WindowHandle& handle) {
@@ -69,7 +81,7 @@ void SfmlRenderWindow::initCamera() {
 
   camera.addCallbackPerspectiveChange(perspectiveChange);
   camera.addCallbackViewChange(viewChange);
-  camera.setPosition(0, 0, -10);
+  camera.setPosition(0, 0, -20);
 
   camera.setAspectRatio(window_ratio);
   camera.setLenseAngleRad(math::deg2Rad(30.));
@@ -185,26 +197,29 @@ void SfmlRenderWindow::drawShadows() {
 
   activateIf();
   /*
-  // todo this is part of simulation
-  static Eigen::Vector3f nextPos = light.getPosition();
-  if ((nextPos - light.getPosition()).norm() < 0.1f) {
-    tool::RandomGenerator* rg;
-    rg = &rg->getInstance();
-    nextPos.x() = rg->uniformDistribution(-10, 10);
-    nextPos.y() = rg->uniformDistribution(-10, 10);
-    nextPos.z() = rg->uniformDistribution(-10, 10);
-  } else {
-    Eigen::Vector3f diff = nextPos - light.getPosition();
-    diff.normalize();
-    diff *= 0.03f;
-    light.setPosition(light.getPosition() + diff);
-  }
+   // todo this is part of simulation
+   static Eigen::Vector3f nextPos = light.getPosition();
+   if ((nextPos - light.getPosition()).norm() < 0.1f) {
+     tool::RandomGenerator* rg;
+     rg = &rg->getInstance();
+     nextPos.x() = rg->uniformDistribution(-10, 10);
+     nextPos.y() = rg->uniformDistribution(-10, 10);
+     nextPos.z() = rg->uniformDistribution(-10, 10);
+   } else {
+     Eigen::Vector3f diff = nextPos - light.getPosition();
+     diff.normalize();
+     diff *= 0.03f;
+     light.setPosition(light.getPosition() + diff);
+     Eigen::Isometry3d pose_sun;
+     pose_sun.matrix() = light.getPose().matrix().cast<double>();
+     sun->setPose(pose_sun);
+   }
 
 
-    for (const auto& mesh : meshes) {
-      mesh.second->draw(true);
-    }
-  */
+     for (const auto& mesh : meshes) {
+       mesh.second->draw(true);
+     }
+   */
 
   deactivateIf();
 }
@@ -212,7 +227,6 @@ void SfmlRenderWindow::drawShadows() {
 void SfmlRenderWindow::processInputActions() {
   sf::Event event;
   while (pollEvent(event)) {
-
     // Close window: exit
     if (event.type == sf::Event::Closed) {
       sf::RenderWindow::close();
@@ -233,6 +247,7 @@ void SfmlRenderWindow::processInputActions() {
   }
   if (has_focus) {
     processMouseAction();
+    processKeyPressedAction();
   }
 }
 
@@ -296,6 +311,38 @@ void SfmlRenderWindow::processMouseAction() {
   last_mouse_pos = mouse_pos;
 }
 
+void SfmlRenderWindow::processKeyPressedAction() {
+  Eigen::Vector3f move(0, 0, 0);
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+    move.x() += 1;
+  }
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+    move.x() -= 1;
+  }
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+    move.y() += 1;
+  }
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+    move.y() -= 1;
+  }
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+    move.z() += 1;
+  }
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+    move.z() -= 1;
+  }
+
+  move.normalize();
+  const float length = 0.03f;
+  move *= length;
+  activateIf();
+  light.setPositionAndTarget(light.getPosition() + move, Eigen::Vector3f(0, 0, 0));
+  Eigen::Isometry3d pose_sun;
+  pose_sun.matrix() = light.getPose().inverse().matrix().cast<double>();
+  sun->setPose(pose_sun);
+  deactivateIf();
+}
+
 void SfmlRenderWindow::scrollHack(double f) {
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
     camera.setLenseAngleRad(math::deg2Rad(f) + camera.getLenseAngleRad());
@@ -329,6 +376,7 @@ void SfmlRenderWindow::rightKlick(const sf::Vector2i& mouse_pos) {
 }
 
 void SfmlRenderWindow::onCameraPositionUpdate() {
+  // todo rename its a pose change
   activateIf();
   for (auto& mesh : meshes) {
     mesh.second->setView(camera.getViewMatrix());

@@ -4,19 +4,33 @@
 #include <Eigen/Geometry>
 
 struct Material {
-  Eigen::Vector3f ambient;
+  // how strong the material emits light
+  Eigen::Vector3f self_glow;
+  // how strong each (rgb) will be reflected
   Eigen::Vector3f diffuse;
+  // how strong the reflection of shiny object is
   Eigen::Vector3f specular;
+  // how large the reflection/light spot becomes
   float shininess;
   bool initiated = false;
 };
 
 struct Chrome : public Material {
   Chrome() {
-    ambient << 0.25f, 0.25f, 0.25f;
-    diffuse << 0.4f, 0.4f, 0.4f;
-    specular << 0.774597f, 0.774597f, 0.774597f;
-    shininess = 0.6f;
+    self_glow << 0.0f, 0.0f, 0.0f;
+    diffuse << 1.0f, 1.0f, 1.0f;
+    specular << 1.0f, 1.0f, 1.0f;
+    shininess = 64.0f;
+    initiated = true;
+  }
+};
+
+struct PureColor : public Material {
+  PureColor() {
+    self_glow << 1.f, 1.f, 1.f;
+    diffuse << 0.f, 0.f, 0.f;
+    specular << 0.f, 0.f, 0.f;
+    shininess = 0.0f;
     initiated = true;
   }
 };

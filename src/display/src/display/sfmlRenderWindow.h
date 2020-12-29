@@ -2,6 +2,7 @@
 #define SFML_RENDER_WINDOW
 
 
+#include <display_elements/sun.h>
 #include <display_elements/worldMesh.h>
 
 #include <SFML/Graphics.hpp>
@@ -83,6 +84,7 @@ class SfmlRenderWindow : public sf::RenderWindow {
 
   void processInputActions();
   void processMouseAction();
+  void processKeyPressedAction();
   void dragMouseLeft(const sf::Vector2i &diff);
   void dragMouseRight(const sf::Vector2i &diff);
   void leftKlick(const sf::Vector2i &mouse_pos);
@@ -119,6 +121,9 @@ class SfmlRenderWindow : public sf::RenderWindow {
   unsigned long mesh_counter = 0;
 
   std::shared_ptr<WorldMesh> world_mesh = nullptr;
+  std::shared_ptr<WorldMesh> world_mesh2 = nullptr;
+
+  std::shared_ptr<SunMesh> sun = nullptr;
   bool is_initialized = false;
   bool has_focus = true;
 

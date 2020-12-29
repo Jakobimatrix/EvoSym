@@ -24,7 +24,7 @@ void main()
     gl_Position = projection * invCameraViewTransformation * objectPoseTransformation * vec4(vertexPos, 1.0);
 
     // outs
-    FragNormal = mat3(objectPoseTransformation) * vertexNormal;
+    FragNormal = vec3(objectPoseTransformation * vec4(vertexNormal, 1.0));
     VertexColor = vertexColor;
     TexCoord = vertexTexturePos;
     FragPos = vec3(objectPoseTransformation * vec4(vertexPos, 1.0));

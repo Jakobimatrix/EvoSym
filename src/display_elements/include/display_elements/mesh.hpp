@@ -65,9 +65,9 @@ class BaseMesh {
     if (shader != nullptr) {
       glCheck(shader->use());
       glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_POSITION_NAME, light.getPosition()));
+      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_DIRECTION_NAME, light.getDirection()));
       glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_AMBIENT_NAME, light.getAmbient()));
-      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_DIFFUSE_NAME, light.getDiffuse()));
-      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_SPECULAR_NAME, light.getSpecular()));
+      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_COLOR_NAME, light.getColor()));
       glUseProgram(0);
     }
   }
@@ -101,7 +101,7 @@ class BaseMesh {
     this->material = material;
     if (shader != nullptr) {
       glCheck(shader->use());
-      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_AMBIENT_NAME, material.ambient));
+      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_SELFGLOW_NAME, material.self_glow));
       glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_DIFFUSE_NAME, material.diffuse));
       glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_SPECULAR_NAME, material.specular));
       glCheck(shader->setFloat(SHADER_UNIFORM_MATERIAL_SHININESS_NAME, material.shininess));
@@ -211,14 +211,13 @@ class BaseMesh {
   static constexpr int SHADER_UNIFORM_SHADOW_TEXTURE_ID = 0;
   static constexpr const char* SHADER_UNIFORM_LIGHT_POSITION_NAME =
       "light.position";
+  static constexpr const char* SHADER_UNIFORM_LIGHT_DIRECTION_NAME =
+      "light.direction";
   static constexpr const char* SHADER_UNIFORM_LIGHT_AMBIENT_NAME =
       "light.ambient";
-  static constexpr const char* SHADER_UNIFORM_LIGHT_DIFFUSE_NAME =
-      "light.diffuse";
-  static constexpr const char* SHADER_UNIFORM_LIGHT_SPECULAR_NAME =
-      "light.specular";
-  static constexpr const char* SHADER_UNIFORM_MATERIAL_AMBIENT_NAME =
-      "material.ambient";
+  static constexpr const char* SHADER_UNIFORM_LIGHT_COLOR_NAME = "light.color";
+  static constexpr const char* SHADER_UNIFORM_MATERIAL_SELFGLOW_NAME =
+      "material.selfGlow";
   static constexpr const char* SHADER_UNIFORM_MATERIAL_DIFFUSE_NAME =
       "material.diffuse";
   static constexpr const char* SHADER_UNIFORM_MATERIAL_SPECULAR_NAME =

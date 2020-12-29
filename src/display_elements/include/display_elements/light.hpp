@@ -29,7 +29,8 @@ class Light : public util::Settings {
   void set(const Eigen::Vector3f &pos, const Eigen::Vector3f &dir) {
     position = pos;
     direction = dir;
-    pose = eigen_utils::getTransformation(pos, dir);
+    direction.normalize();
+    pose = eigen_utils::getTransformation(pos, direction);
 
     // TODO use min max to find following values
     const float left = -10;
@@ -56,8 +57,7 @@ class Light : public util::Settings {
   const Eigen::Vector3f &getPosition() const { return position; }
   const Eigen::Vector3f &getDirection() const { return direction; }
   const Eigen::Vector3f &getAmbient() const { return ambient; }
-  const Eigen::Vector3f &getDiffuse() const { return diffuse; }
-  const Eigen::Vector3f &getSpecular() const { return specular; }
+  const Eigen::Vector3f &getColor() const { return color; }
   const Eigen::Isometry3f &getPose() const { return pose; }
 
  private:
@@ -65,8 +65,7 @@ class Light : public util::Settings {
     put<float, NUM_COORDS>(position.x(), SETTING_POSITION_ID);
     put<float, NUM_COORDS>(direction.x(), SETTING_DIRECTION_ID);
     put<float, NUM_COLORS>(ambient.x(), SETTING_AMBIENT_COLOR_ID);
-    put<float, NUM_COLORS>(diffuse.x(), SETTING_DIFFUSE_COLOR_ID);
-    put<float, NUM_COLORS>(specular.x(), SETTING_SPECULAR_COLOR_ID);
+    put<float, NUM_COLORS>(color.x(), SETTING_COLOR_COLOR_ID);
   }
 
   static constexpr int NUM_COLORS = 3;
@@ -74,17 +73,15 @@ class Light : public util::Settings {
   static constexpr const char *SETTING_POSITION_ID = "position_xyz";
   static constexpr const char *SETTING_DIRECTION_ID = "direction_xyz";
   static constexpr const char *SETTING_AMBIENT_COLOR_ID = "ambiente_rgb";
-  static constexpr const char *SETTING_DIFFUSE_COLOR_ID = "diffuse_rgb";
-  static constexpr const char *SETTING_SPECULAR_COLOR_ID = "specular_rgb";
+  static constexpr const char *SETTING_COLOR_COLOR_ID = "color_rgb";
 
-  Eigen::Vector3f position = Eigen::Vector3f(0.f, 0.f, 1000.f);
+  Eigen::Vector3f position = Eigen::Vector3f(0.f, 0.f, 2.f);
   Eigen::Vector3f direction = Eigen::Vector3f(0.f, 0.f, 1.f);
   // brightness in shaddows
-  Eigen::Vector3f ambient = Eigen::Vector3f(0.2f, 0.2f, 0.2f);
+  Eigen::Vector3f ambient = Eigen::Vector3f(0.05f, 0.05f, 0.05f);
   // brightness direct hit
-  Eigen::Vector3f diffuse = Eigen::Vector3f(0.5f, 0.5f, 0.5f);
+  Eigen::Vector3f color = Eigen::Vector3f(1.f, 1.f, 1.f);
   // brightness reflection
-  Eigen::Vector3f specular = Eigen::Vector3f(1.0f, 1.0f, 1.0f);
   Eigen::Isometry3f pose;
   Eigen::Projective3f lightSpaceMatrix;
   Eigen::Projective3f projection;
