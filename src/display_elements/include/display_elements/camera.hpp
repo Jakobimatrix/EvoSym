@@ -63,7 +63,7 @@ class Camera {
 
   void setLenseAngleRad(double angle) {
     // focal length must be positive. Good values are between 30 and 90
-    if (angle > 1) {
+    if (angle > math::deg2Rad(1)) {
       lense_angle_rad = angle;
       updateProjection();
     }
