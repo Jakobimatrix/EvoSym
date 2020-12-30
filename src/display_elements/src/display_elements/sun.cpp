@@ -97,10 +97,7 @@ void SunMesh::loadVertices() {
     }
   }
 
-
-  std::string texture =
-      Globals::getInstance().getAbsPath2Resources() + "wall.jpg";
-  init(verices_temp, indices_temp, texture);
+  init(verices_temp, indices_temp);
 }
 
 

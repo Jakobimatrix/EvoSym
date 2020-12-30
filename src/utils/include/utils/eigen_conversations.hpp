@@ -5,7 +5,6 @@
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
-#include <iostream>
 #include <map>
 
 #include "math.hpp"
@@ -28,6 +27,13 @@ Eigen::Block<Derived, m, n> getSubmatrix(MatrixBase<Derived> &data) {
   return Eigen::Block<Derived, m, n>(data.derived(), x, y);
 }
 
+template <typename Derived>
+void inverteAffine3d(Eigen::MatrixBase<Derived> &m) {
+  getSubmatrix<3, 3, 0, 0>(m).transposeInPlace();
+  getSubmatrix<3, 1, 0, 3>(m) =
+      -getSubmatrix<3, 3, 0, 0>(m) * getSubmatrix<3, 1, 0, 3>(m);
+}
+
 template <typename T, size_t m, size_t n>
 constexpr Matrix<T, m, n> Zero() {
   Matrix<T, m, n> ret;
@@ -37,110 +43,6 @@ constexpr Matrix<T, m, n> Zero() {
     }
   }
   return ret;
-}
-
-template <typename T>
-inline void updateOrthogonalProjection(
-    Transform<T, 3, Projective> &p, T left, T right, T bottom, T top, T near_clipping, T far_clipping) {
-  p(0, 0) = (static_cast<T>(2) * near_clipping) / (right - left);
-  p(1, 1) = (static_cast<T>(2) * far_clipping) / (top - bottom);
-  p(2, 0) = (right + left) / (right - left);
-  p(2, 1) = (top + bottom) / (top - bottom);
-  p(2, 2) = far_clipping / (far_clipping - near_clipping);
-  p(3, 2) = -(far_clipping * near_clipping) / (far_clipping - near_clipping);
-}
-
-template <typename T>
-inline Transform<T, 3, Projective> getOrthogonalProjection(
-    T left, T right, T bottom, T top, T near_clipping, T far_clipping) {
-
-  Transform<T, 3, Projective> p = Transform<T, 3, Projective>::Zero();
-  p(2, 3) = static_cast<T>(1.0);
-  updateOrthogonalProjection(p, left, right, bottom, top, near_clipping, far_clipping);
-  return p;
-}
-
-template <typename T>
-inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &translation,
-                                                   const Matrix<T, 3, 1> &view_direction_normalized) {
-
-  assert(true == math::almost_equal(view_direction_normalized.norm(), static_cast<T>(1), 4) &&
-         "given view_direction_normalized is not normalized.");
-
-  if (math::almost_equal(view_direction_normalized.y(), static_cast<T>(1), 2)) {
-    // TODO IF view_direction == up
-    assert(false && "todo view direction up.");
-  }
-
-  // y-axis is up
-  const Matrix<T, 3, 1> up(0, 1, 0);
-  // z-axis is view direction
-  const Matrix<T, 3, 1> z = view_direction_normalized;
-  // x-axis is orthogonal to z and y. Both are normalized, so x is too.
-  const Matrix<T, 3, 1> x = z.colwise().cross(up);
-
-  // y-axis actually does not necessary look up directly but is probably tilted
-  const Matrix<T, 3, 1> y = x.colwise().cross(z);
-
-  // Affine first rotates, than translates but within the rotated system.
-  // So we need to figure out the new transformation in the rotated system.
-  // We calculate how much of the old translation belongs to the new axis x,y,z
-  // using dot product.
-
-  const T tx = (x.cwiseProduct(translation)).sum();
-  const T ty = (y.cwiseProduct(translation)).sum();
-  const T tz = (z.cwiseProduct(translation)).sum();
-
-  /*
-  AXIS     TRANSFORM
-  x  y  z  transl.
-  1, 0, 0, tx
-  0, 1, 0, ty,
-  0, 0, 1, tz
-  0, 0, 0, 1
-  AXIS must be normalized and orthogonal
-  */
-
-  Transform<T, 3, Isometry> t;
-
-  getSubmatrix<3, 1, 0, 0>(t.matrix()) = x;
-  getSubmatrix<3, 1, 0, 1>(t.matrix()) = y;
-  getSubmatrix<3, 1, 0, 2>(t.matrix()) = -z;
-  getSubmatrix<3, 1, 0, 3>(t.matrix()) << -tx, -ty, tz;
-  getSubmatrix<1, 4, 3, 0>(t.matrix()) << 0, 0, 0, 1;
-
-  return t;
-}
-
-template <typename T>
-inline void updatePerspectiveProjection(Transform<T, 3, Projective> &projection,
-                                        T lense_angle_rad,
-                                        T near_clipping,
-                                        T far_clipping,
-                                        T aspect_ratio) {
-  // https://wiki.delphigl.com/index.php/glFrustum
-  // crunch every visible vertex into [-1,1]^3 unit qube
-  assert(abs(aspect_ratio - std::numeric_limits<T>::epsilon()) > static_cast<T>(0));
-
-  const double tanHalfFovy = std::tan(lense_angle_rad / 2.0);
-
-  projection(0, 0) = 1.0 / (aspect_ratio * tanHalfFovy);
-  projection(1, 1) = 1.0 / tanHalfFovy;
-  projection(2, 2) = (far_clipping + near_clipping) / (near_clipping - far_clipping);
-  projection(2, 3) = (2 * far_clipping * near_clipping) / (near_clipping - far_clipping);
-}
-
-template <typename T>
-inline Transform<T, 3, Projective> getPerspectiveProjection(T lense_angle_rad,
-                                                            T near_clipping,
-                                                            T far_clipping,
-                                                            T aspect_ratio) {
-  Transform<T, 3, Projective> projection;
-  projection.matrix() = Zero<T, 4, 4>();
-  updatePerspectiveProjection(
-      projection, lense_angle_rad, near_clipping, far_clipping, aspect_ratio);
-  projection(3, 2) = -1;
-  return projection;
 }
 
 template <typename T>
@@ -254,6 +156,126 @@ inline Transform<T, 3, Isometry> rpy2Affine(const Vector3d &rpy) {
   return quaternion2Isometry(rpy2Quaternion(rpy));
 }
 
+
+template <typename T>
+inline void updateOrthogonalProjection(
+    Transform<T, 3, Projective> &p, T left, T right, T bottom, T top, T near_clipping, T far_clipping) {
+  p(0, 0) = (static_cast<T>(2) * near_clipping) / (right - left);
+  p(1, 1) = (static_cast<T>(2) * far_clipping) / (top - bottom);
+  p(2, 0) = (right + left) / (right - left);
+  p(2, 1) = (top + bottom) / (top - bottom);
+  p(2, 2) = far_clipping / (far_clipping - near_clipping);
+  p(3, 2) = -(far_clipping * near_clipping) / (far_clipping - near_clipping);
+}
+
+template <typename T>
+inline Transform<T, 3, Projective> getOrthogonalProjection(
+    T left, T right, T bottom, T top, T near_clipping, T far_clipping) {
+
+  Transform<T, 3, Projective> p = Transform<T, 3, Projective>::Zero();
+  p(2, 3) = static_cast<T>(1.0);
+  updateOrthogonalProjection(p, left, right, bottom, top, near_clipping, far_clipping);
+  return p;
+}
+
+
+#include <iostream>
+template <typename T>
+inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &translation,
+                                                   const Matrix<T, 3, 1> &view_direction_normalized) {
+
+  if (!math::almost_equal(view_direction_normalized.norm(), static_cast<T>(1), 7)) {
+    std::cout << view_direction_normalized.norm() << "\n"
+              << view_direction_normalized;
+    assert(true == math::almost_equal(
+                       view_direction_normalized.norm(), static_cast<T>(1), 7) &&
+           "given view_direction_normalized is not normalized.");
+  }
+
+
+  if (math::almost_equal(std::abs(view_direction_normalized.y()), static_cast<T>(1), 2)) {
+    // TODO CHECK IF CORRECT
+    const Matrix<T, 3, 1> t(0, 0, 0);
+    const Matrix<T, 3, 1> r(0, 0, M_PI_2);
+    Transform<T, 3, Isometry> r_temp = pose2Isometry(t, r);
+    const Matrix<T, 3, 1> new_view_direction = r_temp.linear() * view_direction_normalized;
+
+    const Transform<T, 3, Isometry> rotated_transform =
+        getTransformation(translation, new_view_direction);
+    inverteAffine3d(r_temp.matrix());
+    return r_temp * rotated_transform;
+  }
+
+  // y-axis is up
+  const Matrix<T, 3, 1> up(0, 1, 0);
+  // z-axis is view direction
+  const Matrix<T, 3, 1> z = view_direction_normalized;
+  // x-axis is orthogonal to z and y. Both are normalized, so x is too.
+  const Matrix<T, 3, 1> x = z.colwise().cross(up);
+
+  // y-axis actually does not necessary look up directly but is probably tilted
+  const Matrix<T, 3, 1> y = x.colwise().cross(z);
+
+  // Affine first rotates, than translates but within the rotated system.
+  // So we need to figure out the new transformation in the rotated system.
+  // We calculate how much of the old translation belongs to the new axis x,y,z
+  // using dot product.
+
+  const T tx = (x.cwiseProduct(translation)).sum();
+  const T ty = (y.cwiseProduct(translation)).sum();
+  const T tz = (z.cwiseProduct(translation)).sum();
+
+  /*
+  AXIS     TRANSFORM
+  x  y  z  transl.
+  1, 0, 0, tx
+  0, 1, 0, ty,
+  0, 0, 1, tz
+  0, 0, 0, 1
+  AXIS must be normalized and orthogonal
+  */
+
+  Transform<T, 3, Isometry> t;
+
+  getSubmatrix<3, 1, 0, 0>(t.matrix()) = x;
+  getSubmatrix<3, 1, 0, 1>(t.matrix()) = y;
+  getSubmatrix<3, 1, 0, 2>(t.matrix()) = -z;
+  getSubmatrix<3, 1, 0, 3>(t.matrix()) << -tx, -ty, tz;
+  getSubmatrix<1, 4, 3, 0>(t.matrix()) << 0, 0, 0, 1;
+
+  return t;
+}
+
+template <typename T>
+inline void updatePerspectiveProjection(Transform<T, 3, Projective> &projection,
+                                        T lense_angle_rad,
+                                        T near_clipping,
+                                        T far_clipping,
+                                        T aspect_ratio) {
+  // https://wiki.delphigl.com/index.php/glFrustum
+  // crunch every visible vertex into [-1,1]^3 unit qube
+  assert(abs(aspect_ratio - std::numeric_limits<T>::epsilon()) > static_cast<T>(0));
+
+  const double tanHalfFovy = std::tan(lense_angle_rad / 2.0);
+
+  projection(0, 0) = 1.0 / (aspect_ratio * tanHalfFovy);
+  projection(1, 1) = 1.0 / tanHalfFovy;
+  projection(2, 2) = (far_clipping + near_clipping) / (near_clipping - far_clipping);
+  projection(2, 3) = (2 * far_clipping * near_clipping) / (near_clipping - far_clipping);
+}
+
+template <typename T>
+inline Transform<T, 3, Projective> getPerspectiveProjection(T lense_angle_rad,
+                                                            T near_clipping,
+                                                            T far_clipping,
+                                                            T aspect_ratio) {
+  Transform<T, 3, Projective> projection;
+  projection.matrix() = Zero<T, 4, 4>();
+  updatePerspectiveProjection(
+      projection, lense_angle_rad, near_clipping, far_clipping, aspect_ratio);
+  projection(3, 2) = -1;
+  return projection;
+}
 
 }  // namespace eigen_utils
 

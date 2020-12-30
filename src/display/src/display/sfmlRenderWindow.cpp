@@ -21,13 +21,32 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
   activateIf();
   // init mesh
   world_mesh = std::make_shared<WorldMesh>();
-  world_mesh2 = std::make_shared<WorldMesh>();
   // set perspective for world mesh
   const Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   world_mesh->setPose(pose);
-  Eigen::Vector3d rot(1, 2, 2);
-  rot.normalize();
-  world_mesh2->setPose(eigen_utils::getTransformation(Eigen::Vector3d(1, 2, 1), rot));
+  unsigned int wmid = addMesh(world_mesh);
+
+
+
+  const int nr_rand = 50;
+  tool::RandomGenerator* rg;
+  rg = &rg->getInstance();
+  for (int i = 0; i < nr_rand; i++) {
+    std::shared_ptr<WorldMesh> world_meshx = std::make_shared<WorldMesh>();
+    Eigen::Vector3d rot(0, 0, 0);
+    while (rot.norm() < 0.00001) {
+      rot = Eigen::Vector3d(rg->uniformDistribution(-1, 1),
+                            rg->uniformDistribution(-1, 1),
+                            rg->uniformDistribution(-1, 1));
+    }
+    rot.normalize();
+    world_meshx->setPose(eigen_utils::getTransformation(
+        Eigen::Vector3d(rg->uniformDistribution(-15, 15),
+                        rg->uniformDistribution(-15, 15),
+                        rg->uniformDistribution(-15, 15)),
+        rot));
+    unsigned int wmidx = addMesh(world_meshx);
+  }
 
 
   sun = std::make_shared<SunMesh>();
@@ -36,8 +55,6 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
   sun->setPose(pose_sun);
   deactivateIf();
 
-  unsigned int wmid = addMesh(world_mesh);
-  unsigned int wmid2 = addMesh(world_mesh2);
   unsigned int sid = addMesh(sun);
 }
 
@@ -333,18 +350,22 @@ void SfmlRenderWindow::processKeyPressedAction() {
   }
 
   move.normalize();
-  const float length = 0.03f;
+  const float length = 0.06f;
   move *= length;
   activateIf();
   light.setPositionAndTarget(light.getPosition() + move, Eigen::Vector3f(0, 0, 0));
   Eigen::Isometry3d pose_sun;
-  pose_sun.matrix() = light.getPose().inverse().matrix().cast<double>();
+  pose_sun.matrix() =
+      light.getPose().inverse(Eigen::TransformTraits::Isometry).matrix().cast<double>();
   sun->setPose(pose_sun);
   deactivateIf();
 }
 
 void SfmlRenderWindow::scrollHack(double f) {
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::RControl)) {
+    f *= 10;
+  }
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)) {
     camera.setLenseAngleRad(math::deg2Rad(f) + camera.getLenseAngleRad());
   } else {
     camera.shiftZ(f);

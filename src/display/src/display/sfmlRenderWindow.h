@@ -121,7 +121,6 @@ class SfmlRenderWindow : public sf::RenderWindow {
   unsigned long mesh_counter = 0;
 
   std::shared_ptr<WorldMesh> world_mesh = nullptr;
-  std::shared_ptr<WorldMesh> world_mesh2 = nullptr;
 
   std::shared_ptr<SunMesh> sun = nullptr;
   bool is_initialized = false;

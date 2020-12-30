@@ -99,6 +99,7 @@ void WorldMesh::loadVertices() {
       indices_temp.emplace_back(index++);
     }
   }
+  debug_normals = true;
 
 
   std::string texture =

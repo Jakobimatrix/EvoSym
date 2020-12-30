@@ -108,6 +108,13 @@ struct Vertex {
 
   static constexpr int ARRAY_LENGTH = COLOR_OFFSET + NUM_COLOR;
 
+  static constexpr bool HAS_POSITION = has_position;
+  static constexpr bool HAS_NORMAL = has_normal;
+  static constexpr bool HAS_TANGENT = has_tangent;
+  static constexpr bool HAS_BITANGETN = has_bitangent;
+  static constexpr bool HAS_TEXTURE = has_texture;
+  static constexpr bool HAS_COLOR = has_color;
+
   Vertex() {}
 
   Vertex(const std::array<float, ARRAY_LENGTH>& v) {

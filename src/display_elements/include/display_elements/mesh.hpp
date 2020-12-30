@@ -13,6 +13,7 @@
 #include <display_elements/vertex.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <globals/globals.hpp>
 #include <memory>
 #include <string>
 #include <utils/eigen_conversations.hpp>
@@ -32,10 +33,23 @@ class BaseMesh {
   virtual ~BaseMesh() {}
   virtual void draw() = 0;
 
+  void setDebugNormals(bool debug) {
+    if (debug) {
+      if (normals == nullptr) {
+        calculateNormalMesh();
+      }
+      normals->setPose(pose);
+      normals->setProjection(projection);
+      normals->setView(view);
+    }
+    debug_normals = debug;
+  }
+
   void setPose(const Eigen::Isometry3d& p) {
     pose = p;
     updatePose();
   }
+
   void translate(const Eigen::Vector3d& t) {
     pose.translate(t);
     updatePose();
@@ -58,6 +72,9 @@ class BaseMesh {
       glCheck(shader->use());
       glCheck(shader->setMat4(SHADER_UNIFORM_VIEW_NAME, view.matrix()));
       glUseProgram(0);
+    }
+    if (debug_normals && normals) {
+      normals->setView(view);
     }
   }
 
@@ -86,6 +103,9 @@ class BaseMesh {
       glCheck(shader->setMat4(SHADER_UNIFORM_PROJECTION_NAME, projection.matrix()));
       glUseProgram(0);
     }
+    if (debug_normals && normals) {
+      normals->setProjection(projection);
+    }
   }
 
   void setTexture(int sample_nr = 0) {
@@ -96,18 +116,6 @@ class BaseMesh {
     }
   }
 
- protected:
-  void setMaterial(const Material& material) {
-    this->material = material;
-    if (shader != nullptr) {
-      glCheck(shader->use());
-      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_SELFGLOW_NAME, material.self_glow));
-      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_DIFFUSE_NAME, material.diffuse));
-      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_SPECULAR_NAME, material.specular));
-      glCheck(shader->setFloat(SHADER_UNIFORM_MATERIAL_SHININESS_NAME, material.shininess));
-      glUseProgram(0);
-    }
-  }
 
   /*!
    * \brief Loads and connects a new shader to this mesh.
@@ -125,6 +133,21 @@ class BaseMesh {
     }
     connectShader(shader->ID);
     return true;
+  }
+
+ protected:
+  virtual void calculateNormalMesh() = 0;
+
+  void setMaterial(const Material& material) {
+    this->material = material;
+    if (shader != nullptr) {
+      glCheck(shader->use());
+      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_SELFGLOW_NAME, material.self_glow));
+      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_DIFFUSE_NAME, material.diffuse));
+      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_SPECULAR_NAME, material.specular));
+      glCheck(shader->setFloat(SHADER_UNIFORM_MATERIAL_SHININESS_NAME, material.shininess));
+      glUseProgram(0);
+    }
   }
 
   /*!
@@ -225,10 +248,13 @@ class BaseMesh {
   static constexpr const char* SHADER_UNIFORM_MATERIAL_SHININESS_NAME =
       "material.shininess";
 
-
-  bool is_initialized = false;
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  Eigen::Projective3d projection = Eigen::Projective3d::Identity();
+  Eigen::Isometry3d view = Eigen::Isometry3d::Identity();
   Material material;
+  bool debug_normals = false;
+  bool is_initialized = false;
+  std::shared_ptr<BaseMesh> normals = nullptr;
 
  private:
   void updatePose() {
@@ -236,6 +262,9 @@ class BaseMesh {
       glCheck(shader->use());
       glCheck(shader->setMat4(SHADER_UNIFORM_POSE_NAME, pose.matrix()));
       glUseProgram(0);
+    }
+    if (debug_normals && normals) {
+      normals->setPose(pose);
     }
   }
 };
@@ -260,15 +289,27 @@ class Mesh : public BaseMesh {
             std::vector<unsigned int> indices,
             const std::string& texture_path) {
 
+    loadTexture(texture_path);
+    init(vertices, indices);
+  }
+
+  /*!
+   * \brief Reserves space on GPU for texture and vertices
+   * \param vertices The vector of vertices describeing the mesh and what not.
+   * \param indices A vector of indices describeing the order of the vertices.
+   * \param texture_path The path to the texture.
+   */
+  void init(const std::vector<VertexType>& vertices, const std::vector<unsigned int>& indices) {
     if (is_initialized) {
       clean();
     }
     this->vertices = vertices;
     this->indices = indices;
-
-    loadTexture(texture_path);
     setupMesh();
     is_initialized = true;
+    if (debug_normals) {
+      calculateNormalMesh();
+    }
   }
 
   /*!
@@ -282,7 +323,10 @@ class Mesh : public BaseMesh {
       return;
     }
 
-    glCheck(glBindTexture(GL_TEXTURE_2D, texture));
+
+    if constexpr (has_texture) {
+      glCheck(glBindTexture(GL_TEXTURE_2D, texture));
+    }
     if (shader != nullptr) {
       glCheck(shader->use());
     }
@@ -297,7 +341,13 @@ class Mesh : public BaseMesh {
     }
 
     // always good practice to set everything back to defaults once configured.
-    glCheck(glActiveTexture(GL_TEXTURE0));
+    if constexpr (has_texture) {
+      glCheck(glActiveTexture(GL_TEXTURE0));
+    }
+
+    if (debug_normals && normals) {
+      normals->draw();
+    }
   }
 
  protected:
@@ -318,15 +368,16 @@ class Mesh : public BaseMesh {
     glCheck(glBindVertexArray(VAO));
     // load data into vertex buffers
     glCheck(glBindBuffer(GL_ARRAY_BUFFER, VBO));
-    // A great thing about structs is that their memory layout is sequential for all its items.
-    // The effect is that we can simply pass a pointer to the struct and it translates perfectly to a glm::vec3/2 array which
-    // again translates to 3/2 floats which translates to a byte array.
+
     glCheck(glBufferData(
         GL_ARRAY_BUFFER, vertices.size() * sizeof(VertexType), &vertices[0], GL_STATIC_DRAW));
 
     glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO));
     glCheck(glBufferData(
         GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW));
+
+    // glCheck(glBindVertexArray(0));
+    // glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
   }
 
   /*!
@@ -363,14 +414,14 @@ class Mesh : public BaseMesh {
       glCheck(glEnableVertexAttribArray(u_pos));
       glCheck(glVertexAttribPointer(
           u_pos, num_values, GL_FLOAT, GL_FALSE, sizeof(VertexType), start_position));
-
+      /*
       F_DEBUG(
           "connecting %s with %d values starting at %p. Connected Position is "
           "%d",
           var_name,
           num_values,
           start_position,
-          u_pos);
+          u_pos);*/
     };
 
     // set the vertex attribute pointers
@@ -416,6 +467,98 @@ class Mesh : public BaseMesh {
                            reinterpret_cast<void*>(offsetof(VertexType, color)));
     }
   }
+
+  void calculateNormalMesh() override {
+
+    // put very tall tetraeder on center of every vertex triangle as a normal.
+    using VertexNormalType = Vertex<true, false, false, false, false, true, 3>;
+    using MeshType = Mesh<true, false, false, false, false, true, 3>;
+
+    const size_t num_triangles = indices.size() / 3;
+    std::vector<VertexNormalType> verices_temp;
+    std::vector<unsigned int> indices_temp;
+    verices_temp.reserve(num_triangles * 4);
+    indices_temp.reserve(num_triangles * 9);
+
+    constexpr float normal_thickness = 0.003f;
+    constexpr float normal_length = 0.4f;
+    constexpr float r = 1.f;
+    constexpr float g = 1.f;
+    constexpr float b = 1.f;
+
+    auto putInVec = [&r, &g, &b, &verices_temp](const Eigen::Vector3f& v) {
+      verices_temp.emplace_back(VertexNormalType({v.x(), v.y(), v.z(), r, g, b}));
+    };
+
+    unsigned int index_nr = 0;
+    for (int i = 0; i < indices.size(); i = i + 3) {
+      const Eigen::Vector3f v1(vertices[indices[i]].position);
+      const Eigen::Vector3f v2(vertices[indices[i + 1]].position);
+      const Eigen::Vector3f v3(vertices[indices[i + 2]].position);
+
+      Eigen::Vector3f normal;
+      if constexpr (has_normal) {
+        normal = Eigen::Vector3f(vertices[indices[i]].normal);
+        Eigen::Vector3f normal2(vertices[indices[i + 1]].normal);
+        Eigen::Vector3f normal3(vertices[indices[i + 2]].normal);
+        if (!math::almost_equal((normal - normal2).norm(), 0.f, 4u) ||
+            !math::almost_equal((normal - normal3).norm(), 0.f, 4u)) {
+          assert(false && "Verex triangle has different normals.");
+        }
+      } else {
+        // assuming math positive defined vertex triangle
+        const Eigen::Vector3f edge1 = v2 - v1;
+        const Eigen::Vector3f edge2 = v3 - v1;
+        normal = edge1.cross(edge2);
+        normal.normalize();
+      }
+      const Eigen::Vector3f centroid = (v1 + v2 + v3) / 3.f;
+
+      const Eigen::Vector3f nv0 = centroid + normal * normal_length;
+      const Eigen::Vector3f nv1 = (v1 - centroid) * normal_thickness;
+      const Eigen::Vector3f nv2 = (v2 - centroid) * normal_thickness;
+      const Eigen::Vector3f nv3 = (v3 - centroid) * normal_thickness;
+
+      putInVec(nv0);
+      putInVec(nv1);
+      putInVec(nv2);
+      putInVec(nv3);
+
+      indices_temp.push_back(index_nr);
+      indices_temp.push_back(index_nr + 1);
+      indices_temp.push_back(index_nr + 3);
+
+      indices_temp.push_back(index_nr);
+      indices_temp.push_back(index_nr + 3);
+      indices_temp.push_back(index_nr + 2);
+
+      indices_temp.push_back(index_nr + 1);
+      indices_temp.push_back(index_nr + 3);
+      indices_temp.push_back(index_nr + 2);
+      index_nr += 4;
+    }
+
+    // initiate normal Mesh
+    std::shared_ptr<MeshType> normals(new MeshType());
+
+    normals->setDebugNormals(false);
+    normals->init(verices_temp, indices_temp);
+
+    const std::string path = Globals::getInstance().getAbsPath2Shaders();
+    const std::string vs = path + "normal.vs";
+    const std::string fs = path + "normal.fs";
+    if (!normals->loadShader(vs, fs)) {
+      F_ERROR(
+          "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
+          "%s} ",
+          vs.c_str(),
+          fs.c_str());
+    }
+    addNormals(normals);
+    // this->normals = std::dynamic_pointer_cast<BaseMesh> (normals);
+  }
+
+  void addNormals(const std::shared_ptr<BaseMesh>& n) { normals = n; }
 };
 
 #endif

@@ -15,7 +15,6 @@ class SunMesh : public Mesh<true, true, false, false, true, true, 3> {
     loadVertices();
     loadShader();
     setMaterial(PureColor());
-    setTexture();
   }
 
   void loadVertices();
