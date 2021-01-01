@@ -5,6 +5,7 @@
 #include <stb/stb_image.h>
 
 #include <Eigen/Geometry>
+#include <Eigen/StdVector>
 #include <array>
 #include <display_elements/displayUtils.hpp>
 #include <display_elements/glad_import.hpp>
@@ -29,6 +30,7 @@ using namespace std::literals::string_view_literals;
 
 class BaseMesh {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   BaseMesh() {}
   virtual ~BaseMesh() {}
   virtual void draw() = 0;
@@ -76,6 +78,7 @@ class BaseMesh {
     if (debug_normals && normals) {
       normals->setView(view);
     }
+    this->view = view;
   }
 
   void setLight(const Light& light) {
@@ -106,6 +109,7 @@ class BaseMesh {
     if (debug_normals && normals) {
       normals->setProjection(projection);
     }
+    this->projection = projection;
   }
 
   void setTexture(int sample_nr = 0) {
@@ -272,6 +276,7 @@ class BaseMesh {
 template <bool has_position = true, bool has_normal = true, bool has_tangent = true, bool has_bitangent = true, bool has_texture = true, bool has_color = true, int num_color_values = 3>
 class Mesh : public BaseMesh {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   using VertexType =
       Vertex<has_position, has_normal, has_tangent, has_bitangent, has_texture, has_color, num_color_values>;
 
@@ -307,6 +312,8 @@ class Mesh : public BaseMesh {
     this->indices = indices;
     setupMesh();
     is_initialized = true;
+    return;
+    // TODO for some reason calculating the normals direct deletes the real mesh!?!?!?
     if (debug_normals) {
       calculateNormalMesh();
     }
@@ -480,8 +487,8 @@ class Mesh : public BaseMesh {
     verices_temp.reserve(num_triangles * 4);
     indices_temp.reserve(num_triangles * 9);
 
-    constexpr float normal_thickness = 0.003f;
-    constexpr float normal_length = 0.4f;
+    constexpr float normal_thickness = 0.01f;
+    constexpr float normal_length = 0.7f;
     constexpr float r = 1.f;
     constexpr float g = 1.f;
     constexpr float b = 1.f;
@@ -491,20 +498,18 @@ class Mesh : public BaseMesh {
     };
 
     unsigned int index_nr = 0;
-    for (int i = 0; i < indices.size(); i = i + 3) {
+    const int num_indices = indices.size();
+    for (int i = 0; i < num_indices; i = i + 3) {
       const Eigen::Vector3f v1(vertices[indices[i]].position);
       const Eigen::Vector3f v2(vertices[indices[i + 1]].position);
       const Eigen::Vector3f v3(vertices[indices[i + 2]].position);
 
       Eigen::Vector3f normal;
       if constexpr (has_normal) {
-        normal = Eigen::Vector3f(vertices[indices[i]].normal);
+        Eigen::Vector3f normal1(vertices[indices[i]].normal);
         Eigen::Vector3f normal2(vertices[indices[i + 1]].normal);
         Eigen::Vector3f normal3(vertices[indices[i + 2]].normal);
-        if (!math::almost_equal((normal - normal2).norm(), 0.f, 4u) ||
-            !math::almost_equal((normal - normal3).norm(), 0.f, 4u)) {
-          assert(false && "Verex triangle has different normals.");
-        }
+        normal = (normal1 + normal2 + normal3) / 3.f;
       } else {
         // assuming math positive defined vertex triangle
         const Eigen::Vector3f edge1 = v2 - v1;
@@ -514,47 +519,47 @@ class Mesh : public BaseMesh {
       }
       const Eigen::Vector3f centroid = (v1 + v2 + v3) / 3.f;
 
-      const Eigen::Vector3f nv0 = centroid + normal * normal_length;
-      const Eigen::Vector3f nv1 = (v1 - centroid) * normal_thickness;
-      const Eigen::Vector3f nv2 = (v2 - centroid) * normal_thickness;
-      const Eigen::Vector3f nv3 = (v3 - centroid) * normal_thickness;
+      const Eigen::Vector3f nv0 = centroid + (normal * normal_length);
+      const Eigen::Vector3f nv1 = centroid + (v1 - centroid) * normal_thickness;
+      const Eigen::Vector3f nv2 = centroid + (v2 - centroid) * normal_thickness;
+      const Eigen::Vector3f nv3 = centroid + (v3 - centroid) * normal_thickness;
 
       putInVec(nv0);
       putInVec(nv1);
       putInVec(nv2);
       putInVec(nv3);
 
-      indices_temp.push_back(index_nr);
+      indices_temp.push_back(index_nr + 3);
       indices_temp.push_back(index_nr + 1);
-      indices_temp.push_back(index_nr + 3);
-
       indices_temp.push_back(index_nr);
-      indices_temp.push_back(index_nr + 3);
+
       indices_temp.push_back(index_nr + 2);
+      indices_temp.push_back(index_nr + 3);
+      indices_temp.push_back(index_nr);
 
       indices_temp.push_back(index_nr + 1);
-      indices_temp.push_back(index_nr + 3);
       indices_temp.push_back(index_nr + 2);
+      indices_temp.push_back(index_nr);
+
       index_nr += 4;
     }
 
     // initiate normal Mesh
-    std::shared_ptr<MeshType> normals(new MeshType());
+    std::shared_ptr<MeshType> normalsMesh = std::make_shared<MeshType>();
 
-    normals->setDebugNormals(false);
-    normals->init(verices_temp, indices_temp);
+    normalsMesh->init(verices_temp, indices_temp);
 
     const std::string path = Globals::getInstance().getAbsPath2Shaders();
     const std::string vs = path + "normal.vs";
     const std::string fs = path + "normal.fs";
-    if (!normals->loadShader(vs, fs)) {
+    if (!normalsMesh->loadShader(vs, fs)) {
       F_ERROR(
           "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
           "%s} ",
           vs.c_str(),
           fs.c_str());
     }
-    addNormals(normals);
+    addNormals(normalsMesh);
     // this->normals = std::dynamic_pointer_cast<BaseMesh> (normals);
   }
 

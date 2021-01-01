@@ -11,6 +11,7 @@
 
 class ArrowMesh : public Mesh<true, false, false, false, false, true, 3> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   ArrowMesh() {
     // loadVertices();
     // loadShader();

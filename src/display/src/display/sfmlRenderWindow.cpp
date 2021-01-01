@@ -8,7 +8,8 @@
 
 
 SfmlRenderWindow::SfmlRenderWindow()
-    : light(Globals::getInstance().getPath2LightSettings()) {
+    : camera(Globals::getInstance().getPath2CameraSettings()),
+      light(Globals::getInstance().getPath2LightSettings()) {
   Light::CallbackLightChange posChange = std::bind(&SfmlRenderWindow::onLightChange, this);
   light.setCallbackPositionChange(posChange);
 }
@@ -25,8 +26,6 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
   const Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   world_mesh->setPose(pose);
   unsigned int wmid = addMesh(world_mesh);
-
-
 
   const int nr_rand = 50;
   tool::RandomGenerator* rg;
@@ -47,7 +46,6 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
         rot));
     unsigned int wmidx = addMesh(world_meshx);
   }
-
 
   sun = std::make_shared<SunMesh>();
   Eigen::Isometry3d pose_sun;
@@ -98,10 +96,10 @@ void SfmlRenderWindow::initCamera() {
 
   camera.addCallbackPerspectiveChange(perspectiveChange);
   camera.addCallbackViewChange(viewChange);
-  camera.setPosition(0, 0, -20);
+  // camera.setPosition(0, 0, -20);
 
   camera.setAspectRatio(window_ratio);
-  camera.setLenseAngleRad(math::deg2Rad(30.));
+  // camera.setLenseAngleRad(math::deg2Rad(30.));
 
   setActive(false);
 }
@@ -347,6 +345,13 @@ void SfmlRenderWindow::processKeyPressedAction() {
   }
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
     move.z() -= 1;
+  }
+
+  if (sf::Keyboard::isKeyPressed(sf::Keyboard::N)) {
+    const bool debug_normals = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift);
+    for (const auto& mesh : meshes) {
+      mesh.second->setDebugNormals(debug_normals);
+    }
   }
 
   move.normalize();

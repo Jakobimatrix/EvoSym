@@ -3,8 +3,12 @@
 #include <QApplication>
 #include <QSurfaceFormat>
 #include <globals/globals.hpp>
+#include <locale>
 
 int main(int argc, char* argv[]) {
+
+  // make sure to always use the same decimal point separator
+  std::locale("C");
 
   QApplication app(argc, argv);
   app.setApplicationName(Globals::getInstance().getMainVidowTitle().c_str());

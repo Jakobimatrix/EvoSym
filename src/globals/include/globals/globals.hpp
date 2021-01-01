@@ -70,6 +70,10 @@ class Globals {
     return absolute_path_to_settings + FILE_NAME_LIGHT_SETTINGS;
   }
 
+  std::string getPath2CameraSettings() const {
+    return absolute_path_to_settings + FILE_NAME_CAMERA_SETTINGS;
+  }
+
   std::string getPath2DisplaySettings() const {
     return absolute_path_to_settings + FILE_NAME_DISPLAY_SETTINGS;
   }
@@ -121,6 +125,9 @@ class Globals {
 
   const std::string FILE_NAME_LIGHT_SETTINGS =
       std::string("light_settings.txt");
+
+  const std::string FILE_NAME_CAMERA_SETTINGS =
+      std::string("camera_settings.txt");
 
   const std::string PATH_SEPERATOR =
 #ifdef _WIN32

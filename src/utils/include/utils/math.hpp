@@ -17,6 +17,11 @@ inline T deg2Rad(T deg) {
 }
 
 template <class T>
+inline void abs(T& value) {
+  value = std::abs(value);
+}
+
+template <class T>
 inline T rad2Deg(T rad) {
   return rad * 360. / static_cast<T>(M_PI);
 }
@@ -33,6 +38,18 @@ inline T getSignedAbsMax(T a, T b) {
     return a;
   } else {
     return b;
+  }
+}
+
+/*!
+ * \brief Swaps the inputs if the first is greater than the second.
+ * \param smaller The first value
+ * \param greater The second value
+ */
+template <class T>
+inline void swapIf(T& smaller, T& greater) {
+  if (smaller > greater) {
+    std::swap(smaller, greater);
   }
 }
 

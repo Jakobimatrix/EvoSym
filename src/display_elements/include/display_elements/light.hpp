@@ -2,13 +2,16 @@
 #define LIGHT_HPP
 
 #include <Eigen/Geometry>
+#include <Eigen/StdVector>
 #include <functional>
 #include <settings.hpp>
 #include <utils/eigen_conversations.hpp>
 #include <utils/minmax.hpp>
+#include <utils/sanitize.hpp>
 
 class Light : public util::Settings {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   typedef std::function<void()> CallbackLightChange;
 
   Light(const std::string &source) : Settings(source) {
@@ -19,17 +22,19 @@ class Light : public util::Settings {
   Light(const std::string &source, const Eigen::Vector3f &pos, const Eigen::Vector3f &dir)
       : Settings(source) {
     putSettings();
-    position = pos;
-    direction = dir;
-    set(position, direction);
+    set(pos, dir);
   }
 
   ~Light() { save(); }
 
   void set(const Eigen::Vector3f &pos, const Eigen::Vector3f &dir) {
     position = pos;
-    direction = dir;
-    direction.normalize();
+    if (dir.norm() > 0.0001) {
+      // make sure direction is not 0,0,0
+      direction = dir;
+      direction.normalize();
+    }
+
     pose = eigen_utils::getTransformation(pos, direction);
 
     // TODO use min max to find following values
@@ -66,6 +71,13 @@ class Light : public util::Settings {
     put<float, NUM_COORDS>(direction.x(), SETTING_DIRECTION_ID);
     put<float, NUM_COLORS>(ambient.x(), SETTING_AMBIENT_COLOR_ID);
     put<float, NUM_COLORS>(color.x(), SETTING_COLOR_COLOR_ID);
+    sanitizeSettings();
+  }
+
+  void sanitizeSettings() {
+    sane::normalized3D(direction, Eigen::Vector3f(DEFAULT_DIRECTION.data()));
+    eigen_utils::clampElements(ambient, 0.f, 1.f);
+    eigen_utils::clampElements(color, 0.f, 1.f);
   }
 
   static constexpr int NUM_COLORS = 3;
@@ -76,7 +88,8 @@ class Light : public util::Settings {
   static constexpr const char *SETTING_COLOR_COLOR_ID = "color_rgb";
 
   Eigen::Vector3f position = Eigen::Vector3f(0.f, 0.f, 2.f);
-  Eigen::Vector3f direction = Eigen::Vector3f(0.f, 0.f, 1.f);
+  Eigen::Vector3f direction = Eigen::Vector3f(DEFAULT_DIRECTION.data());
+  static constexpr std::array<float, 3> DEFAULT_DIRECTION = {{0.f, 0.f, 1.f}};
   // brightness in shaddows
   Eigen::Vector3f ambient = Eigen::Vector3f(0.05f, 0.05f, 0.05f);
   // brightness direct hit

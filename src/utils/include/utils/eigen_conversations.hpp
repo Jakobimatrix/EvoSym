@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
+#include <algorithm>
 #include <map>
 
 #include "math.hpp"
@@ -22,7 +23,7 @@ typedef std::map<int, EigenStlVector3f, std::less<int>, Eigen::aligned_allocator
 // Its not defined for the basic classes.
 // usage:
 // Transform<T, 3, Isometry> t; getSubmatrix<num_rows, num_cols, row, col>(t.matrix()) = ...;
-template <size_t m, size_t n, size_t x, size_t y, typename Derived>
+template <int m, int n, int x, int y, typename Derived>
 Eigen::Block<Derived, m, n> getSubmatrix(MatrixBase<Derived> &data) {
   return Eigen::Block<Derived, m, n>(data.derived(), x, y);
 }
@@ -34,7 +35,16 @@ void inverteAffine3d(Eigen::MatrixBase<Derived> &m) {
       -getSubmatrix<3, 3, 0, 0>(m) * getSubmatrix<3, 1, 0, 3>(m);
 }
 
-template <typename T, size_t m, size_t n>
+template <typename T, int m, int n>
+void clampElements(Matrix<T, m, n> &matrix, T min, T max) {
+  for (size_t nn = 0; nn < n; nn++) {
+    for (size_t mm = 0; mm < m; mm++) {
+      std::clamp(matrix(mm, nn), min, max);
+    }
+  }
+}
+
+template <typename T, int m, int n>
 constexpr Matrix<T, m, n> Zero() {
   Matrix<T, m, n> ret;
   for (size_t nn = 0; nn < n; nn++) {
@@ -44,6 +54,88 @@ constexpr Matrix<T, m, n> Zero() {
   }
   return ret;
 }
+
+/*!
+ * \brief isApproxElementWize compares two equal sized matrices element wize
+ * An alternative would be the Eigen::is_approx() which uses the Frobenius norm.
+ * \param a Matrix 1 to compare
+ * \param b Matrix 2 to compare
+ * \param ulp (units in the last place of precision)
+ * \return True if the two matrices are approximate equal
+ */
+template <typename T, int m, int n>
+inline bool isApproxElementWize(const Eigen::Matrix<T, m, n> &a,
+                                const Eigen::Matrix<T, m, n> &b,
+                                int ulp) {
+  for (size_t c = 0; c < m; c++) {
+    for (size_t r = 0; r < n; r++) {
+      if (!math::almost_equal(a(c, r), b(c, r), ulp)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/*!
+ * \brief isApproxElementWize Checks if matrix has the same given velue in every position.
+ * \param a Matrix to compare
+ * \param b one value
+ * \param ulp (units in the last place of precision)
+ * \return True if the two matrices are approximate equal
+ */
+template <typename T, int m, int n>
+inline bool isApproxElementWize(const Eigen::Matrix<T, m, n> &a, T b, int ulp) {
+  for (size_t c = 0; c < m; c++) {
+    for (size_t r = 0; r < n; r++) {
+      if (!math::almost_equal(a(c, r), b, ulp)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/*!
+ * \brief isApproxElementWize compares two equal sized matrices element wize
+ * An alternative would be the Eigen::is_approx() which uses the Frobenius norm.
+ * \param a Matrix 1 to compare
+ * \param b Matrix 2 to compare
+ * \param precision The diff elementwize must be smaller than that
+ * \return True if the two matrices are approximate equal
+ */
+template <typename T, int m, int n>
+inline bool isApproxElementWize(const Eigen::Matrix<T, m, n> &a,
+                                const Eigen::Matrix<T, m, n> &b,
+                                double precision) {
+  for (size_t c = 0; c < m; c++) {
+    for (size_t r = 0; r < n; r++) {
+      if (std::abs(a(c, r) - b(c, r)) > precision) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/*!
+ * \brief isApproxElementWize Checks if matrix has the same given velue in every
+ * position. \param a Matrix to compare \param b one value \param ulp (units in
+ * the last place of precision) \param precision The diff elementwize must be
+ * smaller than that \return True if the two matrices are approximate equal
+ */
+template <typename T, int m, int n>
+inline bool isApproxElementWize(const Eigen::Matrix<T, m, n> &a, T b, double precision) {
+  for (size_t c = 0; c < m; c++) {
+    for (size_t r = 0; r < n; r++) {
+      if (std::abs(a(c, r) - b) > precision) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 
 template <typename T>
 inline Matrix<T, 3, 1> rotationMatrix2ypr(const Matrix<T, 3, 3> &r) {
@@ -103,7 +195,7 @@ inline Matrix<T, 3, 1> rotate(const Quaternion<T> &q, const Matrix<T, 3, 1> &abc
 }
 
 template <typename T>
-inline Quaternion<T> getZeroRotation(const Matrix<T, 3, 1> &axis) {
+inline Quaternion<T> getZeroRotation() {
   Quaternion<T> q;
   const T zero = static_cast<T>(0);
   q.vec() << zero, zero, zero;
@@ -178,15 +270,11 @@ inline Transform<T, 3, Projective> getOrthogonalProjection(
   return p;
 }
 
-
-#include <iostream>
 template <typename T>
 inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &translation,
                                                    const Matrix<T, 3, 1> &view_direction_normalized) {
 
   if (!math::almost_equal(view_direction_normalized.norm(), static_cast<T>(1), 7)) {
-    std::cout << view_direction_normalized.norm() << "\n"
-              << view_direction_normalized;
     assert(true == math::almost_equal(
                        view_direction_normalized.norm(), static_cast<T>(1), 7) &&
            "given view_direction_normalized is not normalized.");

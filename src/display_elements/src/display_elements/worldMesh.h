@@ -11,6 +11,7 @@
 
 class WorldMesh : public Mesh<true, true, false, false, true, true, 3> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   WorldMesh() {
     loadVertices();
     loadShader();

@@ -9,21 +9,26 @@
 #include <functional>
 #include <globals/macros.hpp>
 #include <iostream>
+#include <settings.hpp>
 #include <utils/eigen_conversations.hpp>
 #include <utils/math.hpp>
+#include <utils/sanitize.hpp>
 #include <vector>
 
 
-class Camera {
+class Camera : public util::Settings {
  public:
   typedef std::function<void()> CallbackCameraChange;
 
   // constructor with vectors
-  Camera() {
+  Camera(const std::string &source) : Settings(source) {
+    initSettings();
     projection = eigen_utils::getPerspectiveProjection(
         lense_angle_rad, near_clipping, far_clipping, aspect_ratio);
     updateView();
   }
+
+  ~Camera() { save(); }
 
   void addCallbackViewChange(CallbackCameraChange &func) {
     callbackViewChange = func;
@@ -55,7 +60,6 @@ class Camera {
 
   const Eigen::Quaterniond &getAngles() const { return angles; }
 
-
   void setCameraRotationInverted(bool invert) { invert_rotation = invert; }
 
   // from viewers perspective fix roll movement. In Camera coordinates that is the rotation around z-Axis (yaw)
@@ -63,7 +67,7 @@ class Camera {
 
   void setLenseAngleRad(double angle) {
     // focal length must be positive. Good values are between 30 and 90
-    if (angle > math::deg2Rad(1)) {
+    if (angle > math::deg2Rad(1.)) {
       lense_angle_rad = angle;
       updateProjection();
     }
@@ -153,6 +157,36 @@ class Camera {
   }
 
  private:
+  void initSettings() {
+    put(far_clipping, SETTING_CLIPPING_FAR_ID);
+    put(near_clipping, SETTING_CLIPPING_NEAR_ID);
+    put(lense_angle_rad, SETTING_FOV_ID);
+
+    put(scroll_sensitivity, SETTING_SCROLL_SENS_ID);
+    put(shift_sensitivity, SETTING_SHIFT_SENS_ID);
+    put(rotate_sensitivity, SETTING_ROTATION_SENS_ID);
+    put(invert_rotation, SETTING_INVERT_INPUT_ID);
+    put(fix_camera_yaw, SETTING_FIX_YAW_ID);
+
+    put<double, NUM_COORDS_3D>(position.x(), SETTING_POSITION_ID);
+    // quaternion data is saved [x,y,z,w]
+    put<double, NUM_COORDS_QUATANION>(angles.x(), SETTING_ANGLES_ID);
+    sanitizeSettings();
+  }
+
+  void sanitizeSettings() {
+    math::abs(far_clipping);
+    math::abs(near_clipping);
+    math::swapIf(near_clipping, far_clipping);
+
+    std::clamp(lense_angle_rad, MIN_FOV_RAD, MAX_FOV_RAD);
+
+    math::abs(scroll_sensitivity);
+    math::abs(shift_sensitivity);
+    math::abs(rotate_sensitivity);
+    sane::normalizedQuad(angles, eigen_utils::getZeroRotation<double>());
+  }
+
   void moveXYZ(const Eigen::Vector3d &xyz, bool update_view = true) {
     position += eigen_utils::rotate(angles, xyz);
     if (update_view) {
@@ -264,13 +298,17 @@ class Camera {
   // camera Attributes
   Eigen::Isometry3d view = Eigen::Isometry3d::Identity();
   Eigen::Projective3d projection;
-  Eigen::Vector3d position = Eigen::Vector3d::Zero();  // X,Y,Z
-  Eigen::Quaterniond angles = eigen_utils::getZeroRotation(Eigen::Vector3d(0, 0, 1));  // vec,w
+  Eigen::Vector3d position = Eigen::Vector3d::Zero();                  // X,Y,Z
+  Eigen::Quaterniond angles = eigen_utils::getZeroRotation<double>();  // vec,w
 
   double far_clipping = 500.;
   double near_clipping = 0.1;
-  double lense_angle_rad =
-      math::deg2Rad(30.);  //  field-of-view something between 30 and 90 looks ok
+  double lense_angle_rad = DEFAULT_FOV_RAD;
+  // field-of-view something between 30 and 90 looks ok
+  static constexpr double DEFAULT_FOV_RAD = 30. / 360. * M_PI;
+  static constexpr double MIN_FOV_RAD = 1. / 360. * M_PI;
+  static constexpr double MAX_FOV_RAD = 120. / 360. * M_PI;
+
   double aspect_ratio = 1;
 
   // camera options
@@ -282,5 +320,21 @@ class Camera {
 
   CallbackCameraChange callbackViewChange = ([] {});
   CallbackCameraChange callbackProjectionChange = ([] {});
+
+  static constexpr int NUM_COORDS_3D = 3;
+  static constexpr int NUM_COORDS_QUATANION = 4;
+  static constexpr const char *SETTING_CLIPPING_FAR_ID = "clipping_plane_far";
+  static constexpr const char *SETTING_CLIPPING_NEAR_ID = "clipping_plane_near";
+  static constexpr const char *SETTING_FOV_ID = "fov_rad";
+
+  static constexpr const char *SETTING_SCROLL_SENS_ID = "sensitivity_scroll";
+  static constexpr const char *SETTING_SHIFT_SENS_ID = "sensitivity_schift";
+  static constexpr const char *SETTING_ROTATION_SENS_ID =
+      "sensitivity_rotation";
+  static constexpr const char *SETTING_INVERT_INPUT_ID = "invert_input";
+  static constexpr const char *SETTING_FIX_YAW_ID = "yaw_fixed";
+
+  static constexpr const char *SETTING_POSITION_ID = "pose_trans_xyz";
+  static constexpr const char *SETTING_ANGLES_ID = "pose_rot_xyzw";
 };
 #endif
