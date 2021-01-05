@@ -24,7 +24,7 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
   world_mesh = std::make_shared<WorldMesh>();
   // set perspective for world mesh
   const Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
-  world_mesh->setPose(pose);
+  world_mesh->setTransformMesh2World(pose);
   unsigned int wmid = addMesh(world_mesh);
 
   const int nr_rand = 50;
@@ -39,7 +39,7 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
                             rg->uniformDistribution(-1, 1));
     }
     rot.normalize();
-    world_meshx->setPose(eigen_utils::getTransformation(
+    world_meshx->setTransformMesh2World(eigen_utils::getTransformation(
         Eigen::Vector3d(rg->uniformDistribution(-15, 15),
                         rg->uniformDistribution(-15, 15),
                         rg->uniformDistribution(-15, 15)),
@@ -50,7 +50,7 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
   sun = std::make_shared<SunMesh>();
   Eigen::Isometry3d pose_sun;
   pose_sun.matrix() = light.getPose().matrix().cast<double>();
-  sun->setPose(pose_sun);
+  sun->setTransformMesh2World(pose_sun);
   deactivateIf();
 
   unsigned int sid = addMesh(sun);
@@ -235,6 +235,45 @@ void SfmlRenderWindow::drawShadows() {
        mesh.second->draw(true);
      }
    */
+  /*
+   tool::RandomGenerator* rg;
+   rg = &rg->getInstance();
+   for (const auto& mesh : meshes) {
+     const Eigen::Vector3d trans(rg->uniformDistribution(-0.01, 0.01),
+                                 rg->uniformDistribution(-0.01, 0.01),
+                                 rg->uniformDistribution(-0.01, 0.01));
+     mesh.second->translate(trans);
+     const Eigen::Vector3d rot(rg->uniformDistribution(-0.003, 0.003),
+                               rg->uniformDistribution(-0.003, 0.003),
+                               rg->uniformDistribution(-0.003, 0.003));
+     mesh.second->rotate(rot);
+   }
+
+   */
+
+
+  const double r = 25.;
+  static double phi = 0.;
+  phi += 0.01;
+  static double theta = 0.;
+  theta += 0.01;
+  static double y_dir = 1.;
+
+  static double y = 0;
+  y += 0.001 * y_dir;
+  if (std::abs(y) > 25.) {
+    y_dir *= -1;
+  }
+
+  const double z = std::sin(phi) * r;
+  const double x = std::cos(theta) * r;
+
+  const Eigen::Vector3f light_pos(x, y, z);
+  light.setPositionAndTarget(light_pos, Eigen::Vector3f(0, 0, 0));
+  Eigen::Isometry3d pose_sun;
+  pose_sun.matrix() =
+      light.getPose().inverse(Eigen::TransformTraits::Isometry).matrix().cast<double>();
+  sun->setTransformMesh2World(pose_sun);
 
   deactivateIf();
 }
@@ -346,7 +385,7 @@ void SfmlRenderWindow::processKeyPressedAction() {
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
     move.z() -= 1;
   }
-
+  activateIf();
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::N)) {
     const bool debug_normals = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift);
     for (const auto& mesh : meshes) {
@@ -357,12 +396,7 @@ void SfmlRenderWindow::processKeyPressedAction() {
   move.normalize();
   const float length = 0.06f;
   move *= length;
-  activateIf();
-  light.setPositionAndTarget(light.getPosition() + move, Eigen::Vector3f(0, 0, 0));
-  Eigen::Isometry3d pose_sun;
-  pose_sun.matrix() =
-      light.getPose().inverse(Eigen::TransformTraits::Isometry).matrix().cast<double>();
-  sun->setPose(pose_sun);
+
   deactivateIf();
 }
 

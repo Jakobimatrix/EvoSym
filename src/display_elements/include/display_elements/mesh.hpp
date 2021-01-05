@@ -39,45 +39,46 @@ class BaseMesh {
       if (normals == nullptr) {
         calculateNormalMesh();
       }
-      normals->setPose(pose);
+      normals->setTransformMesh2World(transform_mesh2world);
       normals->setProjection(projection);
       normals->setView(view);
     }
     debug_normals = debug;
   }
 
-  void setPose(const Eigen::Isometry3d& p) {
-    pose = p;
+  void setTransformMesh2World(const Eigen::Isometry3d& p) {
+    transform_mesh2world = p;
     updatePose();
   }
 
   void translate(const Eigen::Vector3d& t) {
-    pose.translate(t);
+    transform_mesh2world.translate(t);
     updatePose();
   }
 
   void rotate(const Eigen::Vector3d& rpy) {
-    pose.rotate(eigen_utils::rpy2RotationMatrix(rpy));
+    transform_mesh2world.rotate(eigen_utils::rpy2RotationMatrix(rpy));
     updatePose();
   }
 
   void rotateAround(const Eigen::Vector3d& rpy, const Eigen::Vector3d& p) {
-    Eigen::Vector3d diff = pose.translation() - p;
-    pose.translate(-diff);
-    pose.rotate(eigen_utils::rpy2RotationMatrix(rpy));
-    pose.translate(diff);
+    Eigen::Vector3d diff = transform_mesh2world.translation() - p;
+    transform_mesh2world.translate(-diff);
+    transform_mesh2world.rotate(eigen_utils::rpy2RotationMatrix(rpy));
+    transform_mesh2world.translate(diff);
   }
 
-  void setView(const Eigen::Isometry3d& view) {
+  // view is camera transformation world2camera
+  void setView(const Eigen::Isometry3d& view_world2camera) {
     if (shader != nullptr) {
       glCheck(shader->use());
-      glCheck(shader->setMat4(SHADER_UNIFORM_VIEW_NAME, view.matrix()));
+      glCheck(shader->setMat4(SHADER_UNIFORM_VIEW_NAME, view_world2camera.matrix()));
       glUseProgram(0);
     }
     if (debug_normals && normals) {
-      normals->setView(view);
+      normals->setView(view_world2camera);
     }
-    this->view = view;
+    this->view = view_world2camera;
   }
 
   void setLight(const Light& light) {
@@ -219,10 +220,9 @@ class BaseMesh {
   static constexpr const char* SHADER_IN_COLOR_NAME = "vertexColor";
 
   // shader standard uniform
-  static constexpr const char* SHADER_UNIFORM_POSE_NAME =
-      "objectPoseTransformation";
+  static constexpr const char* SHADER_UNIFORM_POSE_NAME = "transformMesh2World";
   static constexpr const char* SHADER_UNIFORM_VIEW_NAME =
-      "invCameraViewTransformation";
+      "transformWorld2camera";
   static constexpr const char* SHADER_UNIFORM_CAMERA_POSITION_NAME =
       "cameraPos";
   static constexpr const char* SHADER_UNIFORM_PROJECTION_NAME = "projection";
@@ -251,7 +251,7 @@ class BaseMesh {
   static constexpr const char* SHADER_UNIFORM_MATERIAL_SHININESS_NAME =
       "material.shininess";
 
-  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d transform_mesh2world = Eigen::Isometry3d::Identity();
   Eigen::Projective3d projection = Eigen::Projective3d::Identity();
   Eigen::Isometry3d view = Eigen::Isometry3d::Identity();
   Material material;
@@ -263,11 +263,11 @@ class BaseMesh {
   void updatePose() {
     if (shader != nullptr) {
       glCheck(shader->use());
-      glCheck(shader->setMat4(SHADER_UNIFORM_POSE_NAME, pose.matrix()));
+      glCheck(shader->setMat4(SHADER_UNIFORM_POSE_NAME, transform_mesh2world.matrix()));
       glUseProgram(0);
     }
     if (debug_normals && normals) {
-      normals->setPose(pose);
+      normals->setTransformMesh2World(transform_mesh2world);
     }
   }
 };

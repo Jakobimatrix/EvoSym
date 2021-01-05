@@ -6,7 +6,6 @@
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
 #include <display_elements/vertex.hpp>
-#include <iostream>
 #include <utils/eigen_conversations.hpp>
 #include <utils/math.hpp>
 
@@ -35,7 +34,9 @@ void pushVertexTypeBack(std::vector<VertexType> &vertices,
     // std::copy(bitangent.data(), bitangent.data() + 3, v.bitangent);
   }
   if constexpr (VertexType::HAS_TEXTURE) {
-    static_assert(!VertexType::HAS_TEXTURE, "tangent not supported (yet)");
+    v.texture_pos[0] = 0;
+    v.texture_pos[1] = 0;
+    // static_assert(!VertexType::HAS_TEXTURE, "tangent not supported (yet)");
     // std::copy(texture_pos.data(), texture_pos.data() + 2, v.texture_pos);
   }
   if constexpr (VertexType::HAS_COLOR) {
@@ -100,7 +101,7 @@ inline void cylinder(std::vector<VertexType> &vertices,
   const unsigned int start_index_top_circle = vertices.size();
   circle(vertices, indices_vector, radius, resolution, color, height, true);
   const unsigned int start_index_bot_circle = vertices.size();
-  circle(vertices, indices_vector, radius, resolution, color, -height, false);
+  circle(vertices, indices_vector, radius, resolution, color, 0, false);
   const unsigned int start_index_surface = vertices.size();
   unsigned int index = start_index_surface;
   // We want a flat shaded mesh, so we need for each triangle its own normals.
@@ -249,6 +250,59 @@ inline void getArrowInformation(unsigned int &num_vertices,
   num_vertices += cone_num_vertices;
 }
 
+
+// Arrow in x-y plane and height in z conterclockwize, center (0,0,0) at the bottom of the arrow.
+template <class VertexType>
+inline void coordXYZ(std::vector<VertexType> &vertices,
+                     IndicesVector &indices_vector,
+                     float radius,
+                     unsigned int resolution,
+                     float length,
+                     const Matrix<float, VertexType::NUM_COLOR, 1> color_x =
+                         Matrix<float, VertexType::NUM_COLOR, 1>::Zero(),
+                     const Matrix<float, VertexType::NUM_COLOR, 1> color_y =
+                         Matrix<float, VertexType::NUM_COLOR, 1>::Zero(),
+                     const Matrix<float, VertexType::NUM_COLOR, 1> color_z =
+                         Matrix<float, VertexType::NUM_COLOR, 1>::Zero()) {
+
+
+  Arrow(vertices, indices_vector, radius, resolution, length, color_z);
+  const unsigned int first_index_y = vertices.size();
+  Arrow(vertices, indices_vector, radius, resolution, length, color_y);
+  const unsigned int first_index_x = vertices.size();
+  Arrow(vertices, indices_vector, radius, resolution, length, color_x);
+  const unsigned int end = vertices.size();
+
+  // rotate every pose and every normal around x 90 deg
+  // z' = -y
+  // y' = z
+  for (int i = first_index_y; i < first_index_x; i++) {
+    std::swap(vertices[i].position[2], vertices[i].position[1]);
+    vertices[i].position[2] = -vertices[i].position[2];
+
+    std::swap(vertices[i].normal[2], vertices[i].normal[1]);
+    vertices[i].normal[2] = -vertices[i].normal[2];
+  }
+  // rotate every pose and every normal around y 90 deg
+  // z' = -x
+  // x' = z
+  for (int i = first_index_x; i < end; i++) {
+    std::swap(vertices[i].position[2], vertices[i].position[0]);
+    vertices[i].position[2] = -vertices[i].position[2];
+
+    std::swap(vertices[i].normal[2], vertices[i].normal[0]);
+    vertices[i].normal[2] = -vertices[i].normal[2];
+  }
+}
+
+inline void getcoordXYZInformation(unsigned int &num_vertices,
+                                   unsigned int &num_triangles,
+                                   unsigned int resolution) {
+
+  getArrowInformation(num_vertices, num_triangles, resolution);
+  num_triangles *= 3;
+  num_vertices *= 3;
+}
 
 
 #endif

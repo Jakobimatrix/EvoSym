@@ -346,10 +346,10 @@ inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &transl
 
   Transform<T, 3, Isometry> t;
 
-  getSubmatrix<3, 1, 0, 0>(t.matrix()) = x;
+  getSubmatrix<3, 1, 0, 0>(t.matrix()) = -x;
   getSubmatrix<3, 1, 0, 1>(t.matrix()) = y;
-  getSubmatrix<3, 1, 0, 2>(t.matrix()) = -z;
-  getSubmatrix<3, 1, 0, 3>(t.matrix()) << -tx, -ty, tz;
+  getSubmatrix<3, 1, 0, 2>(t.matrix()) = z;
+  getSubmatrix<3, 1, 0, 3>(t.matrix()) << tx, -ty, -tz;
   getSubmatrix<1, 4, 3, 0>(t.matrix()) << 0, 0, 0, 1;
 
   return t;

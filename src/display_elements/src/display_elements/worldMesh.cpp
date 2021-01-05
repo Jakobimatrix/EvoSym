@@ -1,5 +1,7 @@
 #include "worldMesh.h"
 
+#include <display_elements/basicShapes.hpp>
+
 void WorldMesh::loadVertices() {
 
 
@@ -99,6 +101,23 @@ void WorldMesh::loadVertices() {
       indices_temp.emplace_back(index++);
     }
   }
+
+  unsigned int num_triangles;
+  unsigned int num_vertices;
+  const unsigned int resolution = 50;
+  const float radius = 0.25f;
+  const float length = 1.23f;
+
+  getcoordXYZInformation(num_vertices, num_triangles, resolution);
+
+  num_triangles += indices_temp.size() / 3;
+  num_vertices += verices_temp.size();
+
+  verices_temp.reserve(num_vertices);
+  indices_temp.reserve(num_triangles * 3);
+
+  coordXYZ(
+      verices_temp, indices_temp, radius, resolution, length, {1, 0, 0}, {0, 1, 0}, {0, 0, 1});
 
 
   std::string texture =
