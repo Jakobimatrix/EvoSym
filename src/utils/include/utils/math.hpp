@@ -5,11 +5,10 @@
 #include <type_traits>
 
 namespace math {
-#define M_TAU = 2. * M_PI;
+#define M_TAU 2. * M_PI
 
 
-#define GOLDEN_RATIO \
-  = 1.6180339887498948482045868343656381177203091798057628621354486227;
+#define GOLDEN_RATIO 1.61803398874989484820
 
 template <class T>
 inline T deg2Rad(T deg) {
