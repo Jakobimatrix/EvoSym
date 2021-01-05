@@ -511,10 +511,7 @@ class Mesh : public BaseMesh {
         normal = (normal1 + normal2 + normal3) / 3.f;
       } else {
         // assuming math positive defined vertex triangle
-        const Eigen::Vector3f edge1 = v2 - v1;
-        const Eigen::Vector3f edge2 = v3 - v1;
-        normal = edge1.cross(edge2);
-        normal.normalize();
+        normal = eigen_utils::getTrianglesNormal(v1, v2, v3);
       }
       const Eigen::Vector3f centroid = (v1 + v2 + v3) / 3.f;
 

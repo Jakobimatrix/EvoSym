@@ -120,9 +120,13 @@ inline bool isApproxElementWize(const Eigen::Matrix<T, m, n> &a,
 
 /*!
  * \brief isApproxElementWize Checks if matrix has the same given velue in every
- * position. \param a Matrix to compare \param b one value \param ulp (units in
- * the last place of precision) \param precision The diff elementwize must be
- * smaller than that \return True if the two matrices are approximate equal
+ * position.
+ * \param a Matrix to compare
+ * \param b one value
+ * \param ulp (units in the last place of precision)
+ * \param precision The diff elementwize must be
+ * smaller than that
+ * \return True if the two matrices are approximate equal
  */
 template <typename T, int m, int n>
 inline bool isApproxElementWize(const Eigen::Matrix<T, m, n> &a, T b, double precision) {
@@ -134,6 +138,24 @@ inline bool isApproxElementWize(const Eigen::Matrix<T, m, n> &a, T b, double pre
     }
   }
   return true;
+}
+
+/*!
+ * \brief Calculates the Normal of an triangle assuming a, b, c are given anticlockwize.
+ * \param a The first point of the triangle.
+ * \param b The second point of the triangle.
+ * \param c The third point of the triangle.
+ * \return the normal
+ */
+template <typename T>
+inline Matrix<T, 3, 1> getTrianglesNormal(const Matrix<T, 3, 1> &a,
+                                          const Matrix<T, 3, 1> &b,
+                                          const Matrix<T, 3, 1> &c) {
+  const Eigen::Vector3f edge1 = b - a;
+  const Eigen::Vector3f edge2 = c - a;
+  Matrix<T, 3, 1> normal = edge1.cross(edge2);
+  normal.normalize();
+  return normal;
 }
 
 template <typename T>
