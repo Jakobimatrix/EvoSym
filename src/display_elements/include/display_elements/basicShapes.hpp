@@ -8,6 +8,7 @@
 #include <display_elements/vertex.hpp>
 #include <iostream>
 #include <utils/eigen_conversations.hpp>
+#include <utils/math.hpp>
 
 using namespace Eigen;
 
@@ -52,8 +53,9 @@ inline void circle(std::vector<VertexType> &vertices,
                    const Matrix<float, VertexType::NUM_COLOR, 1> color =
                        Matrix<float, VertexType::NUM_COLOR, 1>::Zero(),
                    float z = 0.f,
-                   float norm_z = 1.f) {
-  const Vector3f normal(0, 0, norm_z);
+                   bool norm_z_pos = true) {
+  const float z_normal_direction = (norm_z_pos) ? 1.f : -1.f;
+  const Vector3f normal(0, 0, z_normal_direction);
   const unsigned int center_index = vertices.size();
   const unsigned int first_index = center_index + 1;
   const unsigned int last_index = first_index + resolution;
@@ -84,7 +86,7 @@ inline void getCircleInformation(unsigned int &num_vertices,
 }
 
 
-// cylinder in x-y plane and height in z conterclockwize, center (0,0,0) in the center of the cylinder.
+// cylinder in x-y plane and height in z conterclockwize, center (0,0,0) in the center of the bottom circle.
 template <class VertexType>
 inline void cylinder(std::vector<VertexType> &vertices,
                      IndicesVector &indices_vector,
@@ -93,11 +95,12 @@ inline void cylinder(std::vector<VertexType> &vertices,
                      float height,
                      const Matrix<float, VertexType::NUM_COLOR, 1> color =
                          Matrix<float, VertexType::NUM_COLOR, 1>::Zero()) {
+  height = std::abs(height);
   // Get two circles for top and bottom
   const unsigned int start_index_top_circle = vertices.size();
-  circle(vertices, indices_vector, radius, resolution, color, height / 2.f, 1.f);
+  circle(vertices, indices_vector, radius, resolution, color, height, true);
   const unsigned int start_index_bot_circle = vertices.size();
-  circle(vertices, indices_vector, radius, resolution, color, -height / 2.f, -1.f);
+  circle(vertices, indices_vector, radius, resolution, color, -height, false);
   const unsigned int start_index_surface = vertices.size();
   unsigned int index = start_index_surface;
   // We want a flat shaded mesh, so we need for each triangle its own normals.
@@ -155,6 +158,95 @@ inline void getCylinderInformation(unsigned int &num_vertices,
   const unsigned int num_outer_vertices = num_outer_vertices - 1;
   num_triangles = num_triangles * 2 + resolution * 2;
   num_vertices = num_vertices * 2 + num_outer_vertices * 4;
+}
+
+// Cone in x-y plane and height in z conterclockwize, center (0,0,0) at the bottom of the cone.
+template <class VertexType>
+inline void cone(std::vector<VertexType> &vertices,
+                 IndicesVector &indices_vector,
+                 float radius,
+                 unsigned int resolution,
+                 float height,
+                 const Matrix<float, VertexType::NUM_COLOR, 1> color =
+                     Matrix<float, VertexType::NUM_COLOR, 1>::Zero()) {
+  const bool bool_look_up = height > 0;
+  // The circle first vertex created will be the center vertex and
+  // thus its index will be the size of the current vertice vector.
+  const unsigned int index_circle_center = vertices.size();
+  circle(vertices, indices_vector, radius, resolution, color, 0.f, !bool_look_up);
+  const unsigned int index_circle_start = index_circle_center + 1;
+  const unsigned int index_circle_stop = vertices.size() - 1;
+
+  const Eigen::Vector3f tip(vertices[index_circle_center].position[0],
+                            vertices[index_circle_center].position[1],
+                            vertices[index_circle_center].position[2] + height);
+
+  unsigned int index = vertices.size();
+  for (int i = index_circle_start; i <= index_circle_stop; i++) {
+
+    const unsigned int right_neigbour_id = (i < index_circle_stop) ? i + 1 : index_circle_start;
+    const Eigen::Vector3f left_v(vertices[i].position);
+    const Eigen::Vector3f right_v(vertices[right_neigbour_id].position);
+    const Eigen::Vector3f normale = eigen_utils::getTrianglesNormal(tip, left_v, right_v);
+
+    pushVertexTypeBack(vertices, tip, normale, color);
+    pushVertexTypeBack(vertices, left_v, normale, color);
+    pushVertexTypeBack(vertices, right_v, normale, color);
+
+    indices_vector.push_back(index++);
+    indices_vector.push_back(index++);
+    indices_vector.push_back(index++);
+  }
+}
+
+inline void getConeInformation(unsigned int &num_vertices,
+                               unsigned int &num_triangles,
+                               unsigned int resolution) {
+
+  getCircleInformation(num_vertices, num_triangles, resolution);
+
+  num_triangles = resolution * 2;
+  num_vertices = resolution * 4 + 1;
+}
+
+
+
+// Arrow in x-y plane and height in z conterclockwize, center (0,0,0) at the bottom of the arrow.
+template <class VertexType>
+inline void Arrow(std::vector<VertexType> &vertices,
+                  IndicesVector &indices_vector,
+                  float radius,
+                  unsigned int resolution,
+                  float length,
+                  const Matrix<float, VertexType::NUM_COLOR, 1> color =
+                      Matrix<float, VertexType::NUM_COLOR, 1>::Zero()) {
+
+  const float inner_radius = radius / static_cast<float>(GOLDEN_RATIO);
+
+  const float tip_length = radius * static_cast<float>(GOLDEN_RATIO);
+  const float cylinder_length = length - tip_length;
+
+  cylinder(vertices, indices_vector, inner_radius, resolution, cylinder_length, color);
+  const unsigned int first_tip_index = vertices.size();
+
+  // get a cone and move it up the length of the cylinder
+  cone(vertices, indices_vector, radius, resolution, tip_length, color);
+  for (int i = first_tip_index; i < vertices.size(); i++) {
+    vertices[i].position[2] += cylinder_length;
+  }
+}
+
+inline void getArrowInformation(unsigned int &num_vertices,
+                                unsigned int &num_triangles,
+                                unsigned int resolution) {
+
+  getCylinderInformation(num_vertices, num_triangles, resolution);
+  unsigned int cone_num_vertices;
+  unsigned int cone_num_triangles;
+  getConeInformation(cone_num_vertices, cone_num_triangles, resolution);
+
+  num_triangles += cone_num_triangles;
+  num_vertices += cone_num_vertices;
 }
 
 

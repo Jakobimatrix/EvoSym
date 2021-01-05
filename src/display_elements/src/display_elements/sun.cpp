@@ -9,14 +9,14 @@ void SunMesh::loadVertices() {
   unsigned int num_triangles;
   unsigned int num_vertices;
 
-  getCylinderInformation(num_vertices, num_triangles, resolution);
+  getArrowInformation(num_vertices, num_triangles, resolution);
 
   std::vector<VertexType> verices_temp;
   verices_temp.reserve(num_vertices);
   std::vector<unsigned int> indices_temp;
   indices_temp.reserve(num_triangles * 3);
 
-  cylinder(verices_temp, indices_temp, arrow_diameter, resolution, arrow_length, Vector3f(1.f, 1.f, 1.f));
+  Arrow(verices_temp, indices_temp, arrow_diameter, resolution, arrow_length, Vector3f(1.f, 1.f, 1.f));
 
   init(verices_temp, indices_temp);
 }
