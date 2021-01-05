@@ -9,7 +9,7 @@
 #include <utils/eigen_glm_conversation.hpp>
 
 
-class SunMesh : public Mesh<true, true, false, false, true, true, 3> {
+class SunMesh : public Mesh<true, true, false, false, false, true, 3> {
  public:
   SunMesh() {
     loadVertices();

@@ -9,7 +9,6 @@
 #include <array>
 #include <display_elements/displayUtils.hpp>
 #include <display_elements/glad_import.hpp>
-#include <display_elements/meshUtils.hpp>
 #include <display_elements/shader.hpp>
 #include <display_elements/vertex.hpp>
 #include <glm/glm.hpp>
@@ -520,9 +519,15 @@ class Mesh : public BaseMesh {
       const Eigen::Vector3f centroid = (v1 + v2 + v3) / 3.f;
 
       const Eigen::Vector3f nv0 = centroid + (normal * normal_length);
-      const Eigen::Vector3f nv1 = centroid + (v1 - centroid) * normal_thickness;
-      const Eigen::Vector3f nv2 = centroid + (v2 - centroid) * normal_thickness;
-      const Eigen::Vector3f nv3 = centroid + (v3 - centroid) * normal_thickness;
+      Eigen::Vector3f dir = v1 - centroid;
+      dir.normalize();
+      const Eigen::Vector3f nv1 = centroid + dir * normal_thickness;
+      dir = v2 - centroid;
+      dir.normalize();
+      const Eigen::Vector3f nv2 = centroid + dir * normal_thickness;
+      dir = v3 - centroid;
+      dir.normalize();
+      const Eigen::Vector3f nv3 = centroid + dir * normal_thickness;
 
       putInVec(nv0);
       putInVec(nv1);

@@ -27,7 +27,7 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
   world_mesh->setPose(pose);
   unsigned int wmid = addMesh(world_mesh);
 
-  const int nr_rand = 50;
+  const int nr_rand = 0;
   tool::RandomGenerator* rg;
   rg = &rg->getInstance();
   for (int i = 0; i < nr_rand; i++) {

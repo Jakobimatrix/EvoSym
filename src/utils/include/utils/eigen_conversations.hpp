@@ -136,7 +136,6 @@ inline bool isApproxElementWize(const Eigen::Matrix<T, m, n> &a, T b, double pre
   return true;
 }
 
-
 template <typename T>
 inline Matrix<T, 3, 1> rotationMatrix2ypr(const Matrix<T, 3, 3> &r) {
   return r.eulerAngles(2, 1, 0);

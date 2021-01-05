@@ -59,7 +59,7 @@ void main()
 
     vec3 color = vec3(texture(objectTexture, TexCoord) * vec4(VertexColor, 1.0));
 
-    vec3 color_frag = lightning*color + material.selfGlow;
+    vec3 color_frag = lightning*color + material.selfGlow*color;
     color_frag = clamp3(color_frag,0,1);
     FragColor = vec4(color_frag , 1.0);
 }
