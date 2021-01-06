@@ -85,7 +85,7 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
       }
     }
     for (int j = 0; j < 6; j++) {
-      std::rotate(pos[j], pos[j] + 1, pos[j] + 2);
+      std::rotate(pos[j], pos[j] + 1, pos[j] + 3);
     }
   }
 
@@ -294,16 +294,16 @@ void SfmlRenderWindow::drawShadows() {
    */
 
 
-  const double r = 25.;
+  const double r = 10.5;
   static double phi = 0.;
-  phi += 0.002;
+  phi += 0.008;
   static double theta = 0.;
-  theta += 0.002;
+  theta += 0.008;
   static double y_dir = 1.;
 
   static double y = 0;
-  y += 0.001 * y_dir;
-  if (std::abs(y) > 25.) {
+  y += 0.01 * y_dir;
+  if (std::abs(y) > 15) {
     y_dir *= -1;
   }
 

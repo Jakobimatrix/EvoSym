@@ -24,7 +24,9 @@ void main()
     gl_Position = projection * transformWorld2camera * transformMesh2World * vec4(vertexPos, 1.0);
 
     // outs
-    FragNormal = vec3(transformMesh2World * vec4(vertexNormal, 1.0));
+    //FragNormal = vec3(transformMesh2World * vec4(vertexNormal, 1.0));
+    mat3 rotation = mat3(transformMesh2World);
+    FragNormal = rotation*vertexNormal;
     VertexColor = vertexColor;
     TexCoord = vertexTexturePos;
     FragPos = vec3(transformMesh2World * vec4(vertexPos, 1.0));

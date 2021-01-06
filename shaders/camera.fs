@@ -41,21 +41,25 @@ void main()
     /// lightning
 
     // diffuse
-    vec3 dirlight = light.direction;
-    dirlight.x = -dirlight.x;
-    float diffuse_value = max(dot(FragNormal, -dirlight), 0.0);
+    float diffuse_value = max(dot(FragNormal, -light.direction), 0.0);
     vec3 diffuse = light.color * (diffuse_value * material.diffuse);
 
-/*
+
     // specular
     vec3 view_direction = normalize(cameraPos - FragPos);
     vec3 reflect_direction = reflect(-light.direction, FragNormal);
-    // vec3 reflect_direction = normalize(light.direction + view_direction);
     float spec = pow(max(dot(view_direction, reflect_direction), 0.0), material.shininess);
-    vec3 specular = light.color * (spec * material.specular);
-*/
 
-    vec3 lightning = light.ambient + diffuse;// + specular;
+    // flashlight effect
+    //reflect_direction = normalize(light.direction + view_direction);
+    //float spec = spec + pow(max(dot(view_direction, reflect_direction), 0.0), material.shininess);
+
+    vec3 specular = light.color * (spec * material.specular);
+
+
+    //vec3 lightning = light.ambient + diffuse;
+    //vec3 lightning = light.ambient + specular;
+    vec3 lightning = light.ambient + diffuse + specular;
 
     lightning = clamp3(lightning,0,1);
 

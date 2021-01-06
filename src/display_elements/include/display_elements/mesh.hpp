@@ -487,7 +487,7 @@ class Mesh : public BaseMesh {
     indices_temp.reserve(num_triangles * 9);
 
     constexpr float normal_thickness = 0.01f;
-    constexpr float normal_length = 0.7f;
+    constexpr float normal_length = 0.2f;
     constexpr float r = 1.f;
     constexpr float g = 1.f;
     constexpr float b = 1.f;
