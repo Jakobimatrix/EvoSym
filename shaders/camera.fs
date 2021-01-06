@@ -41,7 +41,9 @@ void main()
     /// lightning
 
     // diffuse
-    float diffuse_value = max(dot(FragNormal, light.direction), 0.0);
+    vec3 dirlight = light.direction;
+    dirlight.x = -dirlight.x;
+    float diffuse_value = max(dot(FragNormal, -dirlight), 0.0);
     vec3 diffuse = light.color * (diffuse_value * material.diffuse);
 
 /*

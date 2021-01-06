@@ -8,8 +8,8 @@ in mediump vec2 vertexTexturePos;
 in mediump vec3 vertexColor;
 
 // called model in diverse tutorials
-uniform mat4 objectPoseTransformation;
-uniform mat4 invCameraViewTransformation;
+uniform mat4 transformMesh2World;
+uniform mat4 transformWorld2camera;
 uniform mat4 projection;
 
 out vec3 VertexColor;
@@ -21,13 +21,13 @@ out vec3 FragNormal;
 void main()
 {
     // gl outs
-    gl_Position = projection * invCameraViewTransformation * objectPoseTransformation * vec4(vertexPos, 1.0);
+    gl_Position = projection * transformWorld2camera * transformMesh2World * vec4(vertexPos, 1.0);
 
     // outs
-    FragNormal = vec3(objectPoseTransformation * vec4(vertexNormal, 1.0));
+    FragNormal = vec3(transformMesh2World * vec4(vertexNormal, 1.0));
     VertexColor = vertexColor;
     TexCoord = vertexTexturePos;
-    FragPos = vec3(objectPoseTransformation * vec4(vertexPos, 1.0));
+    FragPos = vec3(transformMesh2World * vec4(vertexPos, 1.0));
 
 }
 

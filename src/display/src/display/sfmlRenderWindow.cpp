@@ -27,24 +27,59 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
   world_mesh->setTransformMesh2World(pose);
   unsigned int wmid = addMesh(world_mesh);
 
+
+  /*
   const int nr_rand = 50;
   tool::RandomGenerator* rg;
   rg = &rg->getInstance();
   for (int i = 0; i < nr_rand; i++) {
     std::shared_ptr<WorldMesh> world_meshx = std::make_shared<WorldMesh>();
-    Eigen::Vector3d rot(0, 0, 0);
-    while (rot.norm() < 0.00001) {
-      rot = Eigen::Vector3d(rg->uniformDistribution(-1, 1),
-                            rg->uniformDistribution(-1, 1),
-                            rg->uniformDistribution(-1, 1));
-    }
-    rot.normalize();
+    Eigen::Vector3d rot = Eigen::Vector3d(rg->uniformDistribution(-M_PI, M_PI),
+                                          rg->uniformDistribution(-M_PI, M_PI),
+                                          rg->uniformDistribution(-M_PI, M_PI));
+
+
     world_meshx->setTransformMesh2World(eigen_utils::getTransformation(
         Eigen::Vector3d(rg->uniformDistribution(-15, 15),
                         rg->uniformDistribution(-15, 15),
                         rg->uniformDistribution(-15, 15)),
         rot));
+
+    Eigen::Isometry3d iso = eigen_utils::getTransformation(
+        Eigen::Vector3d(rg->uniformDistribution(-15, 15),
+                        rg->uniformDistribution(-15, 15),
+                        rg->uniformDistribution(-15, 15)),
+        rot);
+
     unsigned int wmidx = addMesh(world_meshx);
+  }
+
+  */
+
+  double dir[6][3] = {
+      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+
+  double pos[6][3] = {{2, 2, -2}, {2, 2, 0}, {0, 2, 2}, {2, 0, 2}, {-2, 0, 2}, {2, -2, 0}};
+
+  double disp[8][3] = {{5, 5, 5},
+                       {-5, 5, 5},
+                       {5, -5, 5},
+                       {5, 5, -5},
+                       {-5, -5, 5},
+                       {-5, 5, -5},
+                       {5, -5, -5},
+                       {-5, -5, -5}};
+
+  for (int j = 0; j < 8; j++) {
+    for (int i = 0; i < 6; i++) {
+      Eigen::Vector3d rot(dir[i]);
+      Eigen::Vector3d der(pos[i]);
+      Eigen::Vector3d die(disp[j]);
+      Eigen::Vector3d das = der + die;
+      std::shared_ptr<WorldMesh> world_meshx = std::make_shared<WorldMesh>();
+      world_meshx->setTransformMesh2World(eigen_utils::getTransformation(das, rot));
+      unsigned int wmidx = addMesh(world_meshx);
+    }
   }
 
   sun = std::make_shared<SunMesh>();
@@ -254,9 +289,9 @@ void SfmlRenderWindow::drawShadows() {
 
   const double r = 25.;
   static double phi = 0.;
-  phi += 0.01;
+  phi += 0.002;
   static double theta = 0.;
-  theta += 0.01;
+  theta += 0.002;
   static double y_dir = 1.;
 
   static double y = 0;
@@ -366,25 +401,33 @@ void SfmlRenderWindow::processMouseAction() {
 }
 
 void SfmlRenderWindow::processKeyPressedAction() {
-  Eigen::Vector3f move(0, 0, 0);
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-    move.x() += 1;
-  }
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
-    move.x() -= 1;
-  }
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
-    move.y() += 1;
-  }
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
-    move.y() -= 1;
-  }
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
-    move.z() += 1;
-  }
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-    move.z() -= 1;
-  }
+  /*
+    Eigen::Vector3f move(0, 0, 0);
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+      move.x() += 1;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+      move.x() -= 1;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+      move.y() += 1;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+      move.y() -= 1;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+      move.z() += 1;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+      move.z() -= 1;
+    }
+
+
+    move.normalize();
+    const float length = 0.06f;
+    move *= length;
+    */
+
   activateIf();
   if (sf::Keyboard::isKeyPressed(sf::Keyboard::N)) {
     const bool debug_normals = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift);
@@ -392,11 +435,6 @@ void SfmlRenderWindow::processKeyPressedAction() {
       mesh.second->setDebugNormals(debug_normals);
     }
   }
-
-  move.normalize();
-  const float length = 0.06f;
-  move *= length;
-
   deactivateIf();
 }
 
