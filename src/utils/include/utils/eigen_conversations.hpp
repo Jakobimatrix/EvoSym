@@ -293,14 +293,10 @@ inline Transform<T, 3, Projective> getOrthogonalProjection(
 
 template <typename T>
 inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &translation,
-                                                   const Matrix<T, 3, 1> &view_direction_normalized) {
+                                                   const Matrix<T, 3, 1> &view_direction) {
 
-  if (!math::almost_equal(view_direction_normalized.norm(), static_cast<T>(1), 7)) {
-    assert(true == math::almost_equal(
-                       view_direction_normalized.norm(), static_cast<T>(1), 7) &&
-           "given view_direction_normalized is not normalized.");
-  }
-
+  Matrix<T, 3, 1> view_direction_normalized = view_direction;
+  view_direction_normalized.normalize();
 
   if (math::almost_equal(std::abs(view_direction_normalized.y()), static_cast<T>(1), 2)) {
     // TODO CHECK IF CORRECT
@@ -319,11 +315,13 @@ inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &transl
   const Matrix<T, 3, 1> up(0, 1, 0);
   // z-axis is view direction
   const Matrix<T, 3, 1> z = view_direction_normalized;
-  // x-axis is orthogonal to z and y. Both are normalized, so x is too.
-  const Matrix<T, 3, 1> x = z.colwise().cross(up);
+  // x-axis is orthogonal to z and y.
+  Matrix<T, 3, 1> x = z.colwise().cross(up);
+  x.normalize();
 
-  // y-axis actually does not necessary look up directly but is probably tilted
-  const Matrix<T, 3, 1> y = x.colwise().cross(z);
+  // y-axis actually does not necessary look up directly but is probably tilted.
+  Matrix<T, 3, 1> y = x.colwise().cross(z);
+  y.normalize();
 
   // Affine first rotates, than translates but within the rotated system.
   // So we need to figure out the new transformation in the rotated system.
