@@ -206,13 +206,13 @@ inline T quaternion2Roll(const Quaternion<T> &q) {
 
 
 template <typename T>
-inline Matrix<T, 3, 1> rotate(const Quaternion<T> &q, const Matrix<T, 3, 1> &abc) {
-  Quaternion<T> q_abc;
-  q_abc.w() = static_cast<T>(0);
-  q_abc.vec() = abc;
+inline Matrix<T, 3, 1> rotate(const Quaternion<T> &q, const Matrix<T, 3, 1> &xyz) {
+  Quaternion<T> q_xyz;
+  q_xyz.w() = static_cast<T>(0);
+  q_xyz.vec() = xyz;
 
-  q_abc = q.inverse() * q_abc * q;
-  return q_abc.vec();
+  q_xyz = q.inverse() * q_xyz * q;
+  return q_xyz.vec();
 }
 
 template <typename T>
@@ -233,7 +233,6 @@ inline Quaternion<T> rpy2Quaternion(const Matrix<T, 3, 1> &rpy) {
   return q;
 }
 
-
 template <typename T>
 inline Eigen::Matrix<T, 3, 3> rpy2RotationMatrix(const Eigen::Matrix<T, 3, 1> &rpy) {
   return rpy2Quaternion(rpy).toRotationMatrix().matrix();
@@ -250,9 +249,29 @@ inline Transform<T, 3, Isometry> pose2Isometry(const Matrix<T, 3, 1> &xyz,
 }
 
 template <typename T>
+inline Transform<T, 3, Isometry> translation2Isometry(const Matrix<T, 3, 1> &xyz) {
+  const Eigen::Matrix<T, 3, 3> r = Eigen::Matrix<T, 3, 3>::Zero();
+  return pose2Isometry(xyz, r);
+}
+
+template <typename T>
+inline Transform<T, 3, Isometry> rotation2Isometry(const Matrix<T, 3, 3> &r) {
+  const Eigen::Matrix<T, 3, 1> xyz = Eigen::Matrix<T, 3, 1>::Zero();
+  return pose2Isometry(xyz, r);
+}
+
+template <typename T>
 inline Transform<T, 3, Isometry> pose2Isometry(const Matrix<T, 3, 1> &xyz,
                                                const Matrix<T, 3, 1> &rpy) {
   const Matrix<T, 3, 3> r = rpy2RotationMatrix(rpy);
+  return pose2Isometry(xyz, r);
+}
+
+template <typename T>
+inline Transform<T, 3, Isometry> pose2Isometry(const Matrix<T, 3, 1> &xyz,
+                                               const Eigen::Quaternion<T> &q) {
+  const Matrix<T, 3, 3> r = q.toRotationMatrix();
+  const T zero = static_cast<T>(0);
   return pose2Isometry(xyz, r);
 }
 
@@ -298,59 +317,33 @@ inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &transl
   Matrix<T, 3, 1> view_direction_normalized = view_direction;
   view_direction_normalized.normalize();
 
-  if (math::almost_equal(std::abs(view_direction_normalized.y()), static_cast<T>(1), 2)) {
-    // TODO CHECK IF CORRECT
-    const Matrix<T, 3, 1> t(0, 0, 0);
-    const Matrix<T, 3, 1> r(0, 0, M_PI_2);
-    Transform<T, 3, Isometry> r_temp = pose2Isometry(t, r);
-    const Matrix<T, 3, 1> new_view_direction = r_temp.linear() * view_direction_normalized;
-
-    const Transform<T, 3, Isometry> rotated_transform =
-        getTransformation(translation, new_view_direction);
-    inverteAffine3d(r_temp.matrix());
-    return r_temp * rotated_transform;
-  }
+  const bool y_is_up = !math::almost_equal(
+      std::abs(view_direction_normalized.y()), static_cast<T>(1), 2);
 
   // y-axis is up
-  const Matrix<T, 3, 1> up(0, 1, 0);
+  Matrix<T, 3, 1> up(0, 1, 0);
+  if (!y_is_up) {
+    up << 0, 0, 1;
+  }
+
   // z-axis is view direction
   const Matrix<T, 3, 1> z = view_direction_normalized;
   // x-axis is orthogonal to z and y.
-  Matrix<T, 3, 1> x = z.colwise().cross(up);
+  Matrix<T, 3, 1> x = up.colwise().cross(z);
   x.normalize();
 
   // y-axis actually does not necessary look up directly but is probably tilted.
-  Matrix<T, 3, 1> y = x.colwise().cross(z);
+  Matrix<T, 3, 1> y = z.colwise().cross(x);
   y.normalize();
 
-  // Affine first rotates, than translates but within the rotated system.
-  // So we need to figure out the new transformation in the rotated system.
-  // We calculate how much of the old translation belongs to the new axis x,y,z
-  // using dot product.
+  const Transform<T, 3, Isometry> translation_part = translation2Isometry(translation);
 
-  const T tx = (x.cwiseProduct(translation)).sum();
-  const T ty = (y.cwiseProduct(translation)).sum();
-  const T tz = (z.cwiseProduct(translation)).sum();
+  Matrix<T, 3, 3> r;
+  getSubmatrix<3, 1, 0, 0>(r.matrix()) = x;
+  getSubmatrix<3, 1, 0, 1>(r.matrix()) = y;
+  getSubmatrix<3, 1, 0, 2>(r.matrix()) = z;
 
-  /*
-  AXIS     TRANSFORM
-  x  y  z  transl.
-  1, 0, 0, tx
-  0, 1, 0, ty,
-  0, 0, 1, tz
-  0, 0, 0, 1
-  AXIS must be normalized and orthogonal
-  */
-
-  Transform<T, 3, Isometry> t;
-
-  getSubmatrix<3, 1, 0, 0>(t.matrix()) = -x;
-  getSubmatrix<3, 1, 0, 1>(t.matrix()) = y;
-  getSubmatrix<3, 1, 0, 2>(t.matrix()) = z;
-  getSubmatrix<3, 1, 0, 3>(t.matrix()) << tx, -ty, -tz;
-  getSubmatrix<1, 4, 3, 0>(t.matrix()) << 0, 0, 0, 1;
-
-  return t;
+  return pose2Isometry(translation, r);
 }
 
 template <typename T>

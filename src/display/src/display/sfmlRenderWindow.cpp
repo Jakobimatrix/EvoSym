@@ -59,7 +59,8 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
   double dir[6][3] = {
       {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
 
-  double pos[6][3] = {{2, 2, -2}, {2, 2, 0}, {0, 2, 2}, {2, 0, 2}, {-2, 0, 2}, {2, -2, 0}};
+  double pos[6][3] = {
+      {0, 1.5, 0}, {0, -1.5, 0}, {0, 3, 0}, {0, -3, 0}, {0, 4.5, 0}, {0, -4.5, 0}};
 
   double disp[8][3] = {{5, 5, 5},
                        {-5, 5, 5},
@@ -70,15 +71,21 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
                        {5, -5, -5},
                        {-5, -5, -5}};
 
-  for (int j = 0; j < 8; j++) {
-    for (int i = 0; i < 6; i++) {
-      Eigen::Vector3d rot(dir[i]);
-      Eigen::Vector3d der(pos[i]);
-      Eigen::Vector3d die(disp[j]);
-      Eigen::Vector3d das = der + die;
-      std::shared_ptr<WorldMesh> world_meshx = std::make_shared<WorldMesh>();
-      world_meshx->setTransformMesh2World(eigen_utils::getTransformation(das, rot));
-      unsigned int wmidx = addMesh(world_meshx);
+  for (int r = 0; r < 3; r++) {
+
+    for (int j = 0; j < 8; j++) {
+      for (int i = 0; i < 6; i++) {
+        Eigen::Vector3d rot(dir[i]);
+        Eigen::Vector3d der(pos[i]);
+        Eigen::Vector3d die(disp[j]);
+        Eigen::Vector3d das = der * 1.2 + die * 1.4;
+        std::shared_ptr<WorldMesh> world_meshx = std::make_shared<WorldMesh>();
+        world_meshx->setTransformMesh2World(eigen_utils::getTransformation(das, rot));
+        unsigned int wmidx = addMesh(world_meshx);
+      }
+    }
+    for (int j = 0; j < 6; j++) {
+      std::rotate(pos[j], pos[j] + 1, pos[j] + 2);
     }
   }
 
@@ -305,10 +312,8 @@ void SfmlRenderWindow::drawShadows() {
 
   const Eigen::Vector3f light_pos(x, y, z);
   light.setPositionAndTarget(light_pos, Eigen::Vector3f(0, 0, 0));
-  Eigen::Isometry3d pose_sun;
-  pose_sun.matrix() =
-      light.getPose().inverse(Eigen::TransformTraits::Isometry).matrix().cast<double>();
-  sun->setTransformMesh2World(pose_sun);
+  Eigen::Isometry3f pose_sun = light.getPose();
+  sun->setTransformMesh2World(pose_sun.template cast<double>());
 
   deactivateIf();
 }
