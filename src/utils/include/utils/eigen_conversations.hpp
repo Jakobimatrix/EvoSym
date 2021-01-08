@@ -234,6 +234,11 @@ inline Quaternion<T> rpy2Quaternion(const Matrix<T, 3, 1> &rpy) {
 }
 
 template <typename T>
+inline Quaternion<T> rotationMatrix2Quaternion(const Matrix<T, 3, 3> &r) {
+  return rpy2Quaternion(rotationMatrix2ypr(r));
+}
+
+template <typename T>
 inline Eigen::Matrix<T, 3, 3> rpy2RotationMatrix(const Eigen::Matrix<T, 3, 1> &rpy) {
   return rpy2Quaternion(rpy).toRotationMatrix().matrix();
 }
@@ -250,12 +255,12 @@ inline Transform<T, 3, Isometry> pose2Isometry(const Matrix<T, 3, 1> &xyz,
 
 template <typename T>
 inline Transform<T, 3, Isometry> translation2Isometry(const Matrix<T, 3, 1> &xyz) {
-  const Eigen::Matrix<T, 3, 3> r = Eigen::Matrix<T, 3, 3>::Zero();
+  const Eigen::Matrix<T, 3, 3> r = Eigen::Matrix<T, 3, 3>::Identity();
   return pose2Isometry(xyz, r);
 }
 
 template <typename T>
-inline Transform<T, 3, Isometry> rotation2Isometry(const Matrix<T, 3, 3> &r) {
+inline Transform<T, 3, Isometry> rotationMatrix2Isometry(const Matrix<T, 3, 3> &r) {
   const Eigen::Matrix<T, 3, 1> xyz = Eigen::Matrix<T, 3, 1>::Zero();
   return pose2Isometry(xyz, r);
 }
@@ -284,7 +289,7 @@ inline Transform<T, 3, Isometry> quaternion2Isometry(const Eigen::Quaternion<T> 
 }
 
 template <typename T>
-inline Transform<T, 3, Isometry> rpy2Affine(const Vector3d &rpy) {
+inline Transform<T, 3, Isometry> rpy2Isometry(const Matrix<T, 3, 1> &rpy) {
   return quaternion2Isometry(rpy2Quaternion(rpy));
 }
 
@@ -311,6 +316,7 @@ inline Transform<T, 3, Projective> getOrthogonalProjection(
   return p;
 }
 
+#include <iostream>
 template <typename T>
 inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &translation,
                                                    const Matrix<T, 3, 1> &view_direction) {
@@ -324,6 +330,7 @@ inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &transl
   // y-axis is up
   Matrix<T, 3, 1> up(0, 1, 0);
   if (!y_is_up) {
+    // Z is up as a simple fix since a.cross(a) = 0,0,0
     up << 0, 0, 1;
   }
 
@@ -337,14 +344,16 @@ inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &transl
   Matrix<T, 3, 1> y = z.colwise().cross(x);
   y.normalize();
 
-  const Transform<T, 3, Isometry> translation_part = translation2Isometry(translation);
-
   Matrix<T, 3, 3> r;
   getSubmatrix<3, 1, 0, 0>(r.matrix()) = x;
   getSubmatrix<3, 1, 0, 1>(r.matrix()) = y;
   getSubmatrix<3, 1, 0, 2>(r.matrix()) = z;
 
-  return pose2Isometry(translation, r);
+  const Transform<T, 3, Isometry> R = rotationMatrix2Isometry(r);
+
+  const Transform<T, 3, Isometry> TT = translation2Isometry(translation);
+
+  return TT * R;
 }
 
 template <typename T>
