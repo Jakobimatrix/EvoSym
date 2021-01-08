@@ -32,7 +32,7 @@ class BaseMesh {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   BaseMesh() {}
   virtual ~BaseMesh() {}
-  virtual void draw() = 0;
+  virtual void draw(bool draw_shadows) = 0;
 
   void setDebugNormals(bool debug) {
     if (debug) {
@@ -70,40 +70,64 @@ class BaseMesh {
 
   // view is camera transformation world2camera
   void setView(const Eigen::Isometry3d& view_world2camera) {
-    if (shader != nullptr) {
-      glCheck(shader->use());
-      glCheck(shader->setMat4(SHADER_UNIFORM_VIEW_NAME, view_world2camera.matrix()));
+    if (shader_camera != nullptr) {
+      glCheck(shader_camera->use());
+      glCheck(shader_camera->setMat4(SHADER_UNIFORM_VIEW_NAME, view_world2camera.matrix()));
       glUseProgram(0);
     }
     if (debug_normals && normals) {
       normals->setView(view_world2camera);
     }
+    if (shader_shadow != nullptr) {
+      glCheck(shader_shadow->use());
+      glCheck(shader_shadow->setMat4(SHADER_UNIFORM_VIEW_NAME, view_world2camera.matrix()));
+      glUseProgram(0);
+    }
     this->view = view_world2camera;
   }
 
-  void setLight(const Light& light) {
-    if (shader != nullptr) {
-      glCheck(shader->use());
-      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_POSITION_NAME, light.getPosition()));
-      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_DIRECTION_NAME, light.getDirection()));
-      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_AMBIENT_NAME, light.getAmbient()));
-      glCheck(shader->setVec3(SHADER_UNIFORM_LIGHT_COLOR_NAME, light.getColor()));
+  void setLight(const std::shared_ptr<Light>& light) {
+    this->light = light;
+    if (shader_camera != nullptr) {
+      glCheck(shader_camera->use());
+      glCheck(shader_camera->setVec3(SHADER_UNIFORM_LIGHT_POSITION_NAME,
+                                     light->getPosition()));
+      glCheck(shader_camera->setVec3(SHADER_UNIFORM_LIGHT_DIRECTION_NAME,
+                                     light->getDirection()));
+      glCheck(shader_camera->setVec3(SHADER_UNIFORM_LIGHT_AMBIENT_NAME, light->getAmbient()));
+      glCheck(shader_camera->setVec3(SHADER_UNIFORM_LIGHT_COLOR_NAME, light->getColor()));
+      glCheck(shader_camera->setMat4(SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME,
+                                     light->getLightSpaceMatrix().matrix()));
+      /*
+            glCheck(shader_camera->setMat4(SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME,
+                                           (projection * view).matrix()));*/
+      glUseProgram(0);
+    }
+    if (shader_shadow != nullptr) {
+      glCheck(shader_shadow->use());
+      glCheck(shader_shadow->setMat4(SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME,
+                                     light->getLightSpaceMatrix().matrix()));
+
+      /*
+            glCheck(shader_shadow->setMat4(SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME,
+                                           (projection * view).matrix()));*/
+
       glUseProgram(0);
     }
   }
 
   void setCameraPosition(const Eigen::Vector3d& pos) {
-    if (shader != nullptr) {
-      glCheck(shader->use());
-      glCheck(shader->setVec3(SHADER_UNIFORM_CAMERA_POSITION_NAME, pos));
+    if (shader_camera != nullptr) {
+      glCheck(shader_camera->use());
+      glCheck(shader_camera->setVec3(SHADER_UNIFORM_CAMERA_POSITION_NAME, pos));
       glUseProgram(0);
     }
   }
 
   void setProjection(const Eigen::Projective3d& projection) {
-    if (shader != nullptr) {
-      glCheck(shader->use());
-      glCheck(shader->setMat4(SHADER_UNIFORM_PROJECTION_NAME, projection.matrix()));
+    if (shader_camera != nullptr) {
+      glCheck(shader_camera->use());
+      glCheck(shader_camera->setMat4(SHADER_UNIFORM_PROJECTION_NAME, projection.matrix()));
       glUseProgram(0);
     }
     if (debug_normals && normals) {
@@ -112,10 +136,22 @@ class BaseMesh {
     this->projection = projection;
   }
 
-  void setTexture(int sample_nr = 0) {
-    if (shader != nullptr) {
-      glCheck(shader->use());
-      glCheck(shader->setInt("texture1", sample_nr));
+  void setObjectTextures() {
+    if (shader_camera != nullptr) {
+      glCheck(shader_camera->use());
+      glCheck(shader_camera->setInt(SHADER_UNIFORM_CAMERA_OBJECT_TEXTURE_NAME,
+                                    SHADER_UNIFORM_CAMERA_OBJECT_TEXTURE_ID));
+      glCheck(shader_camera->setInt(SHADER_UNIFORM_CAMERA_SHADOW_TEXTURE_NAME,
+                                    SHADER_UNIFORM_CAMERA_SHADOW_TEXTURE_ID));
+      glUseProgram(0);
+    }
+  }
+
+  void setShadowMap() {
+    if (shader_camera != nullptr) {
+      glCheck(shader_shadow->use());
+      glCheck(shader_shadow->setInt(SHADER_UNIFORM_SHADOW_TEXTURE_NAME,
+                                    SHADER_UNIFORM_SHADOW_TEXTURE_ID));
       glUseProgram(0);
     }
   }
@@ -129,13 +165,32 @@ class BaseMesh {
    */
   [[nodiscard]] bool loadShader(const std::string& vertex_shader_file,
                                 const std::string& fragment_shader_file) {
-    shader = std::make_shared<Shader>(vertex_shader_file.c_str(),
-                                      fragment_shader_file.c_str());
-    if (!shader->isReady()) {
-      shader.reset();
+    shader_camera = std::make_shared<Shader>(vertex_shader_file.c_str(),
+                                             fragment_shader_file.c_str());
+    if (!shader_camera->isReady()) {
+      shader_camera.reset();
       return false;
     }
-    connectShader(shader->ID);
+    connectShader(shader_camera->ID);
+
+    // TODO
+
+    const std::string path = Globals::getInstance().getAbsPath2Shaders();
+    const std::string shadow_vs = path + "shadow_mapping.vs";
+    const std::string shadow_fs = path + "shadow_mapping.fs";
+
+    shader_shadow = std::make_shared<Shader>(shadow_vs.c_str(), shadow_fs.c_str());
+    if (!shader_shadow->isReady()) {
+      shader_shadow.reset();
+      F_ERROR(
+          "Failed to load shaddow Shader. Error in Shader? Do the files exist? "
+          "{%s, "
+          "%s} ",
+          shadow_vs.c_str(),
+          shadow_fs.c_str());
+    }
+    connectShadowShader(shader_shadow->ID);
+
     return true;
   }
 
@@ -144,12 +199,16 @@ class BaseMesh {
 
   void setMaterial(const Material& material) {
     this->material = material;
-    if (shader != nullptr) {
-      glCheck(shader->use());
-      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_SELFGLOW_NAME, material.self_glow));
-      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_DIFFUSE_NAME, material.diffuse));
-      glCheck(shader->setVec3(SHADER_UNIFORM_MATERIAL_SPECULAR_NAME, material.specular));
-      glCheck(shader->setFloat(SHADER_UNIFORM_MATERIAL_SHININESS_NAME, material.shininess));
+    if (shader_camera != nullptr) {
+      glCheck(shader_camera->use());
+      glCheck(shader_camera->setVec3(SHADER_UNIFORM_MATERIAL_SELFGLOW_NAME,
+                                     material.self_glow));
+      glCheck(shader_camera->setVec3(SHADER_UNIFORM_MATERIAL_DIFFUSE_NAME,
+                                     material.diffuse));
+      glCheck(shader_camera->setVec3(SHADER_UNIFORM_MATERIAL_SPECULAR_NAME,
+                                     material.specular));
+      glCheck(shader_camera->setFloat(SHADER_UNIFORM_MATERIAL_SHININESS_NAME,
+                                      material.shininess));
       glUseProgram(0);
     }
   }
@@ -163,7 +222,9 @@ class BaseMesh {
     glCheck(glGenTextures(1, &texture));
 
     glCheck(glBindTexture(GL_TEXTURE_2D, texture));  // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
-
+    if (texture == 0) {
+      ERROR("Cant create texture. Do we have context???");
+    }
     // load image, create texture and generate mipmaps
     int width, height, nrChannels;
 
@@ -173,10 +234,17 @@ class BaseMesh {
       F_ERROR("Failed to load textre from %s.", texture_path.c_str());
       return;
     }
+    GLenum format;
+    if (nrChannels == 1)
+      format = GL_RED;
+    else if (nrChannels == 3)
+      format = GL_RGB;
+    else if (nrChannels == 4)
+      format = GL_RGBA;
 
     glCheck(glTexImage2D(
-        GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data));
-    // glCheck(glGenerateMipmap(GL_TEXTURE_2D));
+        GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data));
+    // glCheck(glGenerateMipmap(GL_TEXTURE_2D)); // TODO this minimizes data
 
     // set the texture wrapping parameters
     glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));  // set texture wrapping to GL_REPEAT (default wrapping method)
@@ -199,16 +267,41 @@ class BaseMesh {
     is_initialized = false;
   }
 
+  void calculateMeshApproximation() {
+    // TODO https://github.com/kmammou/v-hacd
+    WARNING("TODO");
+  }
+
+  [[nodiscard]] bool activateShader(bool draw_shadow) {
+    if (draw_shadow) {
+      if (shader_shadow != nullptr) {
+        glCheck(shader_shadow->use());
+        return true;
+      }
+      return false;
+    } else {
+      if (shader_camera != nullptr) {
+        glCheck(shader_camera->use());
+        return true;
+      }
+      return false;
+    }
+  }
+
   // render data
   unsigned int VBO, EBO;
 
-  std::shared_ptr<Shader> shader = nullptr;
+  std::shared_ptr<Shader> shader_camera = nullptr;
+  std::shared_ptr<Shader> shader_shadow = nullptr;
 
   virtual void connectShader(unsigned int shaderProgram) = 0;
+  virtual void connectShadowShader(unsigned int shaderProgram) = 0;
 
   // mesh Data
   unsigned int texture;
   unsigned int VAO;
+
+  std::shared_ptr<Light> light = nullptr;
 
   // access in shader like this:
   // in vec3 vertexPos;
@@ -226,6 +319,8 @@ class BaseMesh {
   static constexpr const char* SHADER_UNIFORM_CAMERA_POSITION_NAME =
       "cameraPos";
   static constexpr const char* SHADER_UNIFORM_PROJECTION_NAME = "projection";
+  static constexpr const char* SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME =
+      "lightSpaceMatrix";
   static constexpr const char* SHADER_UNIFORM_CAMERA_OBJECT_TEXTURE_NAME =
       "objectTexture";
   static constexpr int SHADER_UNIFORM_CAMERA_OBJECT_TEXTURE_ID = 0;
@@ -261,13 +356,20 @@ class BaseMesh {
 
  private:
   void updatePose() {
-    if (shader != nullptr) {
-      glCheck(shader->use());
-      glCheck(shader->setMat4(SHADER_UNIFORM_POSE_NAME, transform_mesh2world.matrix()));
+    if (shader_camera != nullptr) {
+      glCheck(shader_camera->use());
+      glCheck(shader_camera->setMat4(SHADER_UNIFORM_POSE_NAME,
+                                     transform_mesh2world.matrix()));
       glUseProgram(0);
     }
     if (debug_normals && normals) {
       normals->setTransformMesh2World(transform_mesh2world);
+    }
+    if (shader_shadow != nullptr) {
+      glCheck(shader_shadow->use());
+      glCheck(shader_shadow->setMat4(SHADER_UNIFORM_POSE_NAME,
+                                     transform_mesh2world.matrix()));
+      glUseProgram(0);
     }
   }
 };
@@ -321,7 +423,7 @@ class Mesh : public BaseMesh {
   /*!
    * \brief This renders the mesh using the active shader if set.
    */
-  void draw() override {
+  void draw(bool draw_shadows) override {
 
     // TODO deal with uninitialized material, light, etc
 
@@ -329,30 +431,42 @@ class Mesh : public BaseMesh {
       return;
     }
 
+    if (draw_shadows) {
+      if (!light->hasShadow()) {
+        return;
+      }
+    } else {
+      if (light->hasShadow()) {
+        glCheck(glActiveTexture(GL_TEXTURE1));
+        glCheck(glBindTexture(GL_TEXTURE_2D, light->getDepthMapTexture()));
+      }
+    }
 
     if constexpr (has_texture) {
+      glActiveTexture(GL_TEXTURE0);
       glCheck(glBindTexture(GL_TEXTURE_2D, texture));
     }
-    if (shader != nullptr) {
-      glCheck(shader->use());
-    }
+    const bool shader_activated = activateShader(draw_shadows);
 
     // draw mesh
     glCheck(glBindVertexArray(VAO));
     glCheck(glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr));
     glCheck(glBindVertexArray(0));
 
-    if (shader != nullptr) {
+    if (shader_activated) {
       glCheck(glUseProgram(0));
     }
 
     // always good practice to set everything back to defaults once configured.
     if constexpr (has_texture) {
       glCheck(glActiveTexture(GL_TEXTURE0));
+      glCheck(glBindTexture(GL_TEXTURE_2D, 0));
+      glCheck(glActiveTexture(GL_TEXTURE1));
+      glCheck(glBindTexture(GL_TEXTURE_2D, 0));
     }
 
-    if (debug_normals && normals) {
-      normals->draw();
+    if (!draw_shadows && debug_normals && normals) {
+      normals->draw(false);
     }
   }
 
@@ -387,6 +501,21 @@ class Mesh : public BaseMesh {
   }
 
   /*!
+   * \brief Connects the vertex shadow shader input variables with the vertex
+   * array. The input variables expected in the shader are: in vec3 meshPos;
+   */
+  void connectShadowShader(unsigned int shaderProgram) override {
+    if constexpr (has_position) {
+      disp_utils::assignShaderVariable(
+          shaderProgram,
+          SHADER_IN_POSITION_NAME,
+          VertexType::NUM_POSITION,
+          sizeof(VertexType),
+          reinterpret_cast<void*>(offsetof(VertexType, position)));
+    }
+  }
+
+  /*!
    * \brief Connects the vertex shader input variables with the vertex array.
    * The input variables expected in the shader are:
    * in vec3 meshPos;
@@ -397,80 +526,65 @@ class Mesh : public BaseMesh {
    * This is kinda hard coded for now.
    */
   void connectShader(unsigned int shaderProgram) override {
-
-    // Rather then using the recomended glBindAttribLocation prior to linking the
-    // shader I did that here, which is bad according to some. but it works for
-    // sfml shaders too which are linked somewhere deep in sfml.
-    // also since I am stuck with #version 130 (GLSL 1.30)
-    // I cannot use layout(location = 0) which is avaiable in GLSL 1.40
-    auto assignShaderVariable = [&shaderProgram](const char* var_name,
-                                                 int num_values,
-                                                 void* start_position) {
-      const int variable_position = glGetAttribLocation(shaderProgram, var_name);
-      glCheckAfter();
-      if (variable_position < 0) {
-        // compiler did optimize away the variable
-        F_WARNING(
-            "Trying to connect to shader variable %s failed. Variable not "
-            "found",
-            var_name);
-        return;
-      }
-      const unsigned int u_pos = static_cast<unsigned int>(variable_position);
-      glCheck(glEnableVertexAttribArray(u_pos));
-      glCheck(glVertexAttribPointer(
-          u_pos, num_values, GL_FLOAT, GL_FALSE, sizeof(VertexType), start_position));
-      /*
-      F_DEBUG(
-          "connecting %s with %d values starting at %p. Connected Position is "
-          "%d",
-          var_name,
-          num_values,
-          start_position,
-          u_pos);*/
-    };
-
     // set the vertex attribute pointers
     // vertex positions
     if constexpr (has_position) {
-      assignShaderVariable(SHADER_IN_POSITION_NAME,
-                           VertexType::NUM_POSITION,
-                           reinterpret_cast<void*>(offsetof(VertexType, position)));
+      disp_utils::assignShaderVariable(
+          shaderProgram,
+          SHADER_IN_POSITION_NAME,
+          VertexType::NUM_POSITION,
+          sizeof(VertexType),
+          reinterpret_cast<void*>(offsetof(VertexType, position)));
     }
 
     // vertex normals
     if constexpr (has_normal) {
-      assignShaderVariable(SHADER_IN_NORMAL_NAME,
-                           VertexType::NUM_NORMAL,
-                           reinterpret_cast<void*>(offsetof(VertexType, normal)));
+      disp_utils::assignShaderVariable(
+          shaderProgram,
+          SHADER_IN_NORMAL_NAME,
+          VertexType::NUM_NORMAL,
+          sizeof(VertexType),
+          reinterpret_cast<void*>(offsetof(VertexType, normal)));
     }
 
     // vertex tangent
     if constexpr (has_tangent) {
-      assignShaderVariable(SHADER_IN_TANGENT_NAME,
-                           VertexType::NUM_TANGENT,
-                           reinterpret_cast<void*>(offsetof(VertexType, tangent)));
+      disp_utils::assignShaderVariable(
+          shaderProgram,
+          SHADER_IN_TANGENT_NAME,
+          VertexType::NUM_TANGENT,
+          sizeof(VertexType),
+          reinterpret_cast<void*>(offsetof(VertexType, tangent)));
     }
 
     // vertex bitangent
     if constexpr (has_bitangent) {
-      assignShaderVariable(SHADER_IN_BITANGENT_NAME,
-                           VertexType::NUM_BITANGENT,
-                           reinterpret_cast<void*>(offsetof(VertexType, bitangent)));
+      disp_utils::assignShaderVariable(
+          shaderProgram,
+          SHADER_IN_BITANGENT_NAME,
+          VertexType::NUM_BITANGENT,
+          sizeof(VertexType),
+          reinterpret_cast<void*>(offsetof(VertexType, bitangent)));
     }
 
     // vertex texture coords
     if constexpr (has_texture) {
-      assignShaderVariable(SHADER_IN_TEXTURE_NAME,
-                           VertexType::NUM_TEXTURE,
-                           reinterpret_cast<void*>(offsetof(VertexType, texture_pos)));
+      disp_utils::assignShaderVariable(
+          shaderProgram,
+          SHADER_IN_TEXTURE_NAME,
+          VertexType::NUM_TEXTURE,
+          sizeof(VertexType),
+          reinterpret_cast<void*>(offsetof(VertexType, texture_pos)));
     }
 
     // vertex color coords
     if constexpr (has_color) {
-      assignShaderVariable(SHADER_IN_COLOR_NAME,
-                           VertexType::NUM_COLOR,
-                           reinterpret_cast<void*>(offsetof(VertexType, color)));
+      disp_utils::assignShaderVariable(
+          shaderProgram,
+          SHADER_IN_COLOR_NAME,
+          VertexType::NUM_COLOR,
+          sizeof(VertexType),
+          reinterpret_cast<void*>(offsetof(VertexType, color)));
     }
   }
 

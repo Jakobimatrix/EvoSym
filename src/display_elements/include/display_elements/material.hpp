@@ -20,7 +20,7 @@ struct Chrome : public Material {
     self_glow << 0.0f, 0.0f, 0.0f;
     diffuse << 1.0f, 1.0f, 1.0f;
     specular << 1.0f, 1.0f, 1.0f;
-    shininess = 64.0f;
+    shininess = 16.0f;
     initiated = true;
   }
 };

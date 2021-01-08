@@ -36,6 +36,22 @@ vec3 clamp3(vec3 v, float min, float max)
   return v;
 }
 
+float ShadowCalculation(vec4 fragPosLightSpace)
+{
+    // perform perspective divide
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(shadowMap, projCoords.xy).r;
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+    // check whether current frag pos is in shadow
+    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+
+    return shadow;
+}
+
 void main()
 {
     /// lightning
@@ -46,21 +62,21 @@ void main()
 
 
     // specular
-    vec3 view_direction = normalize(cameraPos - FragPos);
-    vec3 reflect_direction = reflect(-light.direction, FragNormal);
+    vec3 view_direction = normalize(FragPos - cameraPos);
+    vec3 reflect_direction = reflect(light.direction, FragNormal);
     float spec = pow(max(dot(view_direction, reflect_direction), 0.0), material.shininess);
 
     // flashlight effect
     //reflect_direction = normalize(light.direction + view_direction);
-    //float spec = spec + pow(max(dot(view_direction, reflect_direction), 0.0), material.shininess);
+    //float spec = spec + pow(max(dot(-view_direction, reflect_direction), 0.0), material.shininess);
 
     vec3 specular = light.color * (spec * material.specular);
 
+    float shadow = ShadowCalculation(FragPosLightSpace);
 
     //vec3 lightning = light.ambient + diffuse;
     //vec3 lightning = light.ambient + specular;
-    vec3 lightning = light.ambient + diffuse + specular;
-
+    vec3 lightning = (light.ambient + diffuse + specular)*(1.0 - shadow);
     lightning = clamp3(lightning,0,1);
 
     vec3 color = vec3(texture(objectTexture, TexCoord) * vec4(VertexColor, 1.0));

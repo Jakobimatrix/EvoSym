@@ -43,16 +43,17 @@ inline void checkError(const char* file, unsigned int line, const char* expressi
       error = "An unknown error " + std::to_string(e) + " occured.";
     }
     F_ERROR(
-        "\nAn OpenGL call failed in Line: %u %s \nFunction:\n %s "
+        "\nAn OpenGL call failed in %s Line: %u \nFunction: %s "
         "\nError "
         "description: %s\n",
-        line,
         file,
+        line,
         expression,
         error.c_str());
 
   } while (e != GL_NO_ERROR);
 }
+
 }  // namespace disp_utils
 
 
@@ -67,5 +68,41 @@ inline void checkError(const char* file, unsigned int line, const char* expressi
 #define glCheckAfter() \
   disp_utils::checkError(__FILE__, __LINE__, "Somewhere above this.");
 #endif
+
+namespace disp_utils {
+
+// Rather then using the recomended glBindAttribLocation prior to linking the
+// shader I did that here, which is bad according to some. but it works for
+// sfml shaders too which are linked somewhere deep in sfml.
+// also since I am stuck with #version 130 (GLSL 1.30)
+// I cannot use layout(location = 0) which is avaiable in GLSL 1.40
+inline void assignShaderVariable(unsigned int shaderProgram,
+                                 const char* var_name,
+                                 int num_values,
+                                 int stride,
+                                 void* start_position) {
+  const int variable_position = glGetAttribLocation(shaderProgram, var_name);
+  glCheckAfter();
+  if (variable_position < 0) {
+    // compiler did optimize away the variable
+    F_WARNING(
+        "Trying to connect to shader variable %s failed. Variable not "
+        "found",
+        var_name);
+    return;
+  }
+  const unsigned int u_pos = static_cast<unsigned int>(variable_position);
+  glCheck(glEnableVertexAttribArray(u_pos));
+  glCheck(glVertexAttribPointer(u_pos, num_values, GL_FLOAT, GL_FALSE, stride, start_position));
+  /*
+  F_DEBUG(
+      "connecting %s with %d values starting at %p. Connected Position is "
+      "%d",
+      var_name,
+      num_values,
+      start_position,
+      u_pos);*/
+}
+}  // namespace disp_utils
 
 #endif

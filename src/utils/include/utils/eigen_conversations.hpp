@@ -304,7 +304,8 @@ template <typename T>
 inline Transform<T, 3, Projective> getOrthogonalProjection(
     T left, T right, T bottom, T top, T near_clipping, T far_clipping) {
 
-  Transform<T, 3, Projective> p = Transform<T, 3, Projective>::Zero();
+  Transform<T, 3, Projective> p;
+  p.matrix() = Zero<T, 4, 4>();
   p(2, 3) = static_cast<T>(1.0);
   updateOrthogonalProjection(p, left, right, bottom, top, near_clipping, far_clipping);
   return p;

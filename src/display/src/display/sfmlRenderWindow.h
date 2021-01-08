@@ -108,7 +108,7 @@ class SfmlRenderWindow : public sf::RenderWindow {
   sf::Vector2i last_mouse_pos = sf::Vector2i(0, 0);
   const sf::Vector2i STRANGE_MOUSE_OFFSET = sf::Vector2i(0, 60);
 
-  Light light;
+  std::shared_ptr<Light> light_ptr;
 
   double window_ratio = 1;
   bool is_active = false;

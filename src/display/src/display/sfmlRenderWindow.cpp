@@ -8,10 +8,10 @@
 
 
 SfmlRenderWindow::SfmlRenderWindow()
-    : camera(Globals::getInstance().getPath2CameraSettings()),
-      light(Globals::getInstance().getPath2LightSettings()) {
+    : camera(Globals::getInstance().getPath2CameraSettings()) {
+  light_ptr = std::make_shared<Light>(Globals::getInstance().getPath2LightSettings());
   Light::CallbackLightChange posChange = std::bind(&SfmlRenderWindow::onLightChange, this);
-  light.setCallbackPositionChange(posChange);
+  light_ptr->setCallbackPositionChange(posChange);
 }
 
 void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
@@ -91,8 +91,11 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
 
   sun = std::make_shared<SunMesh>();
   Eigen::Isometry3d pose_sun;
-  pose_sun.matrix() = light.getPose().matrix().cast<double>();
+  pose_sun.matrix() = light_ptr->getPose().matrix().cast<double>();
   sun->setTransformMesh2World(pose_sun);
+
+
+  light_ptr->setShaddow();
   deactivateIf();
 
   unsigned int sid = addMesh(sun);
@@ -170,34 +173,50 @@ void SfmlRenderWindow::update() {
   processInputActions();
   activateIf();
 
+  /*
   // draw shadow shader
-
-  // glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-  // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glViewport(0, 0, 1024, 1024);  // TODO
+  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClearDepth(1);
+  glEnable(GL_DEPTH_TEST);
+  glCheck(glBindFramebuffer(GL_FRAMEBUFFER, light_ptr->getDepthMapFrameBufferInt()));
   drawShadows();
+  glCheck(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+  */
 
   // draw scene
+  //*
+  // glViewport(0, 0, sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
   glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
   glClearDepth(1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
-
   drawMesh();
-  deactivateIf();
+  //*/
 
+  /*
+  // debug shadow/depth map
+  glViewport(0, 0, sf::RenderWindow::getSize().x,
+  sf::RenderWindow::getSize().y); glClear(GL_COLOR_BUFFER_BIT |
+  GL_DEPTH_BUFFER_BIT); glDisable(GL_DEPTH_TEST);
+  light_ptr->debugShadowTexture();
+  */
+
+  deactivateIf();
   // not working :(
   //  // reset transformation for SFML
   //  // se:e https://www.sfml-dev.org/tutorials/2.5/window-opengl.php
   //  // Save the current OpenGL render states and matrices.
   //  // glPushAttrib(GL_ALL_ATTRIB_BITS);
   //  // glPushMatrix();
-  sf::RenderTarget::pushGLStates();
+  // sf::RenderTarget::pushGLStates();
   //  // resetGLStates();
-  draw2DStack();
+  // draw2DStack();
   //  // Restore the previously saved OpenGL render states and matrices.
   //  // glPopAttrib();
   //  // glPopMatrix();
-  sf::RenderTarget::popGLStates();
+  // sf::RenderTarget::popGLStates();
 
 
   sf::RenderWindow::display();
@@ -209,7 +228,7 @@ unsigned long SfmlRenderWindow::addMesh(const std::shared_ptr<BaseMesh>& simple_
   simple_mesh->setProjection(camera.getProjectionMatrix());
   simple_mesh->setView(camera.getViewMatrix());
   simple_mesh->setCameraPosition(camera.getPosition());
-  simple_mesh->setLight(light);
+  simple_mesh->setLight(light_ptr);
   deactivateIf();
   return mesh_counter++;
 }
@@ -245,7 +264,7 @@ void SfmlRenderWindow::draw2DStack() {
 void SfmlRenderWindow::drawMesh() {
   activateIf();
   for (const auto& mesh : meshes) {
-    mesh.second->draw();
+    mesh.second->draw(false);
   }
   deactivateIf();
 }
@@ -271,11 +290,6 @@ void SfmlRenderWindow::drawShadows() {
      pose_sun.matrix() = light.getPose().matrix().cast<double>();
      sun->setPose(pose_sun);
    }
-
-
-     for (const auto& mesh : meshes) {
-       mesh.second->draw(true);
-     }
    */
   /*
    tool::RandomGenerator* rg;
@@ -294,7 +308,7 @@ void SfmlRenderWindow::drawShadows() {
    */
 
 
-  const double r = 10.5;
+  const double r = 20.5;
   static double phi = 0.;
   phi += 0.008;
   static double theta = 0.;
@@ -311,9 +325,14 @@ void SfmlRenderWindow::drawShadows() {
   const double x = std::cos(theta) * r;
 
   const Eigen::Vector3f light_pos(x, y, z);
-  light.setPositionAndTarget(light_pos, Eigen::Vector3f(0, 0, 0));
-  Eigen::Isometry3f pose_sun = light.getPose();
+  light_ptr->setPositionAndTarget(light_pos, Eigen::Vector3f(0, 0, 0));
+  Eigen::Isometry3f pose_sun = light_ptr->getPose();
   sun->setTransformMesh2World(pose_sun.template cast<double>());
+
+
+  for (const auto& mesh : meshes) {
+    mesh.second->draw(true);
+  }
 
   deactivateIf();
 }
@@ -499,7 +518,7 @@ void SfmlRenderWindow::onCameraPerspectiveUpdate() {
 void SfmlRenderWindow::onLightChange() {
   activateIf();
   for (auto& mesh : meshes) {
-    mesh.second->setLight(light);
+    mesh.second->setLight(light_ptr);
   }
   deactivateIf();
 }

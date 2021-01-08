@@ -3,7 +3,9 @@
 
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
+#include <display_elements/shadows.hpp>
 #include <functional>
+#include <memory>
 #include <settings.hpp>
 #include <utils/eigen_conversations.hpp>
 #include <utils/minmax.hpp>
@@ -36,7 +38,8 @@ class Light : public util::Settings {
     }
 
     pose = eigen_utils::getTransformation(pos, direction);
-
+    lightSpaceMatrix = lightOrthProjection * pose.inverse(Eigen::TransformTraits::Isometry);
+    /*
     // TODO use min max to find following values
     const float left = -10;
     const float right = 10;
@@ -44,9 +47,24 @@ class Light : public util::Settings {
     const float bot = 10;
     const float near = 1;
     const float far = 100;
-    eigen_utils::updateOrthogonalProjection(projection, left, right, bot, top, near, far);
+    eigen_utils::updateOrthogonalProjection(
+        lightSpaceMatrix, left, right, bot, top, near, far);
+    */
 
     callbackLightChange();
+  }
+
+
+  void debugShadowTexture() { shadow_ptr->drawDebug(); }
+
+  bool hasShadow() { return shadow_ptr != nullptr; }
+
+  void setShaddow() { shadow_ptr = std::make_shared<Shadows>(); }
+
+  unsigned int getDepthMapTexture() { return shadow_ptr->getDepthMapTexture(); }
+
+  unsigned int getDepthMapFrameBufferInt() {
+    return shadow_ptr->getDepthMapFrameBufferInt();
   }
 
   void setPositionAndTarget(const Eigen::Vector3f &pos, const Eigen::Vector3f &target) {
@@ -64,6 +82,9 @@ class Light : public util::Settings {
   const Eigen::Vector3f &getAmbient() const { return ambient; }
   const Eigen::Vector3f &getColor() const { return color; }
   const Eigen::Isometry3f &getPose() const { return pose; }
+  const Eigen::Projective3f &getLightSpaceMatrix() const {
+    return lightSpaceMatrix;
+  }
 
  private:
   void putSettings() {
@@ -78,6 +99,18 @@ class Light : public util::Settings {
     sane::normalized3D(direction, Eigen::Vector3f(DEFAULT_DIRECTION.data()));
     eigen_utils::clampElements(ambient, 0.f, 1.f);
     eigen_utils::clampElements(color, 0.f, 1.f);
+
+
+    // TODO WO ANDERS HIN
+    const float left = -30;
+    const float right = 30;
+    const float top = -30;
+    const float bot = 30;
+    const float near = 1;
+    const float far = 100;
+    lightOrthProjection =
+        eigen_utils::getOrthogonalProjection(left, right, bot, top, near, far);
+    lightSpaceMatrix = lightOrthProjection * pose.inverse(Eigen::TransformTraits::Isometry);
   }
 
   static constexpr int NUM_COLORS = 3;
@@ -97,8 +130,10 @@ class Light : public util::Settings {
   // brightness reflection
   Eigen::Isometry3f pose;
   Eigen::Projective3f lightSpaceMatrix;
-  Eigen::Projective3f projection;
+  Eigen::Projective3f lightOrthProjection;
+
   CallbackLightChange callbackLightChange = ([] {});
+  std::shared_ptr<Shadows> shadow_ptr;
 };
 
 #endif
