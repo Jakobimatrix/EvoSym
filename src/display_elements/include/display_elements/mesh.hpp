@@ -98,6 +98,15 @@ class BaseMesh {
       glCheck(shader_camera->setVec3(SHADER_UNIFORM_LIGHT_COLOR_NAME, light->getColor()));
       glCheck(shader_camera->setMat4(SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME,
                                      light->getLightSpaceMatrix().matrix()));
+
+      const Eigen::Vector3d rotate(0, M_PI, 0);
+      const Eigen::Isometry3d R = eigen_utils::rpy2Isometry(rotate);
+
+      Eigen::Isometry3d V = R * light->getPose().inverse().cast<double>();
+
+      setView(V);
+      Eigen::Projective3d P = light->getLightOrthProjection().cast<double>();
+      setProjection(P);
       /*
             glCheck(shader_camera->setMat4(SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME,
                                            (projection * view).matrix()));*/

@@ -75,12 +75,13 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
 
     for (int j = 0; j < 8; j++) {
       for (int i = 0; i < 6; i++) {
-        Eigen::Vector3d rot(dir[i]);
-        Eigen::Vector3d der(pos[i]);
-        Eigen::Vector3d die(disp[j]);
-        Eigen::Vector3d das = der * 1.2 + die * 1.4;
+        Eigen::Vector3d look_at(dir[i]);
+        Eigen::Vector3d offset_local(pos[i]);
+        Eigen::Vector3d offset_global(disp[j]);
+        Eigen::Vector3d translation = offset_local * 1.2 + offset_global * 1.4;
         std::shared_ptr<WorldMesh> world_meshx = std::make_shared<WorldMesh>();
-        world_meshx->setTransformMesh2World(eigen_utils::getTransformation(das, rot));
+        world_meshx->setTransformMesh2World(
+            eigen_utils::getTransformation(translation, look_at));
         unsigned int wmidx = addMesh(world_meshx);
       }
     }
@@ -173,7 +174,7 @@ void SfmlRenderWindow::update() {
   processInputActions();
   activateIf();
 
-  /*
+
   // draw shadow shader
   glViewport(0, 0, 1024, 1024);  // TODO
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -183,11 +184,11 @@ void SfmlRenderWindow::update() {
   glCheck(glBindFramebuffer(GL_FRAMEBUFFER, light_ptr->getDepthMapFrameBufferInt()));
   drawShadows();
   glCheck(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-  */
+
 
   // draw scene
   //*
-  // glViewport(0, 0, sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
+  glViewport(0, 0, sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
   glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
   glClearDepth(1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -308,7 +309,7 @@ void SfmlRenderWindow::drawShadows() {
    */
 
 
-  const double r = 20.5;
+  const double r = 15.5;
   static double phi = 0.;
   phi += 0.008;
   static double theta = 0.;
@@ -317,7 +318,7 @@ void SfmlRenderWindow::drawShadows() {
 
   static double y = 0;
   y += 0.01 * y_dir;
-  if (std::abs(y) > 15) {
+  if (std::abs(y) > 5) {
     y_dir *= -1;
   }
 

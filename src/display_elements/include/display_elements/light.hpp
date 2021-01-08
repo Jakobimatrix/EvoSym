@@ -82,6 +82,9 @@ class Light : public util::Settings {
   const Eigen::Vector3f &getAmbient() const { return ambient; }
   const Eigen::Vector3f &getColor() const { return color; }
   const Eigen::Isometry3f &getPose() const { return pose; }
+  const Eigen::Projective3f &getLightOrthProjection() const {
+    return lightOrthProjection;
+  }
   const Eigen::Projective3f &getLightSpaceMatrix() const {
     return lightSpaceMatrix;
   }
@@ -102,12 +105,12 @@ class Light : public util::Settings {
 
 
     // TODO WO ANDERS HIN
-    const float left = -30;
-    const float right = 30;
+    const float left = -5;
+    const float right = 5;
     const float top = -30;
     const float bot = 30;
-    const float near = 1;
-    const float far = 100;
+    const float near = 2;
+    const float far = 40;
     lightOrthProjection =
         eigen_utils::getOrthogonalProjection(left, right, bot, top, near, far);
     lightSpaceMatrix = lightOrthProjection * pose.inverse(Eigen::TransformTraits::Isometry);

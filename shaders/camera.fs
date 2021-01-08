@@ -72,7 +72,7 @@ void main()
 
     vec3 specular = light.color * (spec * material.specular);
 
-    float shadow = ShadowCalculation(FragPosLightSpace);
+    float shadow = 0; //ShadowCalculation(FragPosLightSpace);
 
     //vec3 lightning = light.ambient + diffuse;
     //vec3 lightning = light.ambient + specular;
