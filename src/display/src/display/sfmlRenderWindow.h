@@ -122,7 +122,6 @@ class SfmlRenderWindow : public sf::RenderWindow {
 
   std::shared_ptr<WorldMesh> world_mesh = nullptr;
 
-  std::shared_ptr<SunMesh> sun = nullptr;
   bool is_initialized = false;
   bool has_focus = true;
 

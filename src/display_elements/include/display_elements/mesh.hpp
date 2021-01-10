@@ -99,27 +99,23 @@ class BaseMesh {
       glCheck(shader_camera->setMat4(SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME,
                                      light->getLightSpaceMatrix().matrix()));
 
+      /* debug light point of view (light->getLightSpaceMatrix())
       const Eigen::Vector3d rotate(0, M_PI, 0);
       const Eigen::Isometry3d R = eigen_utils::rpy2Isometry(rotate);
 
       Eigen::Isometry3d V = R * light->getPose().inverse().cast<double>();
-
       setView(V);
+
       Eigen::Projective3d P = light->getLightOrthProjection().cast<double>();
       setProjection(P);
-      /*
-            glCheck(shader_camera->setMat4(SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME,
-                                           (projection * view).matrix()));*/
+      */
+
       glUseProgram(0);
     }
     if (shader_shadow != nullptr) {
       glCheck(shader_shadow->use());
       glCheck(shader_shadow->setMat4(SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME,
                                      light->getLightSpaceMatrix().matrix()));
-
-      /*
-            glCheck(shader_shadow->setMat4(SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME,
-                                           (projection * view).matrix()));*/
 
       glUseProgram(0);
     }
@@ -441,11 +437,11 @@ class Mesh : public BaseMesh {
     }
 
     if (draw_shadows) {
-      if (!light->hasShadow()) {
+      if (light == nullptr || !light->hasShadow()) {
         return;
       }
     } else {
-      if (light->hasShadow()) {
+      if (light && light->hasShadow()) {
         glCheck(glActiveTexture(GL_TEXTURE1));
         glCheck(glBindTexture(GL_TEXTURE_2D, light->getDepthMapTexture()));
       }

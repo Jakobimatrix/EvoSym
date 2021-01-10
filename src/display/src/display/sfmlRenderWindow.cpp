@@ -90,16 +90,9 @@ void SfmlRenderWindow::init(const sf::WindowHandle& handle) {
     }
   }
 
-  sun = std::make_shared<SunMesh>();
-  Eigen::Isometry3d pose_sun;
-  pose_sun.matrix() = light_ptr->getPose().matrix().cast<double>();
-  sun->setTransformMesh2World(pose_sun);
-
 
   light_ptr->setShaddow();
   deactivateIf();
-
-  unsigned int sid = addMesh(sun);
 }
 
 void SfmlRenderWindow::initOpenGl(const sf::WindowHandle& handle) {
@@ -177,30 +170,32 @@ void SfmlRenderWindow::update() {
 
   // draw shadow shader
   glViewport(0, 0, 1024, 1024);  // TODO
-  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glClearDepth(1);
-  glEnable(GL_DEPTH_TEST);
+  glCheck(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
+  glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  glCheck(glClearDepth(1));
+  glCheck(glEnable(GL_DEPTH_TEST));
+  glCheck(glDepthMask(GL_TRUE));
   glCheck(glBindFramebuffer(GL_FRAMEBUFFER, light_ptr->getDepthMapFrameBufferInt()));
   drawShadows();
   glCheck(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+  glDrawBuffer(GL_BACK);  // default
 
 
   // draw scene
   //*
   glViewport(0, 0, sf::RenderWindow::getSize().x, sf::RenderWindow::getSize().y);
   glClearColor(0.3f, 0.3f, 0.3f, 0.0f);
-  glClearDepth(1);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_DEPTH_TEST);
+  glCheck(glClearDepth(1));
+  glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  glCheck(glEnable(GL_DEPTH_TEST));
   drawMesh();
   //*/
 
   /*
   // debug shadow/depth map
   glViewport(0, 0, sf::RenderWindow::getSize().x,
-  sf::RenderWindow::getSize().y); glClear(GL_COLOR_BUFFER_BIT |
-  GL_DEPTH_BUFFER_BIT); glDisable(GL_DEPTH_TEST);
+  sf::RenderWindow::getSize().y); glCheck(glClear(GL_COLOR_BUFFER_BIT |
+  GL_DEPTH_BUFFER_BIT)); glCheck(glDisable(GL_DEPTH_TEST));
   light_ptr->debugShadowTexture();
   */
 
@@ -309,7 +304,7 @@ void SfmlRenderWindow::drawShadows() {
    */
 
 
-  const double r = 15.5;
+  const double r = 150.5;
   static double phi = 0.;
   phi += 0.008;
   static double theta = 0.;
@@ -317,8 +312,8 @@ void SfmlRenderWindow::drawShadows() {
   static double y_dir = 1.;
 
   static double y = 0;
-  y += 0.01 * y_dir;
-  if (std::abs(y) > 5) {
+  y += 0.1 * y_dir;
+  if (std::abs(y) > 100) {
     y_dir *= -1;
   }
 
@@ -327,9 +322,6 @@ void SfmlRenderWindow::drawShadows() {
 
   const Eigen::Vector3f light_pos(x, y, z);
   light_ptr->setPositionAndTarget(light_pos, Eigen::Vector3f(0, 0, 0));
-  Eigen::Isometry3f pose_sun = light_ptr->getPose();
-  sun->setTransformMesh2World(pose_sun.template cast<double>());
-
 
   for (const auto& mesh : meshes) {
     mesh.second->draw(true);

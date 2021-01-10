@@ -95,6 +95,16 @@ class Light : public util::Settings {
     put<float, NUM_COORDS>(direction.x(), SETTING_DIRECTION_ID);
     put<float, NUM_COLORS>(ambient.x(), SETTING_AMBIENT_COLOR_ID);
     put<float, NUM_COLORS>(color.x(), SETTING_COLOR_COLOR_ID);
+
+
+    // todo temp
+    put<float>(left, "left");
+    put<float>(right, "right");
+    put<float>(top, "top");
+    put<float>(bot, "bot");
+    put<float>(near, "near");
+    put<float>(far, "far");
+
     sanitizeSettings();
   }
 
@@ -105,15 +115,14 @@ class Light : public util::Settings {
 
 
     // TODO WO ANDERS HIN
-    const float left = -5;
-    const float right = 5;
-    const float top = -30;
-    const float bot = 30;
-    const float near = 2;
-    const float far = 40;
     lightOrthProjection =
         eigen_utils::getOrthogonalProjection(left, right, bot, top, near, far);
-    lightSpaceMatrix = lightOrthProjection * pose.inverse(Eigen::TransformTraits::Isometry);
+
+    // strange rotation bug
+    const Eigen::Vector3f rotate(0, M_PI, 0);
+    const Eigen::Isometry3f R = eigen_utils::rpy2Isometry(rotate);
+    lightSpaceMatrix =
+        lightOrthProjection * R * pose.inverse(Eigen::TransformTraits::Isometry);
   }
 
   static constexpr int NUM_COLORS = 3;
@@ -134,6 +143,13 @@ class Light : public util::Settings {
   Eigen::Isometry3f pose;
   Eigen::Projective3f lightSpaceMatrix;
   Eigen::Projective3f lightOrthProjection;
+
+  float left = -30;
+  float right = 30;
+  float top = 30;
+  float bot = -30;
+  float near = 2;
+  float far = 1000;
 
   CallbackLightChange callbackLightChange = ([] {});
   std::shared_ptr<Shadows> shadow_ptr;

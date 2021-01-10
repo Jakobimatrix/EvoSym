@@ -6,7 +6,7 @@ void SunMesh::loadVertices() {
   constexpr size_t resolution = 50;
   unsigned int num_triangles;
   unsigned int num_vertices;
-  const float radius = 0.05f;
+  const float radius = 0.0005f;
   const float length = 10.5f;
 
   getcoordXYZInformation(num_vertices, num_triangles, resolution);
