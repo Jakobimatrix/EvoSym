@@ -297,12 +297,17 @@ inline Transform<T, 3, Isometry> rpy2Isometry(const Matrix<T, 3, 1> &rpy) {
 template <typename T>
 inline void updateOrthogonalProjection(
     Transform<T, 3, Projective> &p, T left, T right, T bottom, T top, T near_clipping, T far_clipping) {
-  p(0, 0) = (static_cast<T>(2) * near_clipping) / (right - left);
-  p(1, 1) = (static_cast<T>(2) * far_clipping) / (top - bottom);
-  p(2, 0) = (right + left) / (right - left);
-  p(2, 1) = (top + bottom) / (top - bottom);
-  p(2, 2) = far_clipping / (far_clipping - near_clipping);
-  p(3, 2) = -(far_clipping * near_clipping) / (far_clipping - near_clipping);
+
+  const T rml = right - left;
+  const T tmb = top - bottom;
+  const T fmn = far_clipping - near_clipping;
+
+  p(0, 0) = (static_cast<T>(2)) / (rml);
+  p(1, 1) = (static_cast<T>(2)) / (tmb);
+  p(2, 2) = (static_cast<T>(-2)) / (fmn);
+  p(0, 3) = -(right + left) / (rml);
+  p(1, 3) = -(top + bottom) / (tmb);
+  p(2, 3) = -(far_clipping + near_clipping) / (fmn);
 }
 
 template <typename T>
@@ -311,7 +316,7 @@ inline Transform<T, 3, Projective> getOrthogonalProjection(
 
   Transform<T, 3, Projective> p;
   p.matrix() = Zero<T, 4, 4>();
-  p(2, 3) = static_cast<T>(1.0);
+  p(3, 3) = static_cast<T>(1.0);
   updateOrthogonalProjection(p, left, right, bottom, top, near_clipping, far_clipping);
   return p;
 }
