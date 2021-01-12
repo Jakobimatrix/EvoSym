@@ -1,7 +1,6 @@
 #include "sfmlRenderWindow.h"
 
 #include <SFML/OpenGL.hpp>
-#include <display_elements/glad_import.hpp>
 #include <globals/globals.hpp>
 #include <randomGenerator.hpp>
 #include <utils/math.hpp>

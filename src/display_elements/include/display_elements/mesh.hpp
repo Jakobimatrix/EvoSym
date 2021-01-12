@@ -6,9 +6,9 @@
 
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
+#include <QOpenGLFunctions>
 #include <array>
 #include <display_elements/displayUtils.hpp>
-#include <display_elements/glad_import.hpp>
 #include <display_elements/shader.hpp>
 #include <display_elements/vertex.hpp>
 #include <glm/glm.hpp>

@@ -2,12 +2,13 @@
 #define SQ_SFML_CANVAS
 
 #include <qtimer.h>
-#include <qwidget.h>
+
+#include <QOpenGLWidget>
 
 #include "sfmlRenderWindow.h"
 
-class QSfmlCanvas : public QWidget, public SfmlRenderWindow {
- Q_OBJECT
+class QSfmlCanvas : public QOpenGLWidget, public SfmlRenderWindow {
+  Q_OBJECT
  public:
   explicit QSfmlCanvas(QWidget* Parent, unsigned int fps = 25);
 

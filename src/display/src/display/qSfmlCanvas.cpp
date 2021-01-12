@@ -1,6 +1,7 @@
 #include "qSfmlCanvas.h"
 
-QSfmlCanvas::QSfmlCanvas(QWidget* Parent, unsigned int fps) : QWidget(Parent) {
+QSfmlCanvas::QSfmlCanvas(QWidget* Parent, unsigned int fps)
+    : QOpenGLWidget(Parent) {
   // Setup some states to allow direct rendering into the widget
   setAttribute(Qt::WA_PaintOnScreen);
   setAttribute(Qt::WA_OpaquePaintEvent);

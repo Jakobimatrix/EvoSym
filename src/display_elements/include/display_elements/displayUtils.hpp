@@ -1,8 +1,7 @@
 #ifndef DISP_UTILS_H
 #define DISP_UTILS_H
 
-#include <glad/glad.h>
-
+#include <QOpenGLFunctions>
 #include <globals/macros.hpp>
 #include <string>
 
@@ -80,8 +79,9 @@ inline void assignShaderVariable(unsigned int shaderProgram,
                                  const char* var_name,
                                  int num_values,
                                  int stride,
-                                 void* start_position) {
-  const int variable_position = glGetAttribLocation(shaderProgram, var_name);
+                                 void* start_position,
+                                 QOpenGLFunctions* gl) {
+  const int variable_position = gl->glGetAttribLocation(shaderProgram, var_name);
   glCheckAfter();
   if (variable_position < 0) {
     // compiler did optimize away the variable
@@ -92,8 +92,9 @@ inline void assignShaderVariable(unsigned int shaderProgram,
     return;
   }
   const unsigned int u_pos = static_cast<unsigned int>(variable_position);
-  glCheck(glEnableVertexAttribArray(u_pos));
-  glCheck(glVertexAttribPointer(u_pos, num_values, GL_FLOAT, GL_FALSE, stride, start_position));
+  glCheck(gl->glEnableVertexAttribArray(u_pos));
+  glCheck(gl->glVertexAttribPointer(
+      u_pos, num_values, GL_FLOAT, GL_FALSE, stride, start_position));
   /*
   F_DEBUG(
       "connecting %s with %d values starting at %p. Connected Position is "

@@ -1,10 +1,10 @@
 #ifndef SHADOWS_HPP
 #define SHADOWS_HPP
 
-#include <glad/glad.h>
 #include <stb/stb_image.h>
 
 #include <Eigen/Geometry>
+#include <SFML/OpenGL.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <globals/globals.hpp>

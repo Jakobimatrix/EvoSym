@@ -7,7 +7,6 @@ add_library(display_lib STATIC
 target_link_libraries(display_lib
   warning_guards
   display_elements_lib
-  glad
   Qt5::Widgets
   ${SFML_LIBRARIES}
   ${SFML_DEPENDENCIES}
