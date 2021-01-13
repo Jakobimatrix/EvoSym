@@ -38,15 +38,6 @@ find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(Boost REQUIRED COMPONENTS system)
 include_directories( ${Boost_INCLUDE_DIRS} )
 
-# "Detect" and add SFML
-## sudo find . -name "FindSFML.cmake" -type f
-set(CMAKE_MODULE_PATH "/usr/share/SFML/cmake/Modules")
-#Find any version 2.X of SFML
-# IF THIS FAILS, YOU HAVE A DIFFERENT <CMAKE_MODULE_PATH>. FIND FindSFML.cmake AND CHANGE THE VARIABLE ABOVE.
-find_package(SFML 2 COMPONENTS system window graphics network audio)
-
-include_directories(${SFML_INCLUDE_DIR})
-
 cmake_minimum_required(VERSION 2.8.11)
 
 project(testproject)
@@ -72,6 +63,8 @@ SET(CMAKE_CXX_STANDARD 17) # otherwise compiler will not be c++17
 ## without -fPIE. We add that here.
 #SET(CMAKE_CXX_FLAGS "${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 
+
+find_package(OpenGL REQUIRED)
 
 #thirdparty
 add_subdirectory(src/glm)

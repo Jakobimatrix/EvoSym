@@ -54,7 +54,6 @@ class Light : public util::Settings {
     callbackLightChange();
   }
 
-
   void debugShadowTexture() { shadow_ptr->drawDebug(); }
 
   bool hasShadow() { return shadow_ptr != nullptr; }
@@ -152,7 +151,7 @@ class Light : public util::Settings {
   float far = 1000;
 
   CallbackLightChange callbackLightChange = ([] {});
-  std::shared_ptr<Shadows> shadow_ptr;
+  std::shared_ptr<Shadows> shadow_ptr = nullptr;
 };
 
 #endif

@@ -321,7 +321,6 @@ inline Transform<T, 3, Projective> getOrthogonalProjection(
   return p;
 }
 
-#include <iostream>
 template <typename T>
 inline Transform<T, 3, Isometry> getTransformation(const Matrix<T, 3, 1> &translation,
                                                    const Matrix<T, 3, 1> &view_direction) {
@@ -369,7 +368,7 @@ inline void updatePerspectiveProjection(Transform<T, 3, Projective> &projection,
                                         T aspect_ratio) {
   // https://wiki.delphigl.com/index.php/glFrustum
   // crunch every visible vertex into [-1,1]^3 unit qube
-  assert(abs(aspect_ratio - std::numeric_limits<T>::epsilon()) > static_cast<T>(0));
+  assert(aspect_ratio > static_cast<T>(0));
 
   const double tanHalfFovy = std::tan(lense_angle_rad / 2.0);
 

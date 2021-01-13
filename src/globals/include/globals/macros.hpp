@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+#include <cassert>
 #include <string>
 
 #ifdef NDEBUG
@@ -13,7 +14,8 @@
 #define F_WARNING(fmt, ...)
 #define ERROR(fmt)
 #define F_ERROR(fmt, ...)
-
+#define ASSERT(fmt)
+#define F_ASSERT(fmt, ...)
 #else
 
 #define RED(string) "\x1b[31m" string "\x1b[0m"
@@ -46,6 +48,17 @@
     fprintf(stderr, RED("[ERROR]") "\t %s::%s()  Line: %d: " fmt, __FILE__, __func__, __LINE__, __VA_ARGS__); \
   } while (0);                                                                                                \
   printf("\n")
+
+#define ASSERT(str)                                                                                    \
+  fprintf(stderr, RED("[ASSERT]") "   %s::%s()  Line: %d: %s\n\n", __FILE__, __func__, __LINE__, str); \
+  assert(false && "This is a debug assert. See error message above!")
+
+#define F_ASSERT(fmt, ...)                                                                                     \
+  do {                                                                                                         \
+    fprintf(stderr, RED("[ASSERT]") "   %s::%s()  Line: %d: " fmt, __FILE__, __func__, __LINE__, __VA_ARGS__); \
+  } while (0);                                                                                                 \
+  printf("\n\n");                                                                                              \
+  assert(false && "This is a debug assert. See error message above!")
 #endif
 
 #endif

@@ -9,10 +9,8 @@
 #include <QOpenGLFunctions>
 #include <array>
 #include <display_elements/displayUtils.hpp>
-#include <display_elements/shader.hpp>
+#include <display_elements/shaderProgram.hpp>
 #include <display_elements/vertex.hpp>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <globals/globals.hpp>
 #include <memory>
 #include <string>
@@ -32,7 +30,8 @@ class BaseMesh {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   BaseMesh() {}
   virtual ~BaseMesh() {}
-  virtual void draw(bool draw_shadows) = 0;
+  virtual void draw(QOpenGLExtraFunctions* gl) = 0;
+  virtual void drawShadows(QOpenGLExtraFunctions* gl) = 0;
 
   void setDebugNormals(bool debug) {
     if (debug) {
@@ -73,7 +72,7 @@ class BaseMesh {
     if (shader_camera != nullptr) {
       glCheck(shader_camera->use());
       glCheck(shader_camera->setMat4(SHADER_UNIFORM_VIEW_NAME, view_world2camera.matrix()));
-      glUseProgram(0);
+      glCheck(shader_camera->release());
     }
     if (debug_normals && normals) {
       normals->setView(view_world2camera);
@@ -81,7 +80,7 @@ class BaseMesh {
     if (shader_shadow != nullptr) {
       glCheck(shader_shadow->use());
       glCheck(shader_shadow->setMat4(SHADER_UNIFORM_VIEW_NAME, view_world2camera.matrix()));
-      glUseProgram(0);
+      glCheck(shader_shadow->release());
     }
     this->view = view_world2camera;
   }
@@ -110,14 +109,14 @@ class BaseMesh {
       setProjection(P);
       */
 
-      glUseProgram(0);
+      glCheck(shader_camera->release());
     }
     if (shader_shadow != nullptr) {
       glCheck(shader_shadow->use());
       glCheck(shader_shadow->setMat4(SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME,
                                      light->getLightSpaceMatrix().matrix()));
 
-      glUseProgram(0);
+      glCheck(shader_shadow->release());
     }
   }
 
@@ -125,7 +124,7 @@ class BaseMesh {
     if (shader_camera != nullptr) {
       glCheck(shader_camera->use());
       glCheck(shader_camera->setVec3(SHADER_UNIFORM_CAMERA_POSITION_NAME, pos));
-      glUseProgram(0);
+      glCheck(shader_camera->release());
     }
   }
 
@@ -133,7 +132,7 @@ class BaseMesh {
     if (shader_camera != nullptr) {
       glCheck(shader_camera->use());
       glCheck(shader_camera->setMat4(SHADER_UNIFORM_PROJECTION_NAME, projection.matrix()));
-      glUseProgram(0);
+      glCheck(shader_camera->release());
     }
     if (debug_normals && normals) {
       normals->setProjection(projection);
@@ -148,7 +147,7 @@ class BaseMesh {
                                     SHADER_UNIFORM_CAMERA_OBJECT_TEXTURE_ID));
       glCheck(shader_camera->setInt(SHADER_UNIFORM_CAMERA_SHADOW_TEXTURE_NAME,
                                     SHADER_UNIFORM_CAMERA_SHADOW_TEXTURE_ID));
-      glUseProgram(0);
+      glCheck(shader_camera->release());
     }
   }
 
@@ -157,7 +156,7 @@ class BaseMesh {
       glCheck(shader_shadow->use());
       glCheck(shader_shadow->setInt(SHADER_UNIFORM_SHADOW_TEXTURE_NAME,
                                     SHADER_UNIFORM_SHADOW_TEXTURE_ID));
-      glUseProgram(0);
+      glCheck(shader_shadow->release());
     }
   }
 
@@ -169,32 +168,57 @@ class BaseMesh {
    * \param fragment_shader_file The path to the vertex shader file.
    */
   [[nodiscard]] bool loadShader(const std::string& vertex_shader_file,
-                                const std::string& fragment_shader_file) {
-    shader_camera = std::make_shared<Shader>(vertex_shader_file.c_str(),
-                                             fragment_shader_file.c_str());
-    if (!shader_camera->isReady()) {
-      shader_camera.reset();
+                                const std::string& fragment_shader_file,
+                                QObject* parent = nullptr) {
+
+    shader_camera = std::make_shared<ShaderProgram>(parent);
+    if (!shader_camera->addCacheableShaderFromSourceFile(
+            QOpenGLShader::Vertex, QString::fromStdString(vertex_shader_file))) {
+      F_ASSERT("Failed to compile %s", vertex_shader_file.c_str());
       return false;
     }
-    connectShader(shader_camera->ID);
+    if (!shader_camera->addCacheableShaderFromSourceFile(
+            QOpenGLShader::Fragment, QString::fromStdString(fragment_shader_file))) {
+      F_ASSERT("Failed to compile %s", fragment_shader_file.c_str());
+      return false;
+    }
+
+    shader_camera->link();
+    if (!shader_camera->isLinked()) {
+      ASSERT("Failed to link Camera shader program.");
+      return false;
+    }
+
+    shader_camera->use();
+    connectShader(shader_camera->programId());
+    shader_camera->release();
+
 
     // TODO
-
     const std::string path = Globals::getInstance().getAbsPath2Shaders();
     const std::string shadow_vs = path + "shadow_mapping.vs";
     const std::string shadow_fs = path + "shadow_mapping.fs";
 
-    shader_shadow = std::make_shared<Shader>(shadow_vs.c_str(), shadow_fs.c_str());
-    if (!shader_shadow->isReady()) {
-      shader_shadow.reset();
-      F_ERROR(
-          "Failed to load shaddow Shader. Error in Shader? Do the files exist? "
-          "{%s, "
-          "%s} ",
-          shadow_vs.c_str(),
-          shadow_fs.c_str());
+    shader_shadow = std::make_shared<ShaderProgram>(parent);
+    if (!shader_shadow->addCacheableShaderFromSourceFile(
+            QOpenGLShader::Vertex, QString::fromStdString(shadow_vs))) {
+      F_ASSERT("Failed to compile %s", vertex_shader_file.c_str());
+      return false;
     }
-    connectShadowShader(shader_shadow->ID);
+    if (!shader_shadow->addCacheableShaderFromSourceFile(
+            QOpenGLShader::Fragment, QString::fromStdString(shadow_fs))) {
+      F_ASSERT("Failed to compile %s", fragment_shader_file.c_str());
+      return false;
+    }
+    shader_shadow->link();
+    if (!shader_shadow->isLinked()) {
+      ASSERT("Failed to link Shadow shader program.");
+      return false;
+    }
+
+    shader_shadow->use();
+    connectShadowShader(shader_shadow->programId());
+    shader_shadow->release();
 
     return true;
   }
@@ -214,7 +238,7 @@ class BaseMesh {
                                      material.specular));
       glCheck(shader_camera->setFloat(SHADER_UNIFORM_MATERIAL_SHININESS_NAME,
                                       material.shininess));
-      glUseProgram(0);
+      shader_camera->release();
     }
   }
 
@@ -265,9 +289,10 @@ class BaseMesh {
    * \brief Deletes the buffers.
    */
   void clean() {
-    glCheck(glDeleteVertexArrays(1, &VAO));
-    glCheck(glDeleteBuffers(1, &VBO));
-    glCheck(glDeleteBuffers(1, &EBO));
+    QOpenGLExtraFunctions* gl = QOpenGLContext::currentContext()->extraFunctions();
+    glCheck(gl->glDeleteVertexArrays(1, &VAO));
+    glCheck(gl->glDeleteBuffers(1, &VBO));
+    glCheck(gl->glDeleteBuffers(1, &EBO));
     glCheck(glDeleteTextures(1, &texture));
     is_initialized = false;
   }
@@ -277,27 +302,19 @@ class BaseMesh {
     WARNING("TODO");
   }
 
-  [[nodiscard]] bool activateShader(bool draw_shadow) {
-    if (draw_shadow) {
-      if (shader_shadow != nullptr) {
-        glCheck(shader_shadow->use());
-        return true;
-      }
-      return false;
-    } else {
-      if (shader_camera != nullptr) {
-        glCheck(shader_camera->use());
-        return true;
-      }
-      return false;
-    }
+  void setCameraShader(const std::shared_ptr<ShaderProgram>& prg) {
+    shader_camera = prg;
+  }
+
+  void setShadowShader(const std::shared_ptr<ShaderProgram>& prg) {
+    shader_camera = prg;
   }
 
   // render data
   unsigned int VBO, EBO;
 
-  std::shared_ptr<Shader> shader_camera = nullptr;
-  std::shared_ptr<Shader> shader_shadow = nullptr;
+  std::shared_ptr<ShaderProgram> shader_camera = nullptr;
+  std::shared_ptr<ShaderProgram> shader_shadow = nullptr;
 
   virtual void connectShader(unsigned int shaderProgram) = 0;
   virtual void connectShadowShader(unsigned int shaderProgram) = 0;
@@ -365,7 +382,7 @@ class BaseMesh {
       glCheck(shader_camera->use());
       glCheck(shader_camera->setMat4(SHADER_UNIFORM_POSE_NAME,
                                      transform_mesh2world.matrix()));
-      glUseProgram(0);
+      shader_camera->release();
     }
     if (debug_normals && normals) {
       normals->setTransformMesh2World(transform_mesh2world);
@@ -374,7 +391,7 @@ class BaseMesh {
       glCheck(shader_shadow->use());
       glCheck(shader_shadow->setMat4(SHADER_UNIFORM_POSE_NAME,
                                      transform_mesh2world.matrix()));
-      glUseProgram(0);
+      shader_shadow->release();
     }
   }
 };
@@ -428,51 +445,68 @@ class Mesh : public BaseMesh {
   /*!
    * \brief This renders the mesh using the active shader if set.
    */
-  void draw(bool draw_shadows) override {
+  void draw(QOpenGLExtraFunctions* gl) override {
 
     // TODO deal with uninitialized material, light, etc
 
-    if (!is_initialized) {
-      return;
-    }
-
-    if (draw_shadows) {
-      if (light == nullptr || !light->hasShadow()) {
-        return;
-      }
-    } else {
-      if (light && light->hasShadow()) {
-        glCheck(glActiveTexture(GL_TEXTURE1));
-        glCheck(glBindTexture(GL_TEXTURE_2D, light->getDepthMapTexture()));
-      }
+    if (light && light->hasShadow()) {
+      glCheck(gl->glActiveTexture(GL_TEXTURE1));
+      glCheck(gl->glBindTexture(GL_TEXTURE_2D, light->getDepthMapTexture()));
     }
 
     if constexpr (has_texture) {
-      glActiveTexture(GL_TEXTURE0);
-      glCheck(glBindTexture(GL_TEXTURE_2D, texture));
+      glCheck(gl->glActiveTexture(GL_TEXTURE0));
+      glCheck(gl->glBindTexture(GL_TEXTURE_2D, texture));
     }
-    const bool shader_activated = activateShader(draw_shadows);
+    if (shader_camera != nullptr) {
+      glCheck(shader_camera->use());
+    }
 
     // draw mesh
-    glCheck(glBindVertexArray(VAO));
-    glCheck(glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr));
-    glCheck(glBindVertexArray(0));
+    glCheck(gl->glBindVertexArray(VAO));
+    glCheck(gl->glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr));
+    glCheck(gl->glBindVertexArray(0));
 
-    if (shader_activated) {
-      glCheck(glUseProgram(0));
-    }
+    glCheck(shader_camera->release());
 
     // always good practice to set everything back to defaults once configured.
     if constexpr (has_texture) {
-      glCheck(glActiveTexture(GL_TEXTURE0));
-      glCheck(glBindTexture(GL_TEXTURE_2D, 0));
-      glCheck(glActiveTexture(GL_TEXTURE1));
-      glCheck(glBindTexture(GL_TEXTURE_2D, 0));
+      glCheck(gl->glActiveTexture(GL_TEXTURE0));
+      glCheck(gl->glBindTexture(GL_TEXTURE_2D, 0));
+      glCheck(gl->glActiveTexture(GL_TEXTURE1));
+      glCheck(gl->glBindTexture(GL_TEXTURE_2D, 0));
     }
 
-    if (!draw_shadows && debug_normals && normals) {
-      normals->draw(false);
+    if (debug_normals && normals) {
+      normals->draw(gl);
     }
+  }
+
+  /*!
+   * \brief This renders the mesh using the active shader if set.
+   */
+  void drawShadows(QOpenGLExtraFunctions* gl) override {
+
+    if (light == nullptr || !light->hasShadow()) {
+      return;
+    }
+
+    //    if constexpr (has_texture) {
+    //      glActiveTexture(GL_TEXTURE0);
+    //      glCheck(glBindTexture(GL_TEXTURE_2D, texture));
+    //    }
+
+    if (shader_camera == nullptr) {
+      return;
+    }
+    glCheck(shader_camera->use());
+
+    // draw mesh
+    glCheck(gl->glBindVertexArray(VAO));
+    glCheck(gl->glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr));
+    glCheck(gl->glBindVertexArray(0));
+
+    shader_camera->release();
   }
 
  protected:
@@ -485,20 +519,21 @@ class Mesh : public BaseMesh {
    * \brief Talks to openGL to reserve space for the mesh.
    */
   void setupMesh() {
+    QOpenGLExtraFunctions* gl = QOpenGLContext::currentContext()->extraFunctions();
     // create buffers/arrays
-    glCheck(glGenVertexArrays(1, &VAO));
-    glCheck(glGenBuffers(1, &VBO));
-    glCheck(glGenBuffers(1, &EBO));
+    glCheck(gl->glGenVertexArrays(1, &VAO));
+    glCheck(gl->glGenBuffers(1, &VBO));
+    glCheck(gl->glGenBuffers(1, &EBO));
 
-    glCheck(glBindVertexArray(VAO));
+    glCheck(gl->glBindVertexArray(VAO));
     // load data into vertex buffers
-    glCheck(glBindBuffer(GL_ARRAY_BUFFER, VBO));
+    glCheck(gl->glBindBuffer(GL_ARRAY_BUFFER, VBO));
 
-    glCheck(glBufferData(
+    glCheck(gl->glBufferData(
         GL_ARRAY_BUFFER, vertices.size() * sizeof(VertexType), &vertices[0], GL_STATIC_DRAW));
 
-    glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO));
-    glCheck(glBufferData(
+    glCheck(gl->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO));
+    glCheck(gl->glBufferData(
         GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW));
 
     // glCheck(glBindVertexArray(0));
@@ -510,13 +545,16 @@ class Mesh : public BaseMesh {
    * array. The input variables expected in the shader are: in vec3 meshPos;
    */
   void connectShadowShader(unsigned int shaderProgram) override {
+    QOpenGLFunctions* gl = QOpenGLContext::currentContext()->functions();
+
     if constexpr (has_position) {
       disp_utils::assignShaderVariable(
           shaderProgram,
           SHADER_IN_POSITION_NAME,
           VertexType::NUM_POSITION,
           sizeof(VertexType),
-          reinterpret_cast<void*>(offsetof(VertexType, position)));
+          reinterpret_cast<void*>(offsetof(VertexType, position)),
+          gl);
     }
   }
 
@@ -533,33 +571,35 @@ class Mesh : public BaseMesh {
   void connectShader(unsigned int shaderProgram) override {
     // set the vertex attribute pointers
     // vertex positions
+    QOpenGLFunctions* gl = QOpenGLContext::currentContext()->functions();
     if constexpr (has_position) {
       disp_utils::assignShaderVariable(
           shaderProgram,
           SHADER_IN_POSITION_NAME,
           VertexType::NUM_POSITION,
           sizeof(VertexType),
-          reinterpret_cast<void*>(offsetof(VertexType, position)));
+          reinterpret_cast<void*>(offsetof(VertexType, position)),
+          gl);
     }
 
     // vertex normals
     if constexpr (has_normal) {
-      disp_utils::assignShaderVariable(
-          shaderProgram,
-          SHADER_IN_NORMAL_NAME,
-          VertexType::NUM_NORMAL,
-          sizeof(VertexType),
-          reinterpret_cast<void*>(offsetof(VertexType, normal)));
+      disp_utils::assignShaderVariable(shaderProgram,
+                                       SHADER_IN_NORMAL_NAME,
+                                       VertexType::NUM_NORMAL,
+                                       sizeof(VertexType),
+                                       reinterpret_cast<void*>(offsetof(VertexType, normal)),
+                                       gl);
     }
 
     // vertex tangent
     if constexpr (has_tangent) {
-      disp_utils::assignShaderVariable(
-          shaderProgram,
-          SHADER_IN_TANGENT_NAME,
-          VertexType::NUM_TANGENT,
-          sizeof(VertexType),
-          reinterpret_cast<void*>(offsetof(VertexType, tangent)));
+      disp_utils::assignShaderVariable(shaderProgram,
+                                       SHADER_IN_TANGENT_NAME,
+                                       VertexType::NUM_TANGENT,
+                                       sizeof(VertexType),
+                                       reinterpret_cast<void*>(offsetof(VertexType, tangent)),
+                                       gl);
     }
 
     // vertex bitangent
@@ -569,7 +609,8 @@ class Mesh : public BaseMesh {
           SHADER_IN_BITANGENT_NAME,
           VertexType::NUM_BITANGENT,
           sizeof(VertexType),
-          reinterpret_cast<void*>(offsetof(VertexType, bitangent)));
+          reinterpret_cast<void*>(offsetof(VertexType, bitangent)),
+          gl);
     }
 
     // vertex texture coords
@@ -579,17 +620,18 @@ class Mesh : public BaseMesh {
           SHADER_IN_TEXTURE_NAME,
           VertexType::NUM_TEXTURE,
           sizeof(VertexType),
-          reinterpret_cast<void*>(offsetof(VertexType, texture_pos)));
+          reinterpret_cast<void*>(offsetof(VertexType, texture_pos)),
+          gl);
     }
 
     // vertex color coords
     if constexpr (has_color) {
-      disp_utils::assignShaderVariable(
-          shaderProgram,
-          SHADER_IN_COLOR_NAME,
-          VertexType::NUM_COLOR,
-          sizeof(VertexType),
-          reinterpret_cast<void*>(offsetof(VertexType, color)));
+      disp_utils::assignShaderVariable(shaderProgram,
+                                       SHADER_IN_COLOR_NAME,
+                                       VertexType::NUM_COLOR,
+                                       sizeof(VertexType),
+                                       reinterpret_cast<void*>(offsetof(VertexType, color)),
+                                       gl);
     }
   }
 

@@ -4,9 +4,6 @@ target_link_libraries(pre_display_lib INTERFACE
   Qt5::Widgets
   warning_guards
   glm
-  Qt5::GUI
-  ${SFML_LIBRARIES}
-  ${SFML_DEPENDENCIES}
   globals_lib
   settings_lib
   utils_lib
@@ -24,7 +21,7 @@ add_library(display_elements_lib STATIC
 
 target_link_libraries(display_elements_lib
   pre_display_lib
-  Qt5::GUI
+  Qt5::Widgets
   globals_lib
   utils_lib
   Eigen3::Eigen)

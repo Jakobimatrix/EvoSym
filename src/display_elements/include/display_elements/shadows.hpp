@@ -4,7 +4,7 @@
 #include <stb/stb_image.h>
 
 #include <Eigen/Geometry>
-#include <SFML/OpenGL.hpp>
+#include <QOpenGLExtraFunctions>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <globals/globals.hpp>
@@ -12,35 +12,40 @@
 #include <utils/eigen_conversations.hpp>
 
 #include "displayUtils.hpp"
-#include "shader.hpp"
+#include "shaderProgram.hpp"
 
 // In case we want a light source emmitting in every direction:
 // https://www.youtube.com/watch?v=vpDer0seP9M (Use depthCubeMap and GL_TEXTURE_CUBE_MAP)
 class Shadows {
  public:
-  Shadows(int size_x, int size_y) { setSize(size_x, size_y); }
+  Shadows(int size_x, int size_y, QObject *parent = nullptr) {
+    setSize(size_x, size_y, parent);
+  }
 
   ~Shadows() { clean(); }
 
-  Shadows() { setSize(shadow_texture_width, shadow_texture_height); }
+  Shadows(QObject *parent = nullptr) {
+    setSize(shadow_texture_width, shadow_texture_height, parent);
+  }
 
-  void setSize(int size_x, int size_y) {
+  void setSize(int size_x, int size_y, QObject *parent = nullptr) {
     shadow_texture_width = size_x;
     shadow_texture_height = size_y;
-    init();
+    init(parent);
   }
 
   /*!
    * \brief Deletes the buffers.
    */
   void clean() {
-    glCheck(glDeleteFramebuffers(1, &depthMapFBO));
-    glCheck(glDeleteTextures(1, &depthMap));
+    QOpenGLExtraFunctions *gl = QOpenGLContext::currentContext()->extraFunctions();
+    glCheck(gl->glDeleteFramebuffers(1, &depthMapFBO));
+    glCheck(gl->glDeleteTextures(1, &depthMap));
 
 
-    glCheck(glDeleteVertexArrays(1, &quadVAO));
-    glCheck(glDeleteBuffers(1, &quadVBO));
-    glCheck(glDeleteBuffers(1, &quadEBO));
+    glCheck(gl->glDeleteVertexArrays(1, &quadVAO));
+    glCheck(gl->glDeleteBuffers(1, &quadVBO));
+    glCheck(gl->glDeleteBuffers(1, &quadEBO));
   }
 
   unsigned int getDepthMapTexture() { return depthMap; }
@@ -51,14 +56,15 @@ class Shadows {
     if (shader_shadow_debug == nullptr) {
       return;
     }
+    QOpenGLExtraFunctions *gl = QOpenGLContext::currentContext()->extraFunctions();
     glCheck(shader_shadow_debug->use());
     glCheck(glActiveTexture(GL_TEXTURE0));
     glCheck(glBindTexture(GL_TEXTURE_2D, depthMap));
 
-    glCheck(glBindVertexArray(quadVAO));
+    glCheck(gl->glBindVertexArray(quadVAO));
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glCheck(glBindVertexArray(0));
-    glCheck(glUseProgram(0));
+    glCheck(gl->glBindVertexArray(0));
+    glCheck(gl->glUseProgram(0));
   }
 
  private:
@@ -68,7 +74,7 @@ class Shadows {
   int shadow_texture_width = 1024;
   int shadow_texture_height = 1024;
 
-  std::shared_ptr<Shader> shader_shadow_debug = nullptr;
+  std::shared_ptr<ShaderProgram> shader_shadow_debug = nullptr;
   unsigned int quadVAO = 0;
   unsigned int quadVBO = 0;
   unsigned int quadEBO = 0;
@@ -88,10 +94,12 @@ class Shadows {
       2  // second triangle
   };
 
-  void init() {
+  void init(QObject *parent = nullptr) {
     if (initiated) {
       clean();
     }
+    QOpenGLFunctions *gl = QOpenGLContext::currentContext()->functions();
+
 
     // create depth texture
     glCheck(glGenTextures(1, &depthMap));
@@ -109,77 +117,88 @@ class Shadows {
         GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_texture_width, shadow_texture_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr));
 
     // create frame buffer
-    glCheck(glGenFramebuffers(1, &depthMapFBO));
+    glCheck(gl->glGenFramebuffers(1, &depthMapFBO));
     if (depthMapFBO == 0) {
       ERROR("Cant create texture. Do we have context???");
     }
     // attach depth texture as FBO's depth buffer
-    glCheck(glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO));
-    glCheck(glFramebufferTexture2D(
+    glCheck(gl->glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO));
+    glCheck(gl->glFramebufferTexture2D(
         GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0));
 
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    if (gl->glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
       ERROR("Framebuffer is not complete!");
     }
 
     initiated = true;
-    prepareDebugShader();
+    prepareDebugShader(parent);
 
     // clean up
-    glCheck(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    glCheck(gl->glBindFramebuffer(GL_FRAMEBUFFER, 0));
   }
 
 
-  void prepareDebugShader() {
+  void prepareDebugShader(QObject *parent = nullptr) {
+    QOpenGLExtraFunctions *gl = QOpenGLContext::currentContext()->extraFunctions();
     const std::string path = Globals::getInstance().getAbsPath2Shaders();
     const std::string shadow_debug_vs = path + "debug_quad.vs";
     const std::string shadow_debug_fs = path + "debug_quad.fs";
-    shader_shadow_debug =
-        std::make_shared<Shader>(shadow_debug_vs.c_str(), shadow_debug_fs.c_str());
-    if (!shader_shadow_debug->isReady()) {
-      shader_shadow_debug.reset();
-      F_ERROR(
-          "Failed to load shaddow Shader. Error in Shader? Do the files exist? "
-          "{%s, "
-          "%s} ",
-          shadow_debug_vs.c_str(),
-          shadow_debug_fs.c_str());
+
+    shader_shadow_debug = std::make_shared<ShaderProgram>(parent);
+    if (!shader_shadow_debug->addShaderFromSourceCode(
+            QOpenGLShader::Vertex, QString::fromStdString(shadow_debug_vs))) {
+      F_ERROR("Failed to compile %s", shadow_debug_vs.c_str());
       return;
     }
+    if (!shader_shadow_debug->addShaderFromSourceCode(
+            QOpenGLShader::Fragment, QString::fromStdString(shadow_debug_fs))) {
+      F_ERROR("Failed to compile %s", shadow_debug_fs.c_str());
+      return;
+    }
+
+    shader_shadow_debug->link();
+    if (shader_shadow_debug->isLinked()) {
+      ERROR("Failed to link Camera shader program.");
+      return;
+    }
+
 
     glCheck(shader_shadow_debug->use());
     glCheck(shader_shadow_debug->setInt("depthMap", 0));  // first texture is 0
 
     // setup plane VAO
-    glCheck(glGenVertexArrays(1, &quadVAO));
-    glCheck(glGenBuffers(1, &quadVBO));
-    glCheck(glGenBuffers(1, &quadEBO));
+    glCheck(gl->glGenVertexArrays(1, &quadVAO));
+    glCheck(gl->glGenBuffers(1, &quadVBO));
+    glCheck(gl->glGenBuffers(1, &quadEBO));
 
     if (quadVAO == 0 || quadVBO == 0 || quadEBO == 0) {
       ERROR("Failed to generate Buffers, Do we have Context????");
     }
-    glCheck(glBindVertexArray(quadVAO));
-    glCheck(glBindBuffer(GL_ARRAY_BUFFER, quadVBO));
-    glCheck(glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW));
+    glCheck(gl->glBindVertexArray(quadVAO));
+    glCheck(gl->glBindBuffer(GL_ARRAY_BUFFER, quadVBO));
+    glCheck(gl->glBufferData(
+        GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW));
 
-    glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quadEBO));
-    glCheck(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadIndices), quadIndices, GL_STATIC_DRAW));
+    glCheck(gl->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quadEBO));
+    glCheck(gl->glBufferData(
+        GL_ELEMENT_ARRAY_BUFFER, sizeof(quadIndices), quadIndices, GL_STATIC_DRAW));
 
-
-    disp_utils::assignShaderVariable(shader_shadow_debug->ID,
+    disp_utils::assignShaderVariable(shader_shadow_debug->programId(),
                                      "vertexPos",
                                      3,
                                      5 * sizeof(float),
-                                     reinterpret_cast<void*>(0 * sizeof(float)));
+                                     reinterpret_cast<void *>(0 * sizeof(float)),
+                                     static_cast<QOpenGLFunctions *>(gl));
 
 
-    disp_utils::assignShaderVariable(shader_shadow_debug->ID,
+    disp_utils::assignShaderVariable(shader_shadow_debug->programId(),
                                      "vertexTexturePos",
                                      2,
                                      5 * sizeof(float),
-                                     reinterpret_cast<void*>(3 * sizeof(float)));
+                                     reinterpret_cast<void *>(3 * sizeof(float)),
+                                     static_cast<QOpenGLFunctions *>(gl));
 
-    glUseProgram(0);
+    shader_shadow_debug->release();
   }
 };
 

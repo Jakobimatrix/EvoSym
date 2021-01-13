@@ -91,6 +91,7 @@ inline void assignShaderVariable(unsigned int shaderProgram,
         var_name);
     return;
   }
+
   const unsigned int u_pos = static_cast<unsigned int>(variable_position);
   glCheck(gl->glEnableVertexAttribArray(u_pos));
   glCheck(gl->glVertexAttribPointer(

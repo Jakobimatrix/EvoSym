@@ -5,7 +5,7 @@
 #include <QMainWindow>
 
 #include "display.h"
-#include "qSfmlCanvas.h"
+#include "openGLWidget.h"
 
 class DisplayQt : public QMainWindow, public Display {
   Q_OBJECT
@@ -53,7 +53,7 @@ class DisplayQt : public QMainWindow, public Display {
 
   // QT stuff
 
-  QSfmlCanvas *sfml_view;
+  OpenGLWidget *open_gl_widget;
 
   QMenu *fileMenu;
   QMenu *editMenu;

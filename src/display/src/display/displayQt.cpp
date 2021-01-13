@@ -7,8 +7,8 @@
 #include <globals/macros.hpp>
 
 DisplayQt::DisplayQt() {
-  sfml_view = new QSfmlCanvas(this);
-  setCentralWidget(sfml_view);
+  open_gl_widget = new OpenGLWidget(this);
+  setCentralWidget(dynamic_cast<QWidget *>(open_gl_widget));
 
   QPoint qpos(getDisplayPosX(), getDisplayPosY());
   QSize qsize(getDisplaySizeW(), getDisplaySizeH());
@@ -46,7 +46,7 @@ void DisplayQt::moveEvent(QMoveEvent *event) {
 void DisplayQt::wheelEvent(QWheelEvent *event) {
   // delta is +-120
   const double f = static_cast<double>(event->delta()) / 48.;
-  sfml_view->scrollHack(f);
+  open_gl_widget->scrollHack(f);
 }
 
 bool DisplayQt::askYesNoQuestion(const std::string &question, const std::string &title) {
