@@ -56,6 +56,7 @@ inline void circle(std::vector<VertexType> &vertices,
                    float z = 0.f,
                    bool norm_z_pos = true) {
   const float z_normal_direction = (norm_z_pos) ? 1.f : -1.f;
+  const bool revert_winding = (norm_z_pos) ? false : true;
   const Vector3f normal(0, 0, z_normal_direction);
   const unsigned int center_index = vertices.size();
   const unsigned int first_index = center_index + 1;
@@ -71,10 +72,15 @@ inline void circle(std::vector<VertexType> &vertices,
     pushVertexTypeBack(vertices, Vector3f(x, y, z), normal, color);
 
 
-    const unsigned int next_index = (i < last_index - 1) ? i + 1 : first_index;
+    unsigned int next_index = (i < last_index - 1) ? i + 1 : first_index;
+    unsigned int this_index = i;
+
+    if (revert_winding) {
+      std::swap(next_index, this_index);
+    }
 
     indices_vector.push_back(center_index);
-    indices_vector.push_back(i);           // this one
+    indices_vector.push_back(this_index);  // this one
     indices_vector.push_back(next_index);  // the next one
   }
 }
@@ -302,6 +308,47 @@ inline void getcoordXYZInformation(unsigned int &num_vertices,
   getArrowInformation(num_vertices, num_triangles, resolution);
   num_triangles *= 3;
   num_vertices *= 3;
+}
+
+// circle in x-y plane conterclockwize, center (0,0,0).
+template <class VertexType>
+inline void rectangle(std::vector<VertexType> &vertices,
+                      IndicesVector &indices_vector,
+                      float radius,
+                      unsigned int resolution,
+                      const Matrix<float, VertexType::NUM_COLOR, 1> color =
+                          Matrix<float, VertexType::NUM_COLOR, 1>::Zero(),
+                      float z = 0.f,
+                      bool norm_z_pos = true) {
+  const float z_normal_direction = (norm_z_pos) ? 1.f : -1.f;
+  const Vector3f normal(0, 0, z_normal_direction);
+  const unsigned int center_index = vertices.size();
+  const unsigned int first_index = center_index + 1;
+  const unsigned int last_index = first_index + resolution;
+  pushVertexTypeBack(vertices, Vector3f(0, 0, z), normal, color);
+
+  for (unsigned int i = first_index; i < last_index; i++) {
+    // i-first_index is necessarry that two drawn circles first vertex have the same angle.
+    const float angle = static_cast<float>(M_PI * 2. * static_cast<double>(i - first_index) /
+                                           static_cast<double>(resolution));
+    const float x = radius * std::cos(angle);
+    const float y = radius * std::sin(angle);
+    pushVertexTypeBack(vertices, Vector3f(x, y, z), normal, color);
+
+
+    const unsigned int next_index = (i < last_index - 1) ? i + 1 : first_index;
+
+    indices_vector.push_back(center_index);
+    indices_vector.push_back(i);           // this one
+    indices_vector.push_back(next_index);  // the next one
+  }
+}
+
+inline void getRectangleInformation(unsigned int &num_vertices,
+                                    unsigned int &num_triangles,
+                                    unsigned int resolution) {
+  num_triangles = resolution;
+  num_vertices = resolution + 1;
 }
 
 

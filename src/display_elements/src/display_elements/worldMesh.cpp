@@ -100,11 +100,17 @@ void WorldMesh::loadVertices() {
       // clang-format on
       indices_temp.emplace_back(index++);
     }
+    // wrong winding for site 1, 2, 3
+    if (site == 1 || site == 3 || site == 5) {
+      unsigned int last = indices_temp.size() - 1;
+      std::swap(indices_temp[last - 1], indices_temp[last - 2]);
+      std::swap(indices_temp[last - 3], indices_temp[last - 4]);
+    }
   }
 
   unsigned int num_triangles;
   unsigned int num_vertices;
-  const unsigned int resolution = 50;
+  const unsigned int resolution = 100;
   const float radius = 0.25f;
   const float length = 1.23f;
 
