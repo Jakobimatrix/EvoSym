@@ -97,19 +97,21 @@ class BaseMesh {
       glCheck(shader_camera->setVec3(SHADER_UNIFORM_LIGHT_COLOR_NAME, light->getColor()));
       glCheck(shader_camera->setMat4(SHADER_UNIFORM_LIGHT_SPACE_MATRIX_NAME,
                                      light->getLightSpaceMatrix().matrix()));
+      glCheck(shader_camera->release());
 
-      /* debug light point of view (light->getLightSpaceMatrix())
+      // debug light point of view(light->getLightSpaceMatrix())
+      /*
       const Eigen::Vector3d rotate(0, M_PI, 0);
       const Eigen::Isometry3d R = eigen_utils::rpy2Isometry(rotate);
 
-      Eigen::Isometry3d V = R * light->getPose().inverse().cast<double>();
+      Eigen::Isometry3d V =
+          R * light->getPose().inverse(Eigen::TransformTraits::Isometry).cast<double>();
       setView(V);
 
+      //*
       Eigen::Projective3d P = light->getLightOrthProjection().cast<double>();
       setProjection(P);
-      */
-
-      glCheck(shader_camera->release());
+      //*/
     }
     if (shader_shadow != nullptr) {
       glCheck(shader_shadow->use());
@@ -488,6 +490,7 @@ class Mesh : public BaseMesh {
   void drawShadows(QOpenGLExtraFunctions* gl) override {
 
     if (light == nullptr || !light->hasShadow()) {
+      ERROR("NO Light or no shaddow");
       return;
     }
 
@@ -496,17 +499,18 @@ class Mesh : public BaseMesh {
     //      glCheck(glBindTexture(GL_TEXTURE_2D, texture));
     //    }
 
-    if (shader_camera == nullptr) {
+    if (shader_shadow == nullptr) {
+      ERROR("NO SHADDOW");
       return;
     }
-    glCheck(shader_camera->use());
+    glCheck(shader_shadow->use());
 
     // draw mesh
     glCheck(gl->glBindVertexArray(VAO));
     glCheck(gl->glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr));
     glCheck(gl->glBindVertexArray(0));
 
-    shader_camera->release();
+    shader_shadow->release();
   }
 
  protected:
