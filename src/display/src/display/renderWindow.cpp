@@ -20,6 +20,8 @@ void RenderWindow::init() {
   printGraphicCardInformation();
   initCamera();
 
+  sun_mesh = std::make_shared<SunMesh>();
+  unsigned int wmiddtththx = addMesh(sun_mesh);
 
   // init mesh
   world_mesh = std::make_shared<WorldMesh>();
@@ -61,10 +63,6 @@ void RenderWindow::init() {
       std::rotate(pos[j], pos[j] + 1, pos[j] + 3);
     }
   }
-
-  sun_mesh = std::make_shared<SunMesh>();
-  unsigned int wmiddtththx = addMesh(sun_mesh);
-
 
   light_ptr->setShaddow(getDefualtFrameFuffer());
 }

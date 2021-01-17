@@ -16,8 +16,7 @@ target_include_directories(pre_display_lib INTERFACE "${CMAKE_CURRENT_SOURCE_DIR
 
 add_library(display_elements_lib STATIC
   src/display_elements/worldMesh.cpp
-  src/display_elements/sun.cpp
-  src/display_elements/arrowMesh.cpp)
+  src/display_elements/sun.cpp)
 
 target_link_libraries(display_elements_lib
   pre_display_lib

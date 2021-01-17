@@ -15,7 +15,7 @@ uniform mat4 lightSpaceMatrix;
 
 out vec3 VertexColor;
 out vec2 TexCoord;
-out vec3 FragPosWorld;
+out vec3 FragPos;
 out vec3 FragNormal;
 out vec4 FragPosLightSpace;
 
@@ -27,13 +27,12 @@ void main()
     gl_Position = projection * transformWorld2camera * FragPosWorld;
 
     // outs
-    //FragNormal = vec3(transformMesh2World * vec4(vertexNormal, 1.0));
     mat3 rotation = mat3(transformMesh2World);
     FragNormal = rotation*vertexNormal;
     VertexColor = vertexColor;
     TexCoord = vertexTexturePos;
+    FragPos = vec3(FragPosWorld);
 
     FragPosLightSpace = lightSpaceMatrix * FragPosWorld;
-
 }
 
