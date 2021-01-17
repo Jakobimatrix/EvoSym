@@ -39,7 +39,9 @@ void OpenGLWidget::paintGL(void) {
 }
 
 void OpenGLWidget::resizeGL(int width, int height) {
+  makeCurrent();
   RenderWindow::onResize(width, height);
+  doneCurrent();
 }
 
 void OpenGLWidget::showEvent(QShowEvent* event) {
@@ -91,11 +93,19 @@ void OpenGLWidget::mouseMoveEvent(QMouseEvent* event) {
   const Eigen::Vector2i mouse_pos(event->x(), event->y());
   const Eigen::Vector2i mouse_diff = mouse_pos - last_mouse_pos;
   last_mouse_pos = mouse_pos;
+  makeCurrent();
   if (mouse_left_timer.hasStarted()) {
+
+
     RenderWindow::dragMouseLeft(mouse_diff);
+    doneCurrent();
   } else if (mouse_right_timer.hasStarted()) {
+
+
     RenderWindow::dragMouseRight(mouse_diff);
+    doneCurrent();
   }
+  doneCurrent();
   QOpenGLWidget::mouseMoveEvent(event);
 }
 
@@ -118,11 +128,12 @@ void OpenGLWidget::mousePressEvent(QMouseEvent* event) {
 }
 
 void OpenGLWidget::mouseReleaseEvent(QMouseEvent* event) {
+  makeCurrent();
   if (event->button() == Qt::RightButton) {
     if (mouse_right_timer.hasStarted()) {
       if (MAX_KLICK_DURATION > mouse_right_timer.getPassedTime<std::chrono::milliseconds>()) {
         const Eigen::Vector2i pos(event->screenPos().x(), event->screenPos().y());
-        rightKlick(pos);
+        RenderWindow::rightKlick(pos);
       }
       mouse_right_timer.stop();
     }
@@ -131,7 +142,7 @@ void OpenGLWidget::mouseReleaseEvent(QMouseEvent* event) {
     if (mouse_left_timer.hasStarted()) {
       if (MAX_KLICK_DURATION > mouse_left_timer.getPassedTime<std::chrono::milliseconds>()) {
         const Eigen::Vector2i pos(event->screenPos().x(), event->screenPos().y());
-        leftKlick(pos);
+        RenderWindow::leftKlick(pos);
       }
       mouse_left_timer.stop();
     }
@@ -139,6 +150,7 @@ void OpenGLWidget::mouseReleaseEvent(QMouseEvent* event) {
   } else if (event->button() == Qt::MiddleButton) {
     is_pressed.mouse_mid = false;
   }
+  doneCurrent();
   QOpenGLWidget::mouseReleaseEvent(event);
 }
 
@@ -185,14 +197,17 @@ bool OpenGLWidget::setKeyStatus(int key, bool set) {
 }
 
 void OpenGLWidget::processKeyEvent(int key) {
+  makeCurrent();
+
   switch (key) {
     case Qt::Key_N:
-      keyN();
+      RenderWindow::keyN();
       break;
     case Qt::Key_S:
-      keyS();
+      RenderWindow::keyS();
       break;
     default:
       break;
   }
+  doneCurrent();
 }
