@@ -58,6 +58,7 @@ class RenderWindow : protected QOpenGLExtraFunctions {
   void rightKlick(const Eigen::Vector2i &mouse_pos);
   void scroll(double f);
   void keyN();
+  void keyS();
 
   IsPressed is_pressed;
 
@@ -80,14 +81,10 @@ class RenderWindow : protected QOpenGLExtraFunctions {
 
   void animate();
 
-  // SFML entities
   Camera camera;
   Eigen::Vector2i last_mouse_pos = Eigen::Vector2i(0, 0);
+  bool debug_shadows = false;
 
-  // TODO der kommt von QT und sollte in QT verrechnet werden!!!
-  const Eigen::Vector2i STRANGE_MOUSE_OFFSET = Eigen::Vector2i(0, 60);
-
-  std::shared_ptr<Light> light_ptr;
 
   double window_ratio = 1;
   Eigen::Vector2i window_size;
@@ -97,6 +94,7 @@ class RenderWindow : protected QOpenGLExtraFunctions {
 
   std::shared_ptr<WorldMesh> world_mesh = nullptr;
   std::shared_ptr<SunMesh> sun_mesh = nullptr;
+  std::shared_ptr<Light> light_ptr;
 
   bool is_initialized = false;
 

@@ -110,8 +110,7 @@ void RenderWindow::enable3dDepth() {
 void RenderWindow::update() {
 
   animate();
-  // draw shadow shader
-  /*
+  // draw into shadow frame buffer
   glCheck(glBindFramebuffer(GL_FRAMEBUFFER, light_ptr->getDepthMapFrameBufferInt()));
 
   glViewport(0, 0, 1024, 1024);  // TODO
@@ -123,26 +122,16 @@ void RenderWindow::update() {
   drawShadows();
 
   glCheck(glBindFramebuffer(GL_FRAMEBUFFER, getDefualtFrameFuffer()));
-  //*/
 
-  // draw scene
-  //*
-  glCullFace(GL_BACK);
-  glCheck(glViewport(0, 0, window_size.x(), window_size.y()));
-  glCheck(glClearColor(0.3f, 0.3f, 0.3f, 0.0f));
-  glCheck(glClearDepth(1));
-  glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-  drawMesh();
-  //*/
-
-  /*
-  // debug shadow/depth map
   glCullFace(GL_BACK);
   glViewport(0, 0, window_size.x(), window_size.y());
   glCheck(glClearColor(0.3f, 0.3f, 0.3f, 0.0f));
   glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-  light_ptr->debugShadowTexture();
-  //*/
+  if (debug_shadows) {
+    light_ptr->debugShadowTexture();
+  } else {
+    drawMesh();
+  }
 }
 
 unsigned long RenderWindow::addMesh(const std::shared_ptr<BaseMesh>& simple_mesh) {
@@ -252,6 +241,8 @@ void RenderWindow::keyN() {
     mesh.second->setDebugNormals(debug_normals);
   }
 }
+
+void RenderWindow::keyS() { debug_shadows = is_pressed.shift; }
 
 void RenderWindow::scroll(double f) {
   if (is_pressed.ctrl) {

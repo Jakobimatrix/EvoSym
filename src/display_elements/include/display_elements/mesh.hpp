@@ -252,6 +252,10 @@ class BaseMesh {
   void loadTexture(const std::string& texture_path) {
     glCheck(glGenTextures(1, &texture));
 
+    if (texture == 0) {
+      ASSERT("Do we have Context?!?!?!");
+    }
+
     glCheck(glBindTexture(GL_TEXTURE_2D, texture));  // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
     if (texture == 0) {
       ERROR("Cant create texture. Do we have context???");
@@ -313,7 +317,8 @@ class BaseMesh {
   }
 
   // render data
-  unsigned int VBO, EBO;
+  unsigned int VBO = 0;
+  unsigned int EBO = 0;
 
   std::shared_ptr<ShaderProgram> shader_camera = nullptr;
   std::shared_ptr<ShaderProgram> shader_shadow = nullptr;
@@ -322,8 +327,8 @@ class BaseMesh {
   virtual void connectShadowShader(unsigned int shaderProgram) = 0;
 
   // mesh Data
-  unsigned int texture;
-  unsigned int VAO;
+  unsigned int texture = 0;
+  unsigned int VAO = 0;
 
   std::shared_ptr<Light> light = nullptr;
 
@@ -525,6 +530,10 @@ class Mesh : public BaseMesh {
     glCheck(gl->glGenBuffers(1, &VBO));
     glCheck(gl->glGenBuffers(1, &EBO));
 
+    if (VAO == 0 || VBO == 0 || EBO == 0) {
+      ASSERT("Do we have Context?!?!?!");
+    }
+
     glCheck(gl->glBindVertexArray(VAO));
     // load data into vertex buffers
     glCheck(gl->glBindBuffer(GL_ARRAY_BUFFER, VBO));
@@ -536,8 +545,9 @@ class Mesh : public BaseMesh {
     glCheck(gl->glBufferData(
         GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW));
 
-    // glCheck(glBindVertexArray(0));
-    // glCheck(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+    // TODO this somehow deletes everything ?!?!
+    // glCheck(gl->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+    // glCheck(gl->glBindVertexArray(0));
   }
 
   /*!

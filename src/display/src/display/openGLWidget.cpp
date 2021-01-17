@@ -189,6 +189,9 @@ void OpenGLWidget::processKeyEvent(int key) {
     case Qt::Key_N:
       keyN();
       break;
+    case Qt::Key_S:
+      keyS();
+      break;
     default:
       break;
   }
