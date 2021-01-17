@@ -38,18 +38,13 @@ class Light : public util::Settings {
     }
 
     pose = eigen_utils::getTransformation(pos, direction);
-    lightSpaceMatrix = lightOrthProjection * pose.inverse(Eigen::TransformTraits::Isometry);
-    /*
-    // TODO use min max to find following values
-    const float left = -10;
-    const float right = 10;
-    const float top = -10;
-    const float bot = 10;
-    const float near = 1;
-    const float far = 100;
-    eigen_utils::updateOrthogonalProjection(
-        lightSpaceMatrix, left, right, bot, top, near, far);
-    */
+
+    // strange rotation bug
+    const Eigen::Vector3f rotate(0, M_PI, 0);
+    const Eigen::Isometry3f R = eigen_utils::rpy2Isometry(rotate);
+    lightSpaceMatrix =
+        lightOrthProjection * R * pose.inverse(Eigen::TransformTraits::Isometry);
+
 
     callbackLightChange();
   }
@@ -58,7 +53,9 @@ class Light : public util::Settings {
 
   bool hasShadow() { return shadow_ptr != nullptr; }
 
-  void setShaddow() { shadow_ptr = std::make_shared<Shadows>(); }
+  void setShaddow(GLuint default_frame_buffer = 0) {
+    shadow_ptr = std::make_shared<Shadows>(default_frame_buffer);
+  }
 
   unsigned int getDepthMapTexture() { return shadow_ptr->getDepthMapTexture(); }
 

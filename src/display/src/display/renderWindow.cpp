@@ -62,14 +62,18 @@ void RenderWindow::init() {
     }
   }
 
+  sun_mesh = std::make_shared<SunMesh>();
+  unsigned int wmiddtththx = addMesh(sun_mesh);
 
-  light_ptr->setShaddow();
+
+  light_ptr->setShaddow(getDefualtFrameFuffer());
 }
 
 void RenderWindow::initOpenGl() {
   QOpenGLFunctions::initializeOpenGLFunctions();
   setPerspective();
   enable3dDepth();
+  glEnable(GL_CULL_FACE);
 
   is_initialized = true;
 }
@@ -105,36 +109,40 @@ void RenderWindow::enable3dDepth() {
 
 void RenderWindow::update() {
 
+  animate();
   // draw shadow shader
-  glViewport(0, 0, 1024, 1024);  // TODO
+  /*
   glCheck(glBindFramebuffer(GL_FRAMEBUFFER, light_ptr->getDepthMapFrameBufferInt()));
+
+  glViewport(0, 0, 1024, 1024);  // TODO
   glCheck(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
   glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-  glCheck(glClearDepth(1));
-  glCheck(glEnable(GL_DEPTH_TEST));
-  glCheck(glDepthMask(GL_TRUE));
+  glCullFace(GL_FRONT);
+  // glCheck(glClearDepth(1));
+  // glCheck(glDepthMask(GL_TRUE));
   drawShadows();
-  glCheck(glBindFramebuffer(GL_FRAMEBUFFER, getDefualtFrameFuffer()));
-  // glDrawBuffer(GL_BACK);  // default
 
+  glCheck(glBindFramebuffer(GL_FRAMEBUFFER, getDefualtFrameFuffer()));
+  //*/
 
   // draw scene
   //*
+  glCullFace(GL_BACK);
   glCheck(glViewport(0, 0, window_size.x(), window_size.y()));
   glCheck(glClearColor(0.3f, 0.3f, 0.3f, 0.0f));
   glCheck(glClearDepth(1));
   glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-  glCheck(glEnable(GL_DEPTH_TEST));
   drawMesh();
   //*/
 
   /*
   // debug shadow/depth map
+  glCullFace(GL_BACK);
   glViewport(0, 0, window_size.x(), window_size.y());
-  glCheck(glClear(GL_COLOR_BUFFER_BIT |
-  GL_DEPTH_BUFFER_BIT)); glCheck(glDisable(GL_DEPTH_TEST));
+  glCheck(glClearColor(0.3f, 0.3f, 0.3f, 0.0f));
+  glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   light_ptr->debugShadowTexture();
-  */
+  //*/
 }
 
 unsigned long RenderWindow::addMesh(const std::shared_ptr<BaseMesh>& simple_mesh) {
@@ -165,8 +173,13 @@ void RenderWindow::drawMesh() {
 }
 
 void RenderWindow::drawShadows() {
+  QOpenGLExtraFunctions* gl = QOpenGLContext::currentContext()->extraFunctions();
+  for (const auto& mesh : meshes) {
+    mesh.second->drawShadows(gl);
+  }
+}
 
-
+void RenderWindow::animate() {
   /*
    // todo this is part of simulation
    static Eigen::Vector3f nextPos = light.getPosition();
@@ -203,7 +216,7 @@ void RenderWindow::drawShadows() {
    */
 
 
-  const double r = 150.5;
+  const double r = 105;
   static double phi = 0.;
   phi += 0.008;
   static double theta = 0.;
@@ -221,11 +234,9 @@ void RenderWindow::drawShadows() {
 
   const Eigen::Vector3f light_pos(x, y, z);
   light_ptr->setPositionAndTarget(light_pos, Eigen::Vector3f(0, 0, 0));
-  QOpenGLExtraFunctions* gl = QOpenGLContext::currentContext()->extraFunctions();
 
-  for (const auto& mesh : meshes) {
-    mesh.second->drawShadows(gl);
-  }
+  Eigen::Isometry3f pose_sun = light_ptr->getPose();
+  sun_mesh->setTransformMesh2World(pose_sun.template cast<double>());
 }
 
 void RenderWindow::onResize(int width, int height) {
@@ -235,125 +246,39 @@ void RenderWindow::onResize(int width, int height) {
   camera.setAspectRatio(window_ratio);
 }
 
-/*
-void RenderWindow::processMouseAction() {
-
-  const sf::Vector2i mouse_pos =
-      sf::Mouse::getPosition() - sf::RenderWindow::getPosition() + STRANGE_MOUSE_OFFSET;
-
-  if (!mouse_left_timer.hasStarted() && !mouse_right_timer.hasStarted()) {
-    const sf::Vector2u win_size = sf::RenderWindow::getSize();
-    if (mouse_pos.x < 0 || mouse_pos.y < 0 || mouse_pos.x > win_size.x ||
-        mouse_pos.y > win_size.y) {
-      // not dragging and outside the window.
-      return;
-    }
-  }
-
-  if (sf::Mouse::isButtonPressed(sf::Mouse::Right)) {
-    if (!mouse_right_timer.hasStarted()) {
-      mouse_right_timer.start();
-    } else {
-      dragMouseRight(mouse_pos - last_mouse_pos);
-    }
-  } else {
-    if (mouse_right_timer.hasStarted()) {
-      if (MAX_KLICK_DURATION > mouse_right_timer.getPassedTime<std::chrono::milliseconds>()) {
-        rightKlick(mouse_pos);
-      }
-      mouse_right_timer.stop();
-    }
-  }
-
-  if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
-    if (!mouse_left_timer.hasStarted()) {
-      mouse_left_timer.start();
-    } else {
-      dragMouseLeft(mouse_pos - last_mouse_pos);
-    }
-  } else {
-    if (mouse_left_timer.hasStarted()) {
-      if (MAX_KLICK_DURATION > mouse_left_timer.getPassedTime<std::chrono::milliseconds>()) {
-        leftKlick(mouse_pos);
-      }
-      mouse_left_timer.stop();
-    }
-  }
-
-
-  last_mouse_pos = mouse_pos;
-}
-
-
-void RenderWindow::processKeyPressedAction() {
-  /*
-    Eigen::Vector3f move(0, 0, 0);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-      move.x() += 1;
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
-      move.x() -= 1;
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
-      move.y() += 1;
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
-      move.y() -= 1;
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
-      move.z() += 1;
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-      move.z() -= 1;
-    }
-
-
-    move.normalize();
-    const float length = 0.06f;
-    move *= length;
-    * /
-
-
-if (sf::Keyboard::isKeyPressed(sf::Keyboard::N)) {
-  const bool debug_normals = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift);
+void RenderWindow::keyN() {
+  const bool debug_normals = is_pressed.shift;
   for (const auto& mesh : meshes) {
     mesh.second->setDebugNormals(debug_normals);
   }
 }
-}
-*/
 
-void RenderWindow::scrollHack(double f) {
-  /*
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::RControl)) {
+void RenderWindow::scroll(double f) {
+  if (is_pressed.ctrl) {
     f *= 10;
   }
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z)) {
+  if (is_pressed.alt) {
     camera.setLenseAngleRad(math::deg2Rad(f) + camera.getLenseAngleRad());
   } else {
     camera.shiftZ(f);
   }
-  */
 }
 
 void RenderWindow::dragMouseLeft(const Eigen::Vector2i& diff) {
-  /*
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
-      // FRE COMMAND SPACE
-    } else {
-      camera.rotatePY(diff.x, diff.y);
-    }
-    */
+  if (is_pressed.ctrl) {
+    // FREE COMMAND SPACE
+  } else {
+    camera.rotatePY(diff.x(), diff.y());
+  }
 }
 
 void RenderWindow::dragMouseRight(const Eigen::Vector2i& diff) {
-  /*
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl)) {
-      camera.shiftXY(diff.x, diff.y);
-    } else {
-      camera.rotatePYaround(diff.x, diff.y, Eigen::Vector3d(0, 0, 0));
-    }
-    */
+  if (is_pressed.ctrl) {
+    const double multi = camera.getLenseAngleRad();
+    camera.shiftXY(diff.x() * multi, diff.y() * multi);
+  } else {
+    camera.rotatePYaround(diff.x(), diff.y(), Eigen::Vector3d(0, 0, 0));
+  }
 }
 
 void RenderWindow::leftKlick(const Eigen::Vector2i& mouse_pos) {

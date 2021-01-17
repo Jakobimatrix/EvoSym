@@ -14,6 +14,19 @@
 #include <functional>
 #include <timer/timer.hpp>
 
+
+struct IsPressed {
+  bool ctrl = false;
+  bool alt = false;
+  bool alt_gr = false;
+  bool space = false;
+  bool shift = false;
+  bool esc = false;
+  bool mouse_left = false;
+  bool mouse_right = false;
+  bool mouse_mid = false;
+};
+
 class RenderWindow : protected QOpenGLExtraFunctions {
  public:
   RenderWindow();
@@ -30,8 +43,6 @@ class RenderWindow : protected QOpenGLExtraFunctions {
 
   bool isInitialized() { return is_initialized; }
 
-  void scrollHack(double f);
-
   void clean();
 
   typedef std::function<GLuint()> CallbackGetDefaultFrameBuffer;
@@ -40,15 +51,20 @@ class RenderWindow : protected QOpenGLExtraFunctions {
     getDefualtFrameFuffer = func;
   }
 
- private:
-  void initOpenGl();
-
-  void initCamera();
-
+ protected:
   void dragMouseLeft(const Eigen::Vector2i &diff);
   void dragMouseRight(const Eigen::Vector2i &diff);
   void leftKlick(const Eigen::Vector2i &mouse_pos);
   void rightKlick(const Eigen::Vector2i &mouse_pos);
+  void scroll(double f);
+  void keyN();
+
+  IsPressed is_pressed;
+
+ private:
+  void initOpenGl();
+
+  void initCamera();
 
   void onCameraPositionUpdate();
   void onCameraPerspectiveUpdate();
@@ -62,6 +78,8 @@ class RenderWindow : protected QOpenGLExtraFunctions {
 
   void printGraphicCardInformation();
 
+  void animate();
+
   // SFML entities
   Camera camera;
   Eigen::Vector2i last_mouse_pos = Eigen::Vector2i(0, 0);
@@ -73,25 +91,14 @@ class RenderWindow : protected QOpenGLExtraFunctions {
 
   double window_ratio = 1;
   Eigen::Vector2i window_size;
-  bool is_active = false;
-
-  // Not thread save!
-  // state used by activateIf and deactivateIf
-  int activation_count = 0;
 
   std::map<unsigned long, const std::shared_ptr<BaseMesh>> meshes;
   unsigned long mesh_counter = 0;
 
   std::shared_ptr<WorldMesh> world_mesh = nullptr;
+  std::shared_ptr<SunMesh> sun_mesh = nullptr;
 
   bool is_initialized = false;
-  bool has_focus = true;
-
-  tool::SingleTimer mouse_left_timer;
-  tool::SingleTimer mouse_right_timer;
-
-  static constexpr std::chrono::milliseconds MAX_KLICK_DURATION =
-      std::chrono::milliseconds(300);
 
   CallbackGetDefaultFrameBuffer getDefualtFrameFuffer = []() { return 0; };
 };

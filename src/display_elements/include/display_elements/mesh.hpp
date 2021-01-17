@@ -448,7 +448,10 @@ class Mesh : public BaseMesh {
    * \brief This renders the mesh using the active shader if set.
    */
   void draw(QOpenGLExtraFunctions* gl) override {
-
+    if (debug_normals && normals) {
+      normals->draw(gl);
+      return;
+    }
     // TODO deal with uninitialized material, light, etc
 
     if (light && light->hasShadow()) {
@@ -460,6 +463,7 @@ class Mesh : public BaseMesh {
       glCheck(gl->glActiveTexture(GL_TEXTURE0));
       glCheck(gl->glBindTexture(GL_TEXTURE_2D, texture));
     }
+
     if (shader_camera != nullptr) {
       glCheck(shader_camera->use());
     }
@@ -469,15 +473,14 @@ class Mesh : public BaseMesh {
     glCheck(gl->glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr));
     glCheck(gl->glBindVertexArray(0));
 
-    glCheck(shader_camera->release());
+    // glCheck(shader_camera->release());
+    gl->glUseProgram(0);
 
     // always good practice to set everything back to defaults once configured.
-    if constexpr (has_texture) {
-      glCheck(gl->glActiveTexture(GL_TEXTURE0));
-      glCheck(gl->glBindTexture(GL_TEXTURE_2D, 0));
-      glCheck(gl->glActiveTexture(GL_TEXTURE1));
-      glCheck(gl->glBindTexture(GL_TEXTURE_2D, 0));
-    }
+    glCheck(gl->glActiveTexture(GL_TEXTURE0));
+    glCheck(gl->glBindTexture(GL_TEXTURE_2D, 0));
+    glCheck(gl->glActiveTexture(GL_TEXTURE1));
+    glCheck(gl->glBindTexture(GL_TEXTURE_2D, 0));
 
     if (debug_normals && normals) {
       normals->draw(gl);
@@ -490,17 +493,10 @@ class Mesh : public BaseMesh {
   void drawShadows(QOpenGLExtraFunctions* gl) override {
 
     if (light == nullptr || !light->hasShadow()) {
-      ERROR("NO Light or no shaddow");
       return;
     }
 
-    //    if constexpr (has_texture) {
-    //      glActiveTexture(GL_TEXTURE0);
-    //      glCheck(glBindTexture(GL_TEXTURE_2D, texture));
-    //    }
-
     if (shader_shadow == nullptr) {
-      ERROR("NO SHADDOW");
       return;
     }
     glCheck(shader_shadow->use());
@@ -646,10 +642,10 @@ class Mesh : public BaseMesh {
     using MeshType = Mesh<true, false, false, false, false, true, 3>;
 
     const size_t num_triangles = indices.size() / 3;
-    std::vector<VertexNormalType> verices_temp;
-    std::vector<unsigned int> indices_temp;
-    verices_temp.reserve(num_triangles * 4);
-    indices_temp.reserve(num_triangles * 9);
+    std::vector<VertexNormalType> v_temp;
+    std::vector<unsigned int> i_temp;
+    v_temp.reserve(num_triangles * 4);
+    i_temp.reserve(num_triangles * 9);
 
     constexpr float normal_thickness = 0.01f;
     constexpr float normal_length = 0.2f;
@@ -657,8 +653,8 @@ class Mesh : public BaseMesh {
     constexpr float g = 1.f;
     constexpr float b = 1.f;
 
-    auto putInVec = [&r, &g, &b, &verices_temp](const Eigen::Vector3f& v) {
-      verices_temp.emplace_back(VertexNormalType({v.x(), v.y(), v.z(), r, g, b}));
+    auto putInVec = [&r, &g, &b, &v_temp](const Eigen::Vector3f& v) {
+      v_temp.emplace_back(VertexNormalType({v.x(), v.y(), v.z(), r, g, b}));
     };
 
     unsigned int index_nr = 0;
@@ -696,17 +692,17 @@ class Mesh : public BaseMesh {
       putInVec(nv2);
       putInVec(nv3);
 
-      indices_temp.push_back(index_nr + 3);
-      indices_temp.push_back(index_nr + 1);
-      indices_temp.push_back(index_nr);
+      i_temp.push_back(index_nr + 3);
+      i_temp.push_back(index_nr + 1);
+      i_temp.push_back(index_nr);
 
-      indices_temp.push_back(index_nr + 2);
-      indices_temp.push_back(index_nr + 3);
-      indices_temp.push_back(index_nr);
+      i_temp.push_back(index_nr + 2);
+      i_temp.push_back(index_nr + 3);
+      i_temp.push_back(index_nr);
 
-      indices_temp.push_back(index_nr + 1);
-      indices_temp.push_back(index_nr + 2);
-      indices_temp.push_back(index_nr);
+      i_temp.push_back(index_nr + 1);
+      i_temp.push_back(index_nr + 2);
+      i_temp.push_back(index_nr);
 
       index_nr += 4;
     }
@@ -714,7 +710,7 @@ class Mesh : public BaseMesh {
     // initiate normal Mesh
     std::shared_ptr<MeshType> normalsMesh = std::make_shared<MeshType>();
 
-    normalsMesh->init(verices_temp, indices_temp);
+    normalsMesh->init(v_temp, i_temp);
 
     const std::string path = Globals::getInstance().getAbsPath2Shaders();
     const std::string vs = path + "normal.vs";

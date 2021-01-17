@@ -1,18 +1,16 @@
 #version 130
 
-
-out vec4 FragColor;
+uniform sampler2D depthMap;
 
 in vec2 TexCoords;
 
-uniform sampler2D depthMap;
+out vec4 FragColor;
+
 
 void main()
 {
+    // openGL
     float depthValue = texture(depthMap, TexCoords).r;
+    // FragColor = vec4(vec3(LinearizeDepth(depthValue) / far_plane), 1.0); // perspective
     FragColor = vec4(vec3(depthValue), 1.0); // orthographic
-
-    vec3 texture_color = vec3(texture(depthMap, TexCoords));
-    FragColor = vec4(texture_color,1);
-
 }

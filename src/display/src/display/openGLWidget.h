@@ -12,11 +12,11 @@ class OpenGLWidget : public QOpenGLWidget, public RenderWindow {
   Q_OBJECT
 
  public:
-  explicit OpenGLWidget(QWidget *parent, unsigned int fps = 25);
+  explicit OpenGLWidget(QWidget *parent);
+
+  void scrollHack(double f);
 
   ~OpenGLWidget() override {}
-
-  void setFramerate(unsigned int fps);
 
  protected:
   // Your widget's OpenGL rendering context is made current when paintGL(), resizeGL(), or initializeGL() is called. If you need to call the standard OpenGL API functions from other places (e.g. in your widget's constructor or in your own paint functions), you must call makeCurrent() first.
@@ -37,7 +37,6 @@ class OpenGLWidget : public QOpenGLWidget, public RenderWindow {
   // This functions works together with the WA_PaintOnScreen flag
   // to tell Qt that we're not using any of its built-in paint engines.
   QPaintEngine *paintEngine() const override { return nullptr; }
-
   void showEvent(QShowEvent *) override;
   void closeEvent(QCloseEvent *event) override;
   void focusInEvent(QFocusEvent *event) override;
@@ -46,7 +45,6 @@ class OpenGLWidget : public QOpenGLWidget, public RenderWindow {
   void keyPressEvent(QKeyEvent *event) override;
   void keyReleaseEvent(QKeyEvent *event) override;
   void leaveEvent(QEvent *event) override;
-  void mouseDoubleClickEvent(QMouseEvent *event) override;
   void mouseMoveEvent(QMouseEvent *event) override;
   void mousePressEvent(QMouseEvent *event) override;
   void mouseReleaseEvent(QMouseEvent *event) override;
@@ -54,8 +52,16 @@ class OpenGLWidget : public QOpenGLWidget, public RenderWindow {
   void paintEvent(QPaintEvent *event) override;
   void resizeEvent(QResizeEvent *event) override;
 
-  bool show_event_triggered = false;
-  QTimer timer;
+  bool setKeyStatus(int key, bool set);
+  void processKeyEvent(int key);
+
+  // User input
+  tool::SingleTimer mouse_left_timer;
+  tool::SingleTimer mouse_right_timer;
+  static constexpr std::chrono::milliseconds MAX_KLICK_DURATION =
+      std::chrono::milliseconds(300);
+  Eigen::Vector2i last_mouse_pos = Eigen::Vector2i(0, 0);
+  bool mouse_over = false;
 };
 
 #endif

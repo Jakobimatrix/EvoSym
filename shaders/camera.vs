@@ -15,7 +15,7 @@ uniform mat4 lightSpaceMatrix;
 
 out vec3 VertexColor;
 out vec2 TexCoord;
-out vec3 FragPos;
+out vec3 FragPosWorld;
 out vec3 FragNormal;
 out vec4 FragPosLightSpace;
 
@@ -32,7 +32,6 @@ void main()
     FragNormal = rotation*vertexNormal;
     VertexColor = vertexColor;
     TexCoord = vertexTexturePos;
-    FragPos = vec3(transformMesh2World * vec4(vertexPos, 1.0));
 
     FragPosLightSpace = lightSpaceMatrix * FragPosWorld;
 

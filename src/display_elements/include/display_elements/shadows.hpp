@@ -18,20 +18,20 @@
 // https://www.youtube.com/watch?v=vpDer0seP9M (Use depthCubeMap and GL_TEXTURE_CUBE_MAP)
 class Shadows {
  public:
-  Shadows(int size_x, int size_y, QObject *parent = nullptr) {
-    setSize(size_x, size_y, parent);
+  Shadows(int size_x, int size_y, GLuint default_frame_buffer = 0) {
+    setSize(size_x, size_y, default_frame_buffer);
   }
 
   ~Shadows() { clean(); }
 
-  Shadows(QObject *parent = nullptr) {
-    setSize(shadow_texture_width, shadow_texture_height, parent);
+  Shadows(GLuint default_frame_buffer = 0) {
+    setSize(shadow_texture_width, shadow_texture_height, default_frame_buffer);
   }
 
-  void setSize(int size_x, int size_y, QObject *parent = nullptr) {
+  void setSize(int size_x, int size_y, GLuint default_frame_buffer = 0) {
     shadow_texture_width = size_x;
     shadow_texture_height = size_y;
-    init(parent);
+    init(default_frame_buffer);
   }
 
   /*!
@@ -50,17 +50,19 @@ class Shadows {
 
   unsigned int getDepthMapTexture() { return depthMap; }
 
+  bool is_bound = false;
   unsigned int getDepthMapFrameBufferInt() { return depthMapFBO; }
 
   void drawDebug() {
     if (shader_shadow_debug == nullptr) {
       return;
     }
+
     QOpenGLExtraFunctions *gl = QOpenGLContext::currentContext()->extraFunctions();
     glCheck(shader_shadow_debug->use());
     glCheck(glActiveTexture(GL_TEXTURE0));
-    glCheck(glBindTexture(GL_TEXTURE_2D, depthMap));
 
+    glCheck(glBindTexture(GL_TEXTURE_2D, depthMap));
     glCheck(gl->glBindVertexArray(quadVAO));
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glCheck(gl->glBindVertexArray(0));
@@ -79,11 +81,15 @@ class Shadows {
   unsigned int quadVBO = 0;
   unsigned int quadEBO = 0;
 
+  // clang-format off
   float quadVertices[20] = {
       // positions        // texture Coords
-      -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-      1.0f,  1.0f, 0.0f, 1.0f, 1.0f, 1.0f,  -1.0f, 0.0f, 1.0f, 0.0f,
+      -1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
+      -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+      1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
+      1.0f,  -1.0f, 0.0f, 1.0f, 0.0f,
   };
+  // clang-format on
 
   unsigned int quadIndices[6] = {
       0,
@@ -94,7 +100,7 @@ class Shadows {
       2  // second triangle
   };
 
-  void init(QObject *parent = nullptr) {
+  void init(GLuint default_frame_buffer = 0) {
     if (initiated) {
       clean();
     }
@@ -131,34 +137,34 @@ class Shadows {
     }
 
     initiated = true;
-    prepareDebugShader(parent);
+    prepareDebugShader();
 
     // clean up
-    glCheck(gl->glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    glCheck(gl->glBindFramebuffer(GL_FRAMEBUFFER, default_frame_buffer));
   }
 
 
-  void prepareDebugShader(QObject *parent = nullptr) {
+  void prepareDebugShader() {
     QOpenGLExtraFunctions *gl = QOpenGLContext::currentContext()->extraFunctions();
     const std::string path = Globals::getInstance().getAbsPath2Shaders();
     const std::string shadow_debug_vs = path + "debug_quad.vs";
     const std::string shadow_debug_fs = path + "debug_quad.fs";
 
-    shader_shadow_debug = std::make_shared<ShaderProgram>(parent);
-    if (!shader_shadow_debug->addShaderFromSourceCode(
+    shader_shadow_debug = std::make_shared<ShaderProgram>();
+    if (!shader_shadow_debug->addCacheableShaderFromSourceFile(
             QOpenGLShader::Vertex, QString::fromStdString(shadow_debug_vs))) {
-      F_ERROR("Failed to compile %s", shadow_debug_vs.c_str());
+      F_ASSERT("Failed to compile %s", shadow_debug_vs.c_str());
       return;
     }
-    if (!shader_shadow_debug->addShaderFromSourceCode(
+    if (!shader_shadow_debug->addCacheableShaderFromSourceFile(
             QOpenGLShader::Fragment, QString::fromStdString(shadow_debug_fs))) {
-      F_ERROR("Failed to compile %s", shadow_debug_fs.c_str());
+      F_ASSERT("Failed to compile %s", shadow_debug_fs.c_str());
       return;
     }
 
     shader_shadow_debug->link();
-    if (shader_shadow_debug->isLinked()) {
-      ERROR("Failed to link Camera shader program.");
+    if (!shader_shadow_debug->isLinked()) {
+      ASSERT("Failed to link Camera shader program.");
       return;
     }
 

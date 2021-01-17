@@ -23,7 +23,7 @@ uniform vec3 cameraPos;
 in vec3 FragNormal;
 in vec3 VertexColor;
 in vec2 TexCoord;
-in vec3 FragPos;
+in vec3 FragPosWorld;
 in vec4 FragPosLightSpace;
 
 out vec4 FragColor;
@@ -62,9 +62,10 @@ void main()
 
 
     // specular
-    vec3 view_direction = normalize(FragPos - cameraPos);
+    vec3 view_direction = normalize(FragPosWorld - cameraPos);
     vec3 reflect_direction = reflect(light.direction, FragNormal);
-    float spec = pow(max(dot(view_direction, reflect_direction), 0.0), material.shininess);
+    float angle_reflection = dot(view_direction, reflect_direction);
+    float spec = pow(max(angle_reflection, 0.0), material.shininess);
 
     // flashlight effect
     //reflect_direction = normalize(light.direction + view_direction);
@@ -72,11 +73,12 @@ void main()
 
     vec3 specular = light.color * (spec * material.specular);
 
-    float shadow = 0; //ShadowCalculation(FragPosLightSpace);
+    float shadow = ShadowCalculation(FragPosLightSpace);
 
     //vec3 lightning = light.ambient + diffuse;
-    //vec3 lightning = light.ambient + specular;
-    vec3 lightning = (light.ambient + diffuse + specular)*(1.0 - shadow);
+    vec3 lightning = light.ambient + specular;
+    //vec3 lightning = (light.ambient + diffuse + specular);
+    //vec3 lightning = (light.ambient + diffuse + specular)*(1.0 - shadow);
     lightning = clamp3(lightning,0,1);
 
     vec3 color = vec3(texture(objectTexture, TexCoord) * vec4(VertexColor, 1.0));

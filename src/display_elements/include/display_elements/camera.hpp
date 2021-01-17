@@ -313,7 +313,7 @@ class Camera : public util::Settings {
 
   // camera options
   double scroll_sensitivity = 0.07;
-  double shift_sensitivity = 0.001;
+  double shift_sensitivity = 0.03;
   double rotate_sensitivity = 0.001;
   bool invert_rotation = false;
   bool fix_camera_yaw = true;  // rotate around cameras z-axis

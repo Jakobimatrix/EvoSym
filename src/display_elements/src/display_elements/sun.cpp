@@ -3,11 +3,11 @@
 #include <display_elements/basicShapes.hpp>
 
 void SunMesh::loadVertices() {
-  constexpr size_t resolution = 50;
+  constexpr size_t resolution = 20;
   unsigned int num_triangles;
   unsigned int num_vertices;
-  const float radius = 0.0005f;
-  const float length = 10.5f;
+  const float radius = 0.003f;
+  const float length = 170.5f;
 
   getcoordXYZInformation(num_vertices, num_triangles, resolution);
 
