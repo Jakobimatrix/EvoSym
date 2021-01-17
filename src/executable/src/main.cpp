@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
   format.setVersion(3, 0);
   format.setProfile(QSurfaceFormat::CompatibilityProfile);
   format.setRenderableType(QSurfaceFormat::OpenGL);
-  format.setSwapBehavior(QSurfaceFormat::TripleBuffer);
+  format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
   QSurfaceFormat::setDefaultFormat(format);
 #if defined(Q_OS_SYMBIAN)
   mainWin.showMaximized();
