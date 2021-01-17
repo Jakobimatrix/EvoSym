@@ -169,34 +169,31 @@ class BaseMesh {
    * \param vertex_shader_file The path to the vertex shader file.
    * \param fragment_shader_file The path to the vertex shader file.
    */
-  [[nodiscard]] bool loadShader(const std::string& vertex_shader_file,
-                                const std::string& fragment_shader_file,
-                                QObject* parent = nullptr) {
+  void loadShader(const std::string& vertex_shader_file,
+                  const std::string& fragment_shader_file,
+                  QObject* parent = nullptr) {
 
     shader_camera = std::make_shared<ShaderProgram>(parent);
     if (!shader_camera->addCacheableShaderFromSourceFile(
             QOpenGLShader::Vertex, QString::fromStdString(vertex_shader_file))) {
       F_ASSERT("Failed to compile %s", vertex_shader_file.c_str());
-      return false;
     }
     if (!shader_camera->addCacheableShaderFromSourceFile(
             QOpenGLShader::Fragment, QString::fromStdString(fragment_shader_file))) {
       F_ASSERT("Failed to compile %s", fragment_shader_file.c_str());
-      return false;
     }
 
     shader_camera->link();
     if (!shader_camera->isLinked()) {
       ASSERT("Failed to link Camera shader program.");
-      return false;
     }
 
     shader_camera->use();
     connectShader(shader_camera->programId());
     shader_camera->release();
+  }
 
-
-    // TODO
+  void addShaddow(QObject* parent = nullptr) {
     const std::string path = Globals::getInstance().getAbsPath2Shaders();
     const std::string shadow_vs = path + "shadow_mapping.vs";
     const std::string shadow_fs = path + "shadow_mapping.fs";
@@ -204,25 +201,20 @@ class BaseMesh {
     shader_shadow = std::make_shared<ShaderProgram>(parent);
     if (!shader_shadow->addCacheableShaderFromSourceFile(
             QOpenGLShader::Vertex, QString::fromStdString(shadow_vs))) {
-      F_ASSERT("Failed to compile %s", vertex_shader_file.c_str());
-      return false;
+      F_ASSERT("Failed to compile %s", shadow_vs.c_str());
     }
     if (!shader_shadow->addCacheableShaderFromSourceFile(
             QOpenGLShader::Fragment, QString::fromStdString(shadow_fs))) {
-      F_ASSERT("Failed to compile %s", fragment_shader_file.c_str());
-      return false;
+      F_ASSERT("Failed to compile %s", shadow_fs.c_str());
     }
     shader_shadow->link();
     if (!shader_shadow->isLinked()) {
       ASSERT("Failed to link Shadow shader program.");
-      return false;
     }
 
     shader_shadow->use();
     connectShadowShader(shader_shadow->programId());
     shader_shadow->release();
-
-    return true;
   }
 
  protected:
@@ -306,14 +298,6 @@ class BaseMesh {
   void calculateMeshApproximation() {
     // TODO https://github.com/kmammou/v-hacd
     WARNING("TODO");
-  }
-
-  void setCameraShader(const std::shared_ptr<ShaderProgram>& prg) {
-    shader_camera = prg;
-  }
-
-  void setShadowShader(const std::shared_ptr<ShaderProgram>& prg) {
-    shader_camera = prg;
   }
 
   // render data
@@ -439,24 +423,22 @@ class Mesh : public BaseMesh {
       clean();
     }
     this->vertices = vertices;
+    this->vertices.shrink_to_fit();
     this->indices = indices;
+    this->indices.shrink_to_fit();
+
+    if (this->indices.size() % 3 != 0) {
+      ASSERT("Given number of indices is not divisible by 3.");
+    }
     setupMesh();
     is_initialized = true;
-    return;
-    // TODO for some reason calculating the normals direct deletes the real mesh!?!?!?
-    if (debug_normals) {
-      calculateNormalMesh();
-    }
   }
 
   /*!
    * \brief This renders the mesh using the active shader if set.
    */
   void draw(QOpenGLExtraFunctions* gl) override {
-    if (debug_normals && normals) {
-      normals->draw(gl);
-      return;
-    }
+
     // TODO deal with uninitialized material, light, etc
 
     if (light && light->hasShadow()) {
@@ -541,13 +523,12 @@ class Mesh : public BaseMesh {
     glCheck(gl->glBufferData(
         GL_ARRAY_BUFFER, vertices.size() * sizeof(VertexType), &vertices[0], GL_STATIC_DRAW));
 
+
     glCheck(gl->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO));
     glCheck(gl->glBufferData(
         GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW));
 
-    // TODO this somehow deletes everything ?!?!
-    // glCheck(gl->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
-    // glCheck(gl->glBindVertexArray(0));
+    glCheck(gl->glBindVertexArray(0));
   }
 
   /*!
@@ -555,8 +536,8 @@ class Mesh : public BaseMesh {
    * array. The input variables expected in the shader are: in vec3 meshPos;
    */
   void connectShadowShader(unsigned int shaderProgram) override {
-    QOpenGLFunctions* gl = QOpenGLContext::currentContext()->functions();
-
+    QOpenGLExtraFunctions* gl = QOpenGLContext::currentContext()->extraFunctions();
+    glCheck(gl->glBindVertexArray(VAO));
     if constexpr (has_position) {
       disp_utils::assignShaderVariable(
           shaderProgram,
@@ -566,6 +547,7 @@ class Mesh : public BaseMesh {
           reinterpret_cast<void*>(offsetof(VertexType, position)),
           gl);
     }
+    glCheck(gl->glBindVertexArray(0));
   }
 
   /*!
@@ -581,7 +563,8 @@ class Mesh : public BaseMesh {
   void connectShader(unsigned int shaderProgram) override {
     // set the vertex attribute pointers
     // vertex positions
-    QOpenGLFunctions* gl = QOpenGLContext::currentContext()->functions();
+    QOpenGLExtraFunctions* gl = QOpenGLContext::currentContext()->extraFunctions();
+    glCheck(gl->glBindVertexArray(VAO));
     if constexpr (has_position) {
       disp_utils::assignShaderVariable(
           shaderProgram,
@@ -643,6 +626,7 @@ class Mesh : public BaseMesh {
                                        reinterpret_cast<void*>(offsetof(VertexType, color)),
                                        gl);
     }
+    glCheck(gl->glBindVertexArray(0));
   }
 
   void calculateNormalMesh() override {
@@ -658,7 +642,7 @@ class Mesh : public BaseMesh {
     i_temp.reserve(num_triangles * 9);
 
     constexpr float normal_thickness = 0.01f;
-    constexpr float normal_length = 0.2f;
+    constexpr float normal_length = 0.25f;
     constexpr float r = 1.f;
     constexpr float g = 1.f;
     constexpr float b = 1.f;
@@ -684,18 +668,18 @@ class Mesh : public BaseMesh {
         // assuming math positive defined vertex triangle
         normal = eigen_utils::getTrianglesNormal(v1, v2, v3);
       }
-      const Eigen::Vector3f centroid = (v1 + v2 + v3) / 3.f;
+      const Eigen::Vector3f center = (v1 + v2 + v3) / 3.f;
+      const Eigen::Vector3f nv0 = center + (normal * normal_length);
 
-      const Eigen::Vector3f nv0 = centroid + (normal * normal_length);
-      Eigen::Vector3f dir = v1 - centroid;
+      Eigen::Vector3f dir = v1 - center;
       dir.normalize();
-      const Eigen::Vector3f nv1 = centroid + dir * normal_thickness;
-      dir = v2 - centroid;
+      const Eigen::Vector3f nv1 = center + dir * normal_thickness;
+      dir = v2 - center;
       dir.normalize();
-      const Eigen::Vector3f nv2 = centroid + dir * normal_thickness;
-      dir = v3 - centroid;
+      const Eigen::Vector3f nv2 = center + dir * normal_thickness;
+      dir = v3 - center;
       dir.normalize();
-      const Eigen::Vector3f nv3 = centroid + dir * normal_thickness;
+      const Eigen::Vector3f nv3 = center + dir * normal_thickness;
 
       putInVec(nv0);
       putInVec(nv1);
@@ -725,16 +709,10 @@ class Mesh : public BaseMesh {
     const std::string path = Globals::getInstance().getAbsPath2Shaders();
     const std::string vs = path + "normal.vs";
     const std::string fs = path + "normal.fs";
-    if (!normalsMesh->loadShader(vs, fs)) {
-      F_ERROR(
-          "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
-          "%s} ",
-          vs.c_str(),
-          fs.c_str());
-    }
+    normalsMesh->loadShader(vs, fs);
     addNormals(normalsMesh);
-    // this->normals = std::dynamic_pointer_cast<BaseMesh> (normals);
   }
+
 
   void addNormals(const std::shared_ptr<BaseMesh>& n) { normals = n; }
 };

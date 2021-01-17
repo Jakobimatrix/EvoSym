@@ -194,7 +194,7 @@ class Shadows {
                                      3,
                                      5 * sizeof(float),
                                      reinterpret_cast<void *>(0 * sizeof(float)),
-                                     static_cast<QOpenGLFunctions *>(gl));
+                                     gl);
 
 
     disp_utils::assignShaderVariable(shader_shadow_debug->programId(),
@@ -202,7 +202,7 @@ class Shadows {
                                      2,
                                      5 * sizeof(float),
                                      reinterpret_cast<void *>(3 * sizeof(float)),
-                                     static_cast<QOpenGLFunctions *>(gl));
+                                     gl);
 
     shader_shadow_debug->release();
   }

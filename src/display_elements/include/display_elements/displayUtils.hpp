@@ -1,7 +1,7 @@
 #ifndef DISP_UTILS_H
 #define DISP_UTILS_H
 
-#include <QOpenGLFunctions>
+#include <QOpenGLExtraFunctions>
 #include <globals/macros.hpp>
 #include <string>
 
@@ -80,7 +80,7 @@ inline void assignShaderVariable(unsigned int shaderProgram,
                                  int num_values,
                                  int stride,
                                  void* start_position,
-                                 QOpenGLFunctions* gl) {
+                                 QOpenGLExtraFunctions* gl) {
   const int variable_position = gl->glGetAttribLocation(shaderProgram, var_name);
   glCheckAfter();
   if (variable_position < 0) {

@@ -136,12 +136,5 @@ void WorldMesh::loadShader() {
   const std::string path = Globals::getInstance().getAbsPath2Shaders();
   const std::string vs = path + "camera.vs";
   const std::string fs = path + "camera.fs";
-
-  if (!Mesh::loadShader(vs, fs)) {
-    F_ERROR(
-        "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
-        "%s} ",
-        vs.c_str(),
-        fs.c_str());
-  }
+  Mesh::loadShader(vs, fs);
 }

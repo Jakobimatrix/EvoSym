@@ -15,6 +15,7 @@ class WorldMesh : public Mesh<true, true, false, false, true, true, 3> {
   WorldMesh() {
     loadVertices();
     loadShader();
+    addShaddow();
     setMaterial(Chrome());
     setObjectTextures();
   }

@@ -6,8 +6,8 @@ void SunMesh::loadVertices() {
   constexpr size_t resolution = 20;
   unsigned int num_triangles;
   unsigned int num_vertices;
-  const float radius = 0.003f;
-  const float length = 170.5f;
+  const float radius = 0.3f;
+  const float length = 17.5f;
 
   getcoordXYZInformation(num_vertices, num_triangles, resolution);
 
@@ -27,12 +27,5 @@ void SunMesh::loadShader() {
   const std::string path = Globals::getInstance().getAbsPath2Shaders();
   const std::string vs = path + "camera.vs";
   const std::string fs = path + "camera.fs";
-
-  if (!Mesh::loadShader(vs, fs)) {
-    F_ERROR(
-        "Failed to load Shader. Error in Shader? Do the files exist? {%s, "
-        "%s} ",
-        vs.c_str(),
-        fs.c_str());
-  }
+  Mesh::loadShader(vs, fs);
 }
