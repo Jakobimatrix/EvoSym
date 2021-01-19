@@ -53,11 +53,40 @@ class Light : public util::Settings {
 
   bool hasShadow() { return shadow_ptr != nullptr; }
 
-  void setShaddow(GLuint default_frame_buffer = 0) {
-    shadow_ptr = std::make_shared<Shadows>(default_frame_buffer);
+  void setShaddow(GLuint default_frame_buffer) {
+    shadow_ptr = std::make_shared<Shadows>(
+        shadow_texture_resolution, shadow_texture_resolution, default_frame_buffer);
+  }
+
+  void setShadowResolutionCrap(GLuint default_frame_buffer) {
+    shadow_texture_resolution = 512;
+    setShadowResolution(default_frame_buffer);
+  }
+
+  void setShadowResolutionPoor(GLuint default_frame_buffer) {
+    shadow_texture_resolution = 1024;
+    setShadowResolution(default_frame_buffer);
+  }
+
+  void setShadowResolutionLow(GLuint default_frame_buffer) {
+    shadow_texture_resolution = 2048;
+    setShadowResolution(default_frame_buffer);
+  }
+
+  void setShadowResolutionMid(GLuint default_frame_buffer) {
+    shadow_texture_resolution = 4096;
+    setShadowResolution(default_frame_buffer);
+  }
+
+  void setShadowResolutionHigh(GLuint default_frame_buffer) {
+    shadow_texture_resolution = 8192;
+    setShadowResolution(default_frame_buffer);
   }
 
   unsigned int getDepthMapTexture() { return shadow_ptr->getDepthMapTexture(); }
+  int getShadowTextureWidth() { return shadow_ptr->getShadowTextureWidth(); }
+  int getShadowTextureHeight() { return shadow_ptr->getShadowTextureHeight(); }
+
 
   unsigned int getDepthMapFrameBufferInt() {
     return shadow_ptr->getDepthMapFrameBufferInt();
@@ -91,6 +120,7 @@ class Light : public util::Settings {
     put<float, NUM_COORDS>(direction.x(), SETTING_DIRECTION_ID);
     put<float, NUM_COLORS>(ambient.x(), SETTING_AMBIENT_COLOR_ID);
     put<float, NUM_COLORS>(color.x(), SETTING_COLOR_COLOR_ID);
+    put<int>(shadow_texture_resolution, SETTING_SHADOW_TEXTURE_RES_ID);
 
 
     // todo temp
@@ -109,6 +139,8 @@ class Light : public util::Settings {
     eigen_utils::clampElements(ambient, 0.f, 1.f);
     eigen_utils::clampElements(color, 0.f, 1.f);
 
+    shadow_texture_resolution = math::round2PowerOf2(shadow_texture_resolution);
+
 
     // TODO WO ANDERS HIN
     lightOrthProjection =
@@ -121,12 +153,18 @@ class Light : public util::Settings {
         lightOrthProjection * R * pose.inverse(Eigen::TransformTraits::Isometry);
   }
 
+  void setShadowResolution(GLuint default_frame_buffer) {
+    shadow_ptr->setSize(shadow_texture_resolution, shadow_texture_resolution, default_frame_buffer);
+  }
+
   static constexpr int NUM_COLORS = 3;
   static constexpr int NUM_COORDS = 3;
   static constexpr const char *SETTING_POSITION_ID = "position_xyz";
   static constexpr const char *SETTING_DIRECTION_ID = "direction_xyz";
   static constexpr const char *SETTING_AMBIENT_COLOR_ID = "ambiente_rgb";
   static constexpr const char *SETTING_COLOR_COLOR_ID = "color_rgb";
+  static constexpr const char *SETTING_SHADOW_TEXTURE_RES_ID =
+      "shadow_texture_resolution_base_2";
 
   Eigen::Vector3f position = Eigen::Vector3f(0.f, 0.f, 2.f);
   Eigen::Vector3f direction = Eigen::Vector3f(DEFAULT_DIRECTION.data());
@@ -146,6 +184,8 @@ class Light : public util::Settings {
   float bot = -30;
   float near = 2;
   float far = 1000;
+
+  int shadow_texture_resolution = 8192;
 
   CallbackLightChange callbackLightChange = ([] {});
   std::shared_ptr<Shadows> shadow_ptr = nullptr;

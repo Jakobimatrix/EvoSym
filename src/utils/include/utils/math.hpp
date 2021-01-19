@@ -223,7 +223,8 @@ inline void comparableAngle(T& a, T& b) {
 }
 
 
-/*! \brief almost_equal checks if two floating points differ in epsilon
+/*!
+ * \brief almost_equal checks if two floating points differ in epsilon
  * https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
  * \param x,y floating point numbers checked to be within epsilon
  * \psrsm ulp (units in the last place of precision) ((GTest uses 4 ULP's for
@@ -238,6 +239,42 @@ inline typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type 
   return std::fabs(x - y) <= std::numeric_limits<T>::epsilon() * std::fabs(x + y) * ulp
          // unless the result is subnormal
          || std::fabs(x - y) < std::numeric_limits<T>::min();
+}
+
+// https://stackoverflow.com/questions/466204/rounding-up-to-next-power-of-2
+/*!
+ * \brief Returns the next lower power of 2 or given
+ * \param x a number
+ * \return x or the next lower power of 2
+ */
+inline int power2Floor(int x) {
+  int power = 1;
+  while (x >>= 1) power <<= 1;
+  return power;
+}
+
+/*!
+ * \brief Returns the next higher power of 2 or given
+ * \param x a number
+ * \return x or the next higher power of 2
+ */
+inline int power2Ceil(int x) {
+  if (x <= 1)
+    return 1;
+  int power = 2;
+  x--;
+  while (x >>= 1) power <<= 1;
+  return power;
+}
+
+/*!
+ * \brief Returns the next power of 2 or given
+ * \param in a number
+ * \return in or the next power of 2
+ */
+template <class T>
+inline T round2PowerOf2(T in) {
+  return pow(2, ceil(log(in) / log(2)));
 }
 
 

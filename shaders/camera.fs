@@ -36,7 +36,7 @@ vec3 clamp3(vec3 v, float min, float max)
   return v;
 }
 
-float ShadowCalculation(vec4 fragPosLightSpace)
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
 {
     // perform perspective divide
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -46,8 +46,30 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     float closestDepth = texture(shadowBufferTexture, projCoords.xy).r;
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
-    // check whether current frag pos is in shadow
-    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+
+    // TODO branchless!!!!
+    // regions outside light frustum
+    if(projCoords.z > 1.0){
+      return 0.0;
+    }
+
+    // shadow bias see: https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
+    float bias = max(0.00005 * (1.0 - dot(normal, lightDir)), 0.000005);
+
+    //// 1 sample
+    //// check whether current frag pos is in shadow
+    //float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
+
+    // 9 samples PCF (percentage-closer filtering)
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowBufferTexture, 0);
+    for(int x = -1; x <= 1; ++x) {
+        for(int y = -1; y <= 1; ++y) {
+            float pcfDepth = texture(shadowBufferTexture, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
 
     return shadow;
 }
@@ -75,7 +97,7 @@ void main()
     //vec3 specular = light.color * (spec * material.specular);
     vec3 specular = vec3(spec,spec,spec);
 
-    float shadow = ShadowCalculation(FragPosLightSpace);
+    float shadow = ShadowCalculation(FragPosLightSpace, FragNormal, light.direction);
 
     //vec3 lightning = light.ambient + diffuse;
     //vec3 lightning = light.ambient + specular;

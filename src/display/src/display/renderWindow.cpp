@@ -96,6 +96,10 @@ void RenderWindow::printGraphicCardInformation() {
   printf("Renderer: %s\n", glGetString(GL_RENDERER));
   printf("Version GL: %s\n", glGetString(GL_VERSION));
   printf("Version GLSL: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+  int maxtexsize;
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxtexsize);
+  printf("Max Shadow Texture size %d x %d\n", maxtexsize, maxtexsize);
 }
 
 void RenderWindow::enable3dDepth() {
@@ -111,7 +115,7 @@ void RenderWindow::update() {
   // draw into shadow frame buffer
   glCheck(glBindFramebuffer(GL_FRAMEBUFFER, light_ptr->getDepthMapFrameBufferInt()));
 
-  glViewport(0, 0, 1024, 1024);  // TODO
+  glViewport(0, 0, light_ptr->getShadowTextureWidth(), light_ptr->getShadowTextureHeight());
   glCheck(glClear(GL_DEPTH_BUFFER_BIT));
   // glCullFace(GL_BACK);
   glCullFace(GL_FRONT);

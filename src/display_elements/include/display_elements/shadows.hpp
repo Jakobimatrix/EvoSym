@@ -18,17 +18,17 @@
 // https://www.youtube.com/watch?v=vpDer0seP9M (Use depthCubeMap and GL_TEXTURE_CUBE_MAP)
 class Shadows {
  public:
-  Shadows(int size_x, int size_y, GLuint default_frame_buffer = 0) {
+  Shadows(int size_x, int size_y, GLuint default_frame_buffer) {
     setSize(size_x, size_y, default_frame_buffer);
   }
 
   ~Shadows() { clean(); }
 
-  Shadows(GLuint default_frame_buffer = 0) {
+  Shadows(GLuint default_frame_buffer) {
     setSize(shadow_texture_width, shadow_texture_height, default_frame_buffer);
   }
 
-  void setSize(int size_x, int size_y, GLuint default_frame_buffer = 0) {
+  void setSize(int size_x, int size_y, GLuint default_frame_buffer) {
     shadow_texture_width = size_x;
     shadow_texture_height = size_y;
     init(default_frame_buffer);
@@ -68,6 +68,10 @@ class Shadows {
     glCheck(gl->glBindVertexArray(0));
     glCheck(gl->glUseProgram(0));
   }
+
+  int getShadowTextureWidth() { return shadow_texture_width; }
+
+  int getShadowTextureHeight() { return shadow_texture_height; }
 
  private:
   bool initiated = false;
@@ -119,8 +123,12 @@ class Shadows {
     glCheck(glBindTexture(GL_TEXTURE_2D, depthMap));
     glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
     glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
-    glCheck(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+
+    // No shadow outside the frustum of the shadow perspective
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
     // https://gamedev.stackexchange.com/questions/24000/fbo-depth-buffer-not-working
     glCheck(glTexImage2D(
