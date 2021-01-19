@@ -23,7 +23,7 @@ out vec4 FragPosLightSpace;
 void main()
 {
     // gl outs
-    vec4 FragPosWorld =  transformMesh2World * vec4(vertexPos, 1.0);
+    vec4 FragPosWorld = transformMesh2World * vec4(vertexPos, 1.0);
     gl_Position = projection * transformWorld2camera * FragPosWorld;
 
     // outs

@@ -102,7 +102,7 @@ void RenderWindow::enable3dDepth() {
   glEnable(GL_DEPTH_TEST);
   glDepthMask(GL_TRUE);
   glDepthFunc(GL_LEQUAL);
-  glDepthRange(-1.0, 1.0);
+  glDepthRange(0.0, 1.0);
 }
 
 void RenderWindow::update() {
@@ -112,18 +112,16 @@ void RenderWindow::update() {
   glCheck(glBindFramebuffer(GL_FRAMEBUFFER, light_ptr->getDepthMapFrameBufferInt()));
 
   glViewport(0, 0, 1024, 1024);  // TODO
-  glCheck(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
-  glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+  glCheck(glClear(GL_DEPTH_BUFFER_BIT));
+  // glCullFace(GL_BACK);
   glCullFace(GL_FRONT);
-  // glCheck(glClearDepth(1));
-  // glCheck(glDepthMask(GL_TRUE));
   drawShadows();
 
   glCheck(glBindFramebuffer(GL_FRAMEBUFFER, getDefualtFrameFuffer()));
 
   glCullFace(GL_BACK);
   glViewport(0, 0, window_size.x(), window_size.y());
-  glCheck(glClearColor(0.3f, 0.3f, 0.3f, 0.0f));
+  glCheck(glClearColor(0.3f, 0.3f, 0.3f, 1.0f));
   glCheck(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
   if (debug_shadows) {
     light_ptr->debugShadowTexture();
@@ -203,21 +201,21 @@ void RenderWindow::animate() {
    */
 
 
-  const double r = 105;
-  static double phi = 0.;
-  phi += 0.008;
-  static double theta = 0.;
-  theta += 0.008;
-  static double y_dir = 1.;
+  const float r = 105;
+  static float phi = 0.;
+  phi += 0.003;
+  static float theta = 0.;
+  theta += 0.003;
+  static float y_dir = 1.;
 
-  static double y = 0;
-  y += 0.1 * y_dir;
+  static float y = 0;
+  y += 0.04f * y_dir;
   if (std::abs(y) > 100) {
     y_dir *= -1;
   }
 
-  const double z = std::sin(phi) * r;
-  const double x = std::cos(theta) * r;
+  const float z = std::sin(phi) * r;
+  const float x = std::cos(theta) * r;
 
   const Eigen::Vector3f light_pos(x, y, z);
   light_ptr->setPositionAndTarget(light_pos, Eigen::Vector3f(0, 0, 0));

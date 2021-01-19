@@ -110,7 +110,7 @@ void WorldMesh::loadVertices() {
 
   unsigned int num_triangles;
   unsigned int num_vertices;
-  const unsigned int resolution = 20;
+  const unsigned int resolution = 200;
   const float radius = 0.25f;
   const float length = 1.23f;
 

@@ -61,8 +61,8 @@ class Shadows {
     QOpenGLExtraFunctions *gl = QOpenGLContext::currentContext()->extraFunctions();
     glCheck(shader_shadow_debug->use());
     glCheck(glActiveTexture(GL_TEXTURE0));
-
     glCheck(glBindTexture(GL_TEXTURE_2D, depthMap));
+
     glCheck(gl->glBindVertexArray(quadVAO));
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glCheck(gl->glBindVertexArray(0));
@@ -99,6 +99,10 @@ class Shadows {
       3,
       2  // second triangle
   };
+
+  static constexpr int SHADER_UNIFORM_SHADOW_TEXTURE_ID = 0;
+  static constexpr const char *SHADER_UNIFORM_SHADOW_TEXTURE_NAME =
+      "shadowBufferTexture";
 
   void init(GLuint default_frame_buffer = 0) {
     if (initiated) {
@@ -170,7 +174,8 @@ class Shadows {
 
 
     glCheck(shader_shadow_debug->use());
-    glCheck(shader_shadow_debug->setInt("depthMap", 0));  // first texture is 0
+    glCheck(shader_shadow_debug->setInt(SHADER_UNIFORM_SHADOW_TEXTURE_NAME,
+                                        SHADER_UNIFORM_SHADOW_TEXTURE_ID));  // first texture is 0
 
     // setup plane VAO
     glCheck(gl->glGenVertexArrays(1, &quadVAO));

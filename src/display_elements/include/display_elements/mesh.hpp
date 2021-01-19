@@ -147,6 +147,15 @@ class BaseMesh {
       glCheck(shader_camera->use());
       glCheck(shader_camera->setInt(SHADER_UNIFORM_CAMERA_OBJECT_TEXTURE_NAME,
                                     SHADER_UNIFORM_CAMERA_OBJECT_TEXTURE_ID));
+      glCheck(shader_camera->release());
+    }
+    // TODO
+    setShadowTexture();
+  }
+
+  void setShadowTexture() {
+    if (shader_camera != nullptr) {
+      glCheck(shader_camera->use());
       glCheck(shader_camera->setInt(SHADER_UNIFORM_CAMERA_SHADOW_TEXTURE_NAME,
                                     SHADER_UNIFORM_CAMERA_SHADOW_TEXTURE_ID));
       glCheck(shader_camera->release());
@@ -338,7 +347,7 @@ class BaseMesh {
       "objectTexture";
   static constexpr int SHADER_UNIFORM_CAMERA_OBJECT_TEXTURE_ID = 0;
   static constexpr const char* SHADER_UNIFORM_CAMERA_SHADOW_TEXTURE_NAME =
-      "shadowTexture";
+      "shadowBufferTexture";
   static constexpr int SHADER_UNIFORM_CAMERA_SHADOW_TEXTURE_ID = 1;
   static constexpr const char* SHADER_UNIFORM_SHADOW_TEXTURE_NAME =
       "shadowBufferTexture";
@@ -441,18 +450,20 @@ class Mesh : public BaseMesh {
 
     // TODO deal with uninitialized material, light, etc
 
-    if (light && light->hasShadow()) {
-      glCheck(gl->glActiveTexture(GL_TEXTURE1));
-      glCheck(gl->glBindTexture(GL_TEXTURE_2D, light->getDepthMapTexture()));
+    if (shader_camera == nullptr) {
+      return;
     }
 
+    glCheck(shader_camera->use());
+
     if constexpr (has_texture) {
-      glCheck(gl->glActiveTexture(GL_TEXTURE0));
+      glCheck(gl->glActiveTexture(GL_TEXTURE0 + SHADER_UNIFORM_CAMERA_OBJECT_TEXTURE_ID));
       glCheck(gl->glBindTexture(GL_TEXTURE_2D, texture));
     }
 
-    if (shader_camera != nullptr) {
-      glCheck(shader_camera->use());
+    if (light && light->hasShadow()) {
+      glCheck(gl->glActiveTexture(GL_TEXTURE0 + SHADER_UNIFORM_CAMERA_SHADOW_TEXTURE_ID));
+      glCheck(gl->glBindTexture(GL_TEXTURE_2D, light->getDepthMapTexture()));
     }
 
     // draw mesh
@@ -460,14 +471,13 @@ class Mesh : public BaseMesh {
     glCheck(gl->glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr));
     glCheck(gl->glBindVertexArray(0));
 
-    // glCheck(shader_camera->release());
-    gl->glUseProgram(0);
-
     // always good practice to set everything back to defaults once configured.
     glCheck(gl->glActiveTexture(GL_TEXTURE0));
     glCheck(gl->glBindTexture(GL_TEXTURE_2D, 0));
     glCheck(gl->glActiveTexture(GL_TEXTURE1));
     glCheck(gl->glBindTexture(GL_TEXTURE_2D, 0));
+
+    glCheck(shader_camera->release());
 
     if (debug_normals && normals) {
       normals->draw(gl);
