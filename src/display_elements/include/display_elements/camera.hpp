@@ -283,7 +283,6 @@ class Camera : public util::Settings {
         eigen_utils::pose2Isometry(position, zero_rotation);
     const Eigen::Isometry3d rotation = eigen_utils::quaternion2Isometry(angles);
     Eigen::Isometry3d transformation = rotation * translation;
-    transformation.inverse(Eigen::TransformTraits::Isometry);
     view = transformation;
     callbackViewChange();
   }

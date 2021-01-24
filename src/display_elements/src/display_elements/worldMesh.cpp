@@ -114,7 +114,7 @@ void WorldMesh::loadVertices() {
   const float radius = 0.25f;
   const float length = 1.23f;
 
-  getcoordXYZInformation(num_vertices, num_triangles, resolution);
+  basicShape::getcoordXYZInformation(num_vertices, num_triangles, resolution);
 
   num_triangles += indices_temp.size() / 3;
   num_vertices += verices_temp.size();
@@ -122,7 +122,7 @@ void WorldMesh::loadVertices() {
   verices_temp.reserve(num_vertices);
   indices_temp.reserve(num_triangles * 3);
 
-  coordXYZ(
+  basicShape::coordXYZ(
       verices_temp, indices_temp, radius, resolution, length, {1, 0, 0}, {0, 1, 0}, {0, 0, 1});
 
 

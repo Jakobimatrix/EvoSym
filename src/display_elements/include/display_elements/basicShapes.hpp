@@ -11,6 +11,7 @@
 
 using namespace Eigen;
 
+namespace basicShape {
 typedef std::vector<unsigned int> IndicesVector;
 
 template <class VertexType>
@@ -351,5 +352,6 @@ inline void getRectangleInformation(unsigned int &num_vertices,
   num_vertices = resolution + 1;
 }
 
+}  // namespace basicShape
 
 #endif
