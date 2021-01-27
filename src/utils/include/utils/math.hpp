@@ -11,17 +11,17 @@ namespace math {
 #define GOLDEN_RATIO 1.61803398874989484820
 
 template <class T>
-inline T deg2Rad(T deg) {
+inline constexpr T deg2Rad(T deg) {
   return deg / 360. * static_cast<T>(M_PI);
 }
 
 template <class T>
-inline void abs(T& value) {
+inline constexpr void abs(T& value) {
   value = std::abs(value);
 }
 
 template <class T>
-inline T rad2Deg(T rad) {
+inline constexpr T rad2Deg(T rad) {
   return rad * 360. / static_cast<T>(M_PI);
 }
 
@@ -32,7 +32,7 @@ inline T rad2Deg(T rad) {
  * \return The signed absolute greatest value of the given two.
  */
 template <class T>
-inline T getSignedAbsMax(T a, T b) {
+inline constexpr T getSignedAbsMax(T a, T b) {
   if (std::abs(a) > std::abs(b)) {
     return a;
   } else {
@@ -46,14 +46,56 @@ inline T getSignedAbsMax(T a, T b) {
  * \param greater The second value
  */
 template <class T>
-inline void swapIf(T& smaller, T& greater) {
+inline constexpr void swapIf(T& smaller, T& greater) {
   if (smaller > greater) {
     std::swap(smaller, greater);
   }
 }
 
+/*!
+ * \brief Use std::fmin without the need of an initializer list
+ */
+template <typename First, typename... T>
+inline constexpr First variadic_fmin(const First& f, const T&... t) {
+  First retval = f;
+  // no constexpr implementation from fmin avaiable (yet)
+  ((retval = std::fmin(retval, t)), ...);
+  return retval;
+}
+
+/*!
+ * \brief Use std::fmax without the need of an initializer list
+ */
+template <typename First, typename... T>
+inline constexpr First variadic_fmax(const First& f, const T&... t) {
+  First retval = f;
+  // no constexpr implementation from fmin avaiable (yet)
+  ((retval = std::fmax(retval, t)), ...);
+  return retval;
+}
+
+/*!
+ * \brief Use std::min without the need of an initializer list
+ */
+template <typename First, typename... T>
+inline constexpr First variadic_min(const First& f, const T&... t) {
+  const First* retval = &f;
+  ((retval = &std::min(*retval, t)), ...);
+  return *retval;
+}
+
+/*!
+ * \brief Use std::max without the need of an initializer list
+ */
+template <typename First, typename... T>
+inline constexpr First variadic_max(const First& f, const T&... t) {
+  const First* retval = &f;
+  ((retval = &std::max(*retval, t)), ...);
+  return *retval;
+}
+
 template <typename T1, typename T2>
-inline auto positiveModulo_detail(T1 x, T2 y, std::true_type, std::false_type) {
+inline constexpr decltype(auto) positiveModulo_detail(T1 x, T2 y, std::true_type, std::false_type) {
   static_assert(std::is_signed<T1>::value && std::is_signed<T2>::value,
                 "you passed an unsigned value to positiveModulo. "
                 "positiveModulo only works with signed integer or floating "
@@ -64,7 +106,7 @@ inline auto positiveModulo_detail(T1 x, T2 y, std::true_type, std::false_type) {
 }
 
 template <typename T1, typename T2>
-inline auto positiveModulo_detail(T1 x, T2 y, std::false_type, std::true_type) {
+inline constexpr decltype(auto) positiveModulo_detail(T1 x, T2 y, std::false_type, std::true_type) {
   // see https://stackoverflow.com/questions/11980292/how-to-wrap-around-a-range
   return x - std::floor(x / y) * y;
 }
@@ -83,7 +125,7 @@ inline auto positiveModulo_detail(T1 x, T2 y, std::false_type, std::true_type) {
  * \return x modulo y
  */
 template <typename T1, typename T2>
-inline auto positiveModulo(T1 x, T2 y) {
+inline constexpr decltype(auto) positiveModulo(T1 x, T2 y) {
   return positiveModulo_detail(
       x,
       y,
@@ -99,7 +141,7 @@ inline auto positiveModulo(T1 x, T2 y) {
  * \return The wraped angle.
  */
 template <typename T>
-inline T wrapAngleMinusPiToPi(T angle) {
+inline T constexpr wrapAngleMinusPiToPi(T angle) {
   static_assert(
       std::is_floating_point<T>::value,
       "you can only wrap floating point angles (float, double, long double)");
@@ -113,7 +155,7 @@ inline T wrapAngleMinusPiToPi(T angle) {
  * \return The wraped angle.
  */
 template <typename T>
-inline T wrapAngleAroundGivenAngle(T angle, T given) {
+inline T constexpr wrapAngleAroundGivenAngle(T angle, T given) {
   static_assert(
       std::is_floating_point<T>::value,
       "you can only wrap floating point angles (float, double, long double)");
@@ -128,7 +170,7 @@ inline T wrapAngleAroundGivenAngle(T angle, T given) {
  * \return the normalized angle.
  */
 template <typename T>
-inline T findCloseAngle(T angle, T goal) {
+inline constexpr T findCloseAngle(T angle, T goal) {
   static_assert(
       std::is_floating_point<T>::value,
       "you can only find close angle of (float, double, long double)");
@@ -157,7 +199,7 @@ inline T findCloseAngle(T angle, T goal) {
  * \return True, if the angle could be wrapped inside min and max
  */
 template <typename T>
-inline bool wrapAngleBetweenMaxMin(T& angle, const T min, const T max) {
+inline constexpr bool wrapAngleBetweenMaxMin(T& angle, const T min, const T max) {
   const double span = max - min;
   const double offset = min + span / 2.0;
   // std::fmod(angle, 2.0 * M_PI);
@@ -187,7 +229,7 @@ inline bool wrapAngleBetweenMaxMin(T& angle, const T min, const T max) {
  * \return The wraped angle.
  */
 template <typename T>
-inline T wrapAngleZeroToTwoPi(T angle) {
+inline constexpr T wrapAngleZeroToTwoPi(T angle) {
   static_assert(
       std::is_floating_point<T>::value,
       "you can only wrap floating point angles (float, double, long double)");
@@ -201,14 +243,14 @@ inline T wrapAngleZeroToTwoPi(T angle) {
  * \param min Lower border
  */
 template <typename T>
-inline bool isBetween(T x, T max, T min) {
+inline constexpr bool isBetween(T x, T max, T min) {
   return (max > x && x > min);
 }
 /*!
  *\brief ComparableAngle changes two given angles such that they are in a comparable range.
  */
 template <typename T>
-inline void comparableAngle(T& a, T& b) {
+inline constexpr void comparableAngle(T& a, T& b) {
   if (a < b) {
     if (b - a > M_PI) {
       b = b - 2 * M_PI;
