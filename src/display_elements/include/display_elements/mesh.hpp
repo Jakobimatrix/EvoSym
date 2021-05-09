@@ -26,10 +26,12 @@
 using namespace std::literals::string_view_literals;
 
 class BaseMesh {
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+ protected:
   BaseMesh() {}
   virtual ~BaseMesh() {}
+
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   virtual void draw(QOpenGLExtraFunctions* gl) = 0;
   virtual void drawShadows(QOpenGLExtraFunctions* gl) = 0;
 
