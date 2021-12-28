@@ -310,15 +310,67 @@ inline int power2Ceil(int x) {
 }
 
 /*!
- * \brief Returns the next power of 2 or given
+ * \brief Returns the nearest exponent if given value is written as a power of two
  * \param in a number
- * \return in or the next power of 2
+ * \return The exponent. E.g.: in 123.45 out 7 because 123.45 = 0.964453 * 2^7
+ */
+template <class T>
+inline int getPowerOf2Exponent(T& value) {
+  int exp;
+  std::frexp(value, &exp);
+  const int b = static_cast<int>(exp > 0);
+  return b * exp + !b * 0;
+}
+
+/*!
+ * \brief Returns the next power of 2
+ * \param in a number
+ * \return The next power of 2
  */
 template <class T>
 inline T round2PowerOf2(T in) {
-  return pow(2, ceil(log(in) / log(2)));
+  const T b = static_cast<T>(in > 0);
+  in = b * in - !b * in;
+  const T power = pow(2, static_cast<T>(getPowerOf2Exponent(in)));
+  return power * b - !b * power;
 }
 
+inline constexpr unsigned nChoosek(unsigned n, unsigned k) {
+  if (k > n)
+    return 0;
+  if (k * 2 > n)
+    k = n - k;
+  if (k == 0)
+    return 1;
+
+  unsigned result = n;
+  for (unsigned i = 2; i <= k; ++i) {
+    result *= (n - i + 1);
+    result /= i;
+  }
+  return result;
+}
+
+inline constexpr double circumferenceEllipse(double a, double b) {
+  const double piab = M_PI * (a + b);
+  const double h = (a - b) * (a - b) / ((a + b) * (a + b));
+  double sum = 1;
+  const double lambdaPowa = h * h;
+  double lambda = 1;
+  const unsigned twoPowa = 4;
+  unsigned two = 1;
+  // Gauß-Kummer-Reihe
+  for (unsigned i = 0; i < 10; i++) {
+    lambda *= lambdaPowa;
+    two *= twoPowa;
+
+    const double nom = nChoosek(2 * i, i);
+    const double denom = (i + 1) * two;
+    const double omnom = nom / denom;
+    sum += omnom * omnom * lambda;
+  }
+  return piab * sum;
+}
 
 
 }  // namespace math
