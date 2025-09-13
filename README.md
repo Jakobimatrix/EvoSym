@@ -14,7 +14,7 @@
 - std::filesystem
   `needs gcc version 9 or you change the CMakeLists.txt and link against -lstdc++fs`
 - Qt 5.9
-  `sudo apt-get install qt5-default`
+  `sudo apt install qt5-default qtbase5-dev qtbase5-dev-tools qt5-qmake libqt5opengl5-dev`
 
 # third party submodule
 - stb https://github.com/nothings/stb
